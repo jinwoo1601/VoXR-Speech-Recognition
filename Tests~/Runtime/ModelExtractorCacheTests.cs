@@ -1,5 +1,6 @@
 // ============================================================================
-// Purpose:  PlayMode tests for the model cache's archive-hash freshness stamp
+// Purpose:  PlayMode tests for the model cache's two-tier freshness stamp — the cheap
+//           source-identity token and the archive hash behind it
 // Layer:    Tests.Runtime
 // Owns:     ModelExtractorCacheTests (public class)
 // Depends:  ModelExtractor, VoxrBridgeErrorCode
@@ -375,6 +376,306 @@ namespace VoXR.Tests.Runtime
             );
         }
 
+        // Issue #153: hashing the archive to answer "is the cache fresh?" meant reading the
+        // whole ~39 MB of it on every launch — ~719 ms of a 1303 ms time-to-voice-ready on
+        // a Quest 3. The stamp gained a second tier, a cheap source-identity token, and
+        // these tests pin the two-tier contract: a matching token serves the cache with no
+        // archive I/O at all; anything else falls back to the hash, which still decides
+        // re-extraction exactly as issue #145 left it. The token may only ever
+        // over-invalidate — a moved token costs one hash, never a re-extraction, and never
+        // serves a cache the hash would have rejected.
+
+        [UnityTest]
+        public IEnumerator MatchingSourceToken_SkipsArchiveRead()
+        {
+            byte[] archive = BuildModelArchive("--beam=13");
+
+            var first = ExtractWithToken(() => Task.FromResult(archive), () => "token-a");
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+
+            string sentinel = Path.Combine(path, "marker.txt");
+            File.WriteAllText(sentinel, "sentinel");
+
+            // Deliberately different bytes: were the archive read at all, the hash would
+            // mismatch and take the sentinel with it. Reaching the cache anyway is only
+            // possible if the token answered the question on its own.
+            var source = new CountingArchiveSource(BuildModelArchive("--beam=11"));
+
+            var second = ExtractWithToken(source.Read, () => "token-a");
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(path, second.Result, "The cached path must be returned again.");
+            Assert.AreEqual(
+                0,
+                source.Reads,
+                "A matching token must serve the cache without touching the archive — the "
+                    + "avoided read is the entire point of issue #153."
+            );
+            Assert.IsTrue(
+                File.Exists(sentinel),
+                "The fast path must not re-extract; the sentinel proves the cached directory "
+                    + "survived untouched."
+            );
+            Assert.IsEmpty(_errors, $"A cache hit must raise no error: [{ErrorSummary}]");
+        }
+
+        [UnityTest]
+        public IEnumerator MovedSourceToken_UnchangedBytes_RefreshesTokenWithoutReExtracting()
+        {
+            byte[] archive = BuildModelArchive("--beam=13");
+
+            var first = ExtractWithToken(() => Task.FromResult(archive), () => "token-a");
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+            string firstHash = ReadStampHash(path);
+
+            string sentinel = Path.Combine(path, "marker.txt");
+            File.WriteAllText(sentinel, "sentinel");
+
+            // A reinstall of the same build moves the token without moving a single byte.
+            var moved = new CountingArchiveSource(archive);
+
+            var second = ExtractWithToken(moved.Read, () => "token-b");
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(path, second.Result, "The cached path must be returned again.");
+            Assert.IsTrue(
+                File.Exists(sentinel),
+                "A moved token must cost a hash, never a re-extraction: the bytes the cache "
+                    + "was built from have not changed."
+            );
+            Assert.AreEqual(
+                1,
+                moved.Reads,
+                "The moved token must fall through to the hash — that fallback is what keeps "
+                    + "the token from ever deciding freshness on its own."
+            );
+            Assert.AreEqual(
+                firstHash,
+                ReadStampHash(path),
+                "The recorded hash describes bytes that did not change, so it must not either."
+            );
+            StringAssert.Contains(
+                "src:token-b",
+                ReadStamp(path),
+                "The refreshed stamp must record the new token in place."
+            );
+
+            // The refresh is only worth anything if the next launch is actually cheap again.
+            File.WriteAllText(sentinel, "sentinel");
+            var settled = new CountingArchiveSource(archive);
+
+            var third = ExtractWithToken(settled.Read, () => "token-b");
+            while (!third.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(
+                0,
+                settled.Reads,
+                "The in-place refresh must restore the fast path, not merely avoid breaking "
+                    + "it — otherwise every launch after a reinstall keeps paying the hash."
+            );
+            Assert.IsTrue(File.Exists(sentinel), "The settled launch must not re-extract either.");
+        }
+
+        [UnityTest]
+        public IEnumerator MovedSourceToken_ChangedBytes_ReExtracts()
+        {
+            var first = ExtractWithToken(
+                () => Task.FromResult(BuildModelArchive("--beam=13")),
+                () => "token-a"
+            );
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+            string firstHash = ReadStampHash(path);
+
+            var second = ExtractWithToken(
+                () => Task.FromResult(BuildModelArchive("--beam=11")),
+                () => "token-b"
+            );
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.IsNotNull(
+                second.Result,
+                $"Re-extraction must succeed. Errors: [{ErrorSummary}]"
+            );
+            StringAssert.Contains(
+                "--beam=11",
+                ReadModelConf(second.Result),
+                "Adding the token tier must not cost issue #145's guarantee: changed bytes "
+                    + "still re-extract."
+            );
+            Assert.AreNotEqual(
+                firstHash,
+                ReadStampHash(second.Result),
+                "The stamp must track the new archive's hash, or the next launch would "
+                    + "re-extract all over again."
+            );
+            StringAssert.Contains(
+                "src:token-b",
+                ReadStamp(second.Result),
+                "The re-extraction must stamp the token that came with the new bytes."
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator LegacyStamp_UpgradesInPlaceWithoutReExtracting()
+        {
+            byte[] archive = BuildModelArchive("--beam=13");
+
+            // The five-argument form writes what issue #145 wrote: a hash and nothing else.
+            var legacy = Extract(archive);
+            while (!legacy.IsCompleted)
+                yield return null;
+
+            string path = legacy.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+            string legacyStamp = ReadStamp(path);
+            StringAssert.DoesNotContain(
+                "src:",
+                legacyStamp,
+                "A token-less extraction must keep writing the one-line stamp, byte for byte "
+                    + "what installs in the field already carry."
+            );
+
+            string sentinel = Path.Combine(path, "marker.txt");
+            File.WriteAllText(sentinel, "sentinel");
+
+            var upgrade = ExtractWithToken(() => Task.FromResult(archive), () => "token-a");
+            while (!upgrade.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(path, upgrade.Result, "The cached path must be returned again.");
+            Assert.IsTrue(
+                File.Exists(sentinel),
+                "Existing installs must upgrade to the token tier for the price of one hash — "
+                    + "re-extracting 39 MB to write a second stamp line would be absurd."
+            );
+            StringAssert.Contains(
+                legacyStamp,
+                ReadStamp(path),
+                "The upgraded stamp must keep the hash it already had; the bytes did not "
+                    + "change just because the format gained a line."
+            );
+            StringAssert.Contains(
+                "src:token-a",
+                ReadStamp(path),
+                "The upgrade is pointless unless the token is what the next launch reads."
+            );
+            Assert.IsEmpty(_errors, $"The upgrade path must raise no error: [{ErrorSummary}]");
+        }
+
+        [UnityTest]
+        public IEnumerator NullSourceToken_FallsBackToHashing()
+        {
+            // A token provider can fail transiently — an unstattable source yields null —
+            // and that must land on exactly the pre-#153 behaviour, not on a degraded one.
+            byte[] archive = BuildModelArchive("--beam=13");
+
+            var first = ExtractWithToken(() => Task.FromResult(archive), () => null);
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+            StringAssert.DoesNotContain(
+                "src:",
+                ReadStamp(path),
+                "A null token records nothing: writing one would claim an identity the "
+                    + "provider never established."
+            );
+
+            string sentinel = Path.Combine(path, "marker.txt");
+            File.WriteAllText(sentinel, "sentinel");
+
+            var source = new CountingArchiveSource(archive);
+
+            var second = ExtractWithToken(source.Read, () => null);
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(path, second.Result, "The cached path must be returned again.");
+            Assert.AreEqual(
+                1,
+                source.Reads,
+                "Without a token the archive must be read and hashed, exactly as it was "
+                    + "before the fast path existed."
+            );
+            Assert.IsTrue(
+                File.Exists(sentinel),
+                "An unchanged archive must still hit the cache on the hash alone."
+            );
+            StringAssert.DoesNotContain(
+                "src:",
+                ReadStamp(path),
+                "A null token must leave the stamp's format alone rather than erasing or "
+                    + "inventing a token line."
+            );
+            Assert.IsEmpty(_errors, $"A cache hit must raise no error: [{ErrorSummary}]");
+        }
+
+        [UnityTest]
+        public IEnumerator MissingStampToken_WithMatchingToken_StillHashes()
+        {
+            byte[] archive = BuildModelArchive("--beam=13");
+
+            var first = ExtractWithToken(() => Task.FromResult(archive), () => "token-a");
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+
+            // The adversarial stamp: a token with no hash beside it. Nothing in production
+            // writes this, which is exactly why it has to be constructed by hand — it is the
+            // shape a truncated write or a hand-edited stamp could leave behind.
+            File.WriteAllText(Path.Combine(path, ModelExtractor.StampFileName), "src:token-a");
+
+            string sentinel = Path.Combine(path, "marker.txt");
+            File.WriteAllText(sentinel, "sentinel");
+
+            var source = new CountingArchiveSource(archive);
+
+            var second = ExtractWithToken(source.Read, () => "token-a");
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.IsNotNull(
+                second.Result,
+                $"The extraction must still succeed. Errors: [{ErrorSummary}]"
+            );
+            Assert.AreEqual(
+                1,
+                source.Reads,
+                "A stamp carrying no hash describes a cache whose bytes were never verified "
+                    + "against anything, so the token alone must never serve it."
+            );
+            Assert.IsFalse(
+                File.Exists(sentinel),
+                "With no recorded hash to match, the cache reads as stale and is rebuilt — "
+                    + "the over-invalidating branch, which is the one to take when unsure."
+            );
+            StringAssert.Contains(
+                "src:token-a",
+                ReadStamp(second.Result),
+                "The rebuilt cache must carry a complete stamp again, so the next launch is "
+                    + "cheap rather than repeating this."
+            );
+        }
+
         Task<string> Extract(byte[] archiveBytes) =>
             ExtractFrom(() => Task.FromResult(archiveBytes));
 
@@ -388,13 +689,57 @@ namespace VoXR.Tests.Runtime
                 (code, msg) => _errors.Add($"{code}: {msg}")
             );
 
+        // The same seam with a source-identity token injected. The nine issue-#145 tests go
+        // on taking the five-argument overload, so they keep pinning the token-less path.
+        Task<string> ExtractWithToken(Func<Task<byte[]>> archiveSource, Func<string> sourceToken) =>
+            ModelExtractor.ExtractModelAsync(
+                ModelName,
+                _baseDir,
+                archiveSource,
+                ModelName + ".zip",
+                (code, msg) => _errors.Add($"{code}: {msg}"),
+                sourceToken
+            );
+
         string ErrorSummary => string.Join("; ", _errors);
 
         static string ReadModelConf(string modelPath) =>
             File.ReadAllText(Path.Combine(modelPath, "conf", "model.conf"));
 
+        // The stamp's raw text, so assertions can weigh the presence or absence of the
+        // token line rather than only the hash it sits beside.
         static string ReadStamp(string modelPath) =>
             File.ReadAllText(Path.Combine(modelPath, ModelExtractor.StampFileName));
+
+        static string ReadStampHash(string modelPath)
+        {
+            foreach (string rawLine in ReadStamp(modelPath).Split('\n'))
+            {
+                // Trimmed so the helper cannot start lying if the stamp ever picks up \r.
+                string line = rawLine.Trim();
+                if (line.Length > 0 && !line.StartsWith("src:", StringComparison.Ordinal))
+                    return line;
+            }
+
+            return null;
+        }
+
+        // An archive source that records how often it was actually invoked, so a test can
+        // assert zero archive I/O — the cache path coming back proves nothing on its own.
+        sealed class CountingArchiveSource
+        {
+            readonly byte[] _archiveBytes;
+
+            public CountingArchiveSource(byte[] archiveBytes) => _archiveBytes = archiveBytes;
+
+            public int Reads { get; private set; }
+
+            public Task<byte[]> Read()
+            {
+                Reads++;
+                return Task.FromResult(_archiveBytes);
+            }
+        }
 
         // Builds a VOSK-shaped archive in memory. The entries sit under a root folder
         // because real VOSK archives have one and the extractor strips the first path

@@ -343,6 +343,63 @@ deliberate trade-offs rather than oversights.
   validation should run once per `Configure()` call, not per parser rebuild.
   Filed as a low-priority follow-up.
 
+### The model-cache freshness check still costs a main-thread copy on the launches that read the archive
+
+- **Symptom**: On a launch where the model archive is actually read — the first
+  launch after an install, and any launch on which the archive's source identity
+  moved — the Android path spends about 19 ms on the main thread materialising the
+  ~39 MB archive as a managed byte array from `UnityWebRequest`'s
+  `downloadHandler.data`, and the managed heap grows by ~43 MB that nothing
+  releases until a GC runs. An ordinary cached launch pays neither: it serves the
+  cache off a single `stat` and never opens the archive.
+- **Repro**: Install a build on Quest and launch it (the model is extracted).
+  Reinstall the *same* build, byte for byte, and launch again: the archive is read
+  and hashed a second time, although nothing about it changed. Launch a third time
+  without reinstalling and it is not read at all.
+- **Where seen**: device measurements taken for
+  [#153](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/153) on a
+  Quest 3 (Horizon OS / Android 14, 90 Hz, Development build, so the timings are
+  an upper bound).
+- **Root cause**: two independent things.
+  - The copy. `downloadHandler.data` hands back a managed array and there is no
+    off-main-thread route to it;
+    [#154](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/154)
+    removed the polling stall around the transfer, not the copy after it. Only the
+    SHA-256 itself is reliably on a thread-pool thread.
+  - The reinstall. The source-identity token is the container path, byte length
+    and last-write-UTC ticks of the *file the archive lives in* — the APK, on an
+    ordinary Android build — and an install always replaces that container.
+    Device-verified: reinstalling a byte-identical build moves both the path and
+    the mtime. A cheaper identity was tried and rejected — `versionCode` reported
+    `1` for a freshly rebuilt APK and for a four-month-old build alike, so it
+    cannot tell them apart at all.
+- **Why this is recorded rather than fixed**: the failure direction is chosen, not
+  accidental. The token over-invalidates and never under-invalidates: an identity
+  that moves while the bytes did not costs one read and one hash and never a
+  re-extraction, while bytes that change cannot fail to move it. A stickier
+  identity would buy back the reinstall's hash at the price of the one failure
+  this design is not allowed to have — serving a model the archive no longer
+  contains.
+- **Status of one delivery mode**: **unverified**. `Application.streamingAssetsPath`
+  is built by concatenating `jar:file://` with `Application.dataPath`, and the
+  container is parsed back out of that string. Where a project ships
+  StreamingAssets outside the main APK — Split Application Binary, or Play Asset
+  Delivery — it has not been confirmed here whether that path tracks the real
+  container; if it does not, a changed archive delivered that way might not move
+  the token. This package's model archive is expected to ship inside the APK and
+  neither configuration has been tested, so this is recorded as an untested
+  configuration rather than as a confirmed hazard.
+- **Workaround**:
+  - For the reinstall cost, none is needed: it buys one read and one hash, never a
+    re-extraction.
+  - For the copy, none at user level. It happens inside `InitialiseAsync()`, so
+    call that deliberately at load time rather than letting the first push-to-talk
+    press trigger it, and the cost lands where a hitch is affordable.
+  - If you do ship StreamingAssets outside the APK and a changed model appears not
+    to take effect, force a re-extraction: delete the extracted folder under
+    `Application.persistentDataPath/VoxrModels/`, or the `.voxr-model-stamp`
+    inside it, as `Documentation~/getting-started.md` describes.
+
 ### Coverage demotes a command when it explains too little of what was said
 
 - **Repro**: Register only `decelerate` (no slot-filled sibling) and say
