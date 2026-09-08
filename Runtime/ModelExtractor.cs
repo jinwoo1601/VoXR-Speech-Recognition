@@ -79,7 +79,15 @@ namespace VoXR
                     // has. A device that takes this path every launch therefore keeps that
                     // temp directory until something forces a re-extraction and sweeps it.
                     if (cachedKey != null && cachedToken == sourceToken)
+                    {
+                        // The one route out of here that reaches no await, and a completed
+                        // task would let InitialiseAsync run vosk_bridge_init and raise
+                        // OnModelReady inside the caller's own Initialise(), so a caller
+                        // subscribing after that documented fire-and-forget call never hears
+                        // the event. One yield forces async completion — not a #154 poll loop.
+                        await Task.Yield();
                         return finalPath;
+                    }
                 }
 
                 byte[] archiveBytes = null;

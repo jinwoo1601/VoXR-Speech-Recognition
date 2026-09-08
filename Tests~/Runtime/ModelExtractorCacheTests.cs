@@ -425,6 +425,47 @@ namespace VoXR.Tests.Runtime
         }
 
         [UnityTest]
+        public IEnumerator MatchingSourceToken_DoesNotCompleteSynchronously()
+        {
+            byte[] archive = BuildModelArchive("--beam=13");
+
+            var first = ExtractWithToken(() => Task.FromResult(archive), () => "token-a");
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+
+            var source = new CountingArchiveSource(archive);
+
+            // Held rather than awaited: what matters is the state of the task at the instant
+            // the extractor hands it back, which an await would have already erased.
+            var second = ExtractWithToken(source.Read, () => "token-a");
+
+            Assert.IsFalse(
+                second.IsCompleted,
+                "A task that is already complete on return lets InitialiseAsync raise "
+                    + "OnModelReady inside Initialise(), so a caller subscribing after the "
+                    + "documented fire-and-forget call would never hear the event."
+            );
+
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(
+                path,
+                second.Result,
+                "Suspending must not cost the fast path the cache hit it exists to serve."
+            );
+            Assert.AreEqual(
+                0,
+                source.Reads,
+                "The yield buys the asynchronous contract only — it must not reintroduce the "
+                    + "archive read issue #153 removed."
+            );
+        }
+
+        [UnityTest]
         public IEnumerator MovedSourceToken_UnchangedBytes_RefreshesTokenWithoutReExtracting()
         {
             byte[] archive = BuildModelArchive("--beam=13");
@@ -689,7 +730,7 @@ namespace VoXR.Tests.Runtime
                 (code, msg) => _errors.Add($"{code}: {msg}")
             );
 
-        // The same seam with a source-identity token injected. The nine issue-#145 tests go
+        // The same seam with a source-identity token injected. The ten issue-#145 tests go
         // on taking the five-argument overload, so they keep pinning the token-less path.
         Task<string> ExtractWithToken(Func<Task<byte[]>> archiveSource, Func<string> sourceToken) =>
             ModelExtractor.ExtractModelAsync(
