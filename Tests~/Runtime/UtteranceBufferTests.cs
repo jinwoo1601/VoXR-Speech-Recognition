@@ -148,6 +148,119 @@ namespace VoXR.Tests.Runtime
             );
         }
 
+        // --- The positional fast path is VERIFIED, not assumed (issue #146) ---
+        //
+        // Each test below appends ONE segment, so nothing about the join is in play: what is
+        // under test is the single-result decision between the allocation-free positional fill
+        // and the ragged aligned walk, and whether the verification lets the wrong pairing
+        // through.
+
+        [Test]
+        public void Append_EqualLengthButMisPaired_FallsThroughToTheAlignedWalk()
+        {
+            // Text and words are the same LENGTH but in the wrong ORDER. Length equality is the
+            // whole of what an unverified positional copy consults, so this is precisely the
+            // shape such a copy gets silently wrong.
+            var buffer = new UtteranceBuffer();
+
+            buffer.Append(
+                "cease fire",
+                new[]
+                {
+                    new VoxrWord("fire", 0.9f, 0f, 0.3f),
+                    new VoxrWord("cease", 0.8f, 0.3f, 0.6f),
+                },
+                0f
+            );
+
+            Assert.AreEqual(2, buffer.ConfidenceCount);
+
+            // Derived from the live code. TryFillPositionalVerified compares token 0's span
+            // ("cease") against words[0].Text ("fire"), mismatches, and returns false before
+            // writing anything — so the whole segment goes to the ragged path.
+            // FillAlignedConfidence then walks it: "fire" appears in a LATER token, so that
+            // word is waiting for its own token and token 0 takes NoConfidence with only the
+            // token cursor advancing; token 1 matches "fire" and takes 0.9. "cease" (0.8) is
+            // left unconsumed — the token it belongs to is already behind the forward-only
+            // cursor.
+            //
+            // PRE-HARDENING: [0.9, 0.8]. The `words.Length == tokenCount` branch copied
+            // positionally without comparing the texts, so token "cease" was credited with
+            // "fire"'s 0.9 and token "fire" with "cease"'s 0.8 — both values on the wrong
+            // token, and the span minimum 0.8 instead of 0.9.
+            AssertConfidences(
+                new[] { Nc, 0.9f },
+                buffer,
+                "an equal-length but mis-paired segment must not be copied positionally"
+            );
+        }
+
+        [Test]
+        public void Append_EqualLengthAndCorrectlyPaired_FillsFromTheVerifiedPositionalPath()
+        {
+            // The other branch of the verification, and the shape the decoder actually emits:
+            // one word per token, in order. Every token verifies, so the positional fill
+            // completes and the segment text is never split.
+            var buffer = new UtteranceBuffer();
+
+            buffer.Append(
+                "cease fire",
+                new[]
+                {
+                    new VoxrWord("cease", 0.9f, 0f, 0.3f),
+                    new VoxrWord("fire", 0.8f, 0.3f, 0.6f),
+                },
+                0f
+            );
+
+            Assert.AreEqual(2, buffer.ConfidenceCount);
+
+            // PRE-HARDENING produced this same array, by the unverified copy. So this is
+            // coverage rather than a regression pin — it is here so that a fix which rejected
+            // the GOOD pairing along with the bad one could not pass unnoticed.
+            AssertConfidences(
+                new[] { 0.9f, 0.8f },
+                buffer,
+                "the decoder's own 1:1 shape must still fill positionally"
+            );
+        }
+
+        [Test]
+        public void Append_ForeignTrailingWord_IsDroppedRatherThanCreditedToItsToken()
+        {
+            // Verification succeeds on token 0 and fails on token 1, so it abandons partway and
+            // the ragged walk rewrites the whole segment. (The abandoned pass and the ragged
+            // walk necessarily AGREE on the verified prefix — a verified match is also a match
+            // for the aligned walk — so the rewrite's completeness is not what this observes.
+            // What it observes is token 1.)
+            var buffer = new UtteranceBuffer();
+
+            buffer.Append(
+                "cease fire",
+                new[]
+                {
+                    new VoxrWord("cease", 0.9f, 0f, 0.3f),
+                    new VoxrWord("resume", 0.8f, 0.3f, 0.6f),
+                },
+                0f
+            );
+
+            Assert.AreEqual(2, buffer.ConfidenceCount);
+
+            // Derived from the live code. Ragged walk: token 0 matches "cease" for 0.9; then
+            // "resume" appears in NO remaining token, so it is foreign and dropped, the word
+            // cursor runs out, and token 1 takes NoConfidence.
+            //
+            // PRE-HARDENING: [0.9, 0.8] — the positional copy handed token "fire" the
+            // confidence of "resume", a word that is not in this transcript at all.
+            AssertConfidences(
+                new[] { 0.9f, Nc },
+                buffer,
+                "a word foreign to the transcript must not be credited to the token it "
+                    + "happens to sit opposite"
+            );
+        }
+
         [Test]
         public void ClearWords_ZeroesTheConfidenceCount()
         {

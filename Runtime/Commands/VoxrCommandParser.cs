@@ -3949,29 +3949,95 @@ namespace VoXR.Commands
             return TryMatchSlot(tokens, startIdx, slotIdx, out consumed);
         }
 
+        // Fills dest[destOffset .. destOffset + tokens.Length) with one confidence per token.
+        //
+        // Alignment is verified, never assumed: a word's confidence lands on a token only where
+        // the two texts match, so no token is credited with a value that came from a different
+        // word.
+        //
+        // On a mismatch the walk asks WHICH of the two streams is ahead, which is what lets it
+        // recover from either kind of raggedness without ever stealing:
+        //   - the word's text appears in a LATER token -> the word is waiting for its own token,
+        //     so this token genuinely has no data and only the token cursor advances;
+        //   - it appears in no remaining token -> the word is foreign to this transcript, so it
+        //     is dropped and the same token is retried against the next word.
+        // Advancing only on a match (the earlier shape) could not tell these apart: one foreign
+        // word parked the cursor and cost EVERY later token its confidence, which reads as -1 and
+        // bypasses minConfidence rather than failing it.
+        //
+        // There is deliberately NO unverified positional fast path: a length-equal copy would
+        // credit a token with a different word's confidence whenever the two streams merely
+        // happen to be the same length. On the shape the decoder actually emits — one word per
+        // token, in order (measured 1:1 against real libvosk over the committed fixture corpus,
+        // [unk] included) — the walk below is exactly N successful ordinal comparisons and never
+        // looks ahead, so verifying costs a comparison per token and nothing more.
+        //
+        // Allocation-free. The lookahead is O(remaining tokens) and runs only on a mismatch,
+        // which the decoder's own output never produces.
+        internal static void FillAlignedConfidence(
+            string[] tokens,
+            ReadOnlySpan<VoxrWord> words,
+            float[] dest,
+            int destOffset
+        )
+        {
+            int j = 0;
+            for (int i = 0; i < tokens.Length; )
+            {
+                if (j >= words.Length)
+                {
+                    dest[destOffset + i] = NoConfidence;
+                    i++;
+                    continue;
+                }
+
+                if (string.Equals(words[j].Text, tokens[i], StringComparison.Ordinal))
+                {
+                    dest[destOffset + i] = words[j].Confidence;
+                    i++;
+                    j++;
+                    continue;
+                }
+
+                // A null, empty or whitespace-only word text appears in no token — tokens come
+                // from a RemoveEmptyEntries split on ' ' — so AppearsFrom classifies it as
+                // foreign and it is dropped here, which is what the old IsNullOrEmpty skip did.
+                if (AppearsFrom(tokens, i + 1, words[j].Text))
+                {
+                    dest[destOffset + i] = NoConfidence;
+                    i++;
+                }
+                else
+                {
+                    j++;
+                }
+            }
+        }
+
+        // Whether any token at or after startIdx equals text ordinally. A null or empty text
+        // matches nothing, so such a word is treated as foreign to the transcript.
+        static bool AppearsFrom(string[] tokens, int startIdx, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            for (int k = startIdx; k < tokens.Length; k++)
+            {
+                if (string.Equals(tokens[k], text, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
         // Per-token confidence, indexed by position in tokens rather than keyed by word text
         // (issue #146): a text-keyed carrier gave every later occurrence of a repeated word the
         // FIRST occurrence's confidence, so a span's minimum was wrong in either direction.
         //
         // Single-result builder. On real decoder output words is 1:1 with tokens, but a caller
         // can pass text and words independently via InjectText/InjectResult, so alignment is
-        // verified per token instead of assumed — a word is attributed only where its text
-        // matches the token under the cursor, and no token is ever credited with a confidence
-        // that came from a different word.
-        //
-        // PRECONDITION for graceful degradation: words must be an in-order SUBSEQUENCE of tokens
-        // by text. When it holds, a token with no word takes NoConfidence while the cursor holds,
-        // the walk resynchronises on the next match, and the loss is per token, not per utterance
-        // — the tokens that DO have word data still contribute.
-        //
-        // When it does NOT hold — a word whose text matches no remaining token — the cursor parks
-        // on that word and EVERY later token takes NoConfidence. That reads as -1, which bypasses
-        // minConfidence and eager-flush condition 7 rather than failing them, so the loss is
-        // gate-loosening. Every in-repo producer satisfies the precondition: the JSON parser
-        // copies VOSK's words verbatim 1:1, CreateSimulatedWords splits the same string, and
-        // UtteranceBuffer builds its own per-segment array (alignment is a per-RESULT property,
-        // so it never routes a buffered utterance through this walk). Only a caller-supplied
-        // InjectText/InjectResult pairing can violate it.
+        // verified per token instead of assumed — see FillAlignedConfidence, which does the walk
+        // and recovers from both a token with no word and a word with no token.
         //
         // Returns null when there is no word data at all, which is what keeps the "no
         // confidence known" contract intact — ComputeConfidence reports -1 and both confidence
@@ -3982,32 +4048,12 @@ namespace VoXR.Commands
                 return null;
 
             if (_wordConfidencePool.Length < tokens.Length)
-                Array.Resize(ref _wordConfidencePool, tokens.Length);
+                Array.Resize(
+                    ref _wordConfidencePool,
+                    Math.Max(tokens.Length, _wordConfidencePool.Length * 2)
+                );
 
-            int j = 0;
-            for (int i = 0; i < tokens.Length; i++)
-            {
-                // A word with no text can match no token — tokens come from a
-                // RemoveEmptyEntries split — so it would hold the cursor forever and cost
-                // every later token its confidence. Skipped instead, which is what the old
-                // text-keyed builder's IsNullOrEmpty guard did.
-                while (j < words.Length && string.IsNullOrEmpty(words[j].Text))
-                    j++;
-
-                if (
-                    j < words.Length
-                    && string.Equals(words[j].Text, tokens[i], StringComparison.Ordinal)
-                )
-                {
-                    _wordConfidencePool[i] = words[j].Confidence;
-                    j++;
-                }
-                else
-                {
-                    _wordConfidencePool[i] = NoConfidence;
-                }
-            }
-
+            FillAlignedConfidence(tokens, words, _wordConfidencePool, 0);
             return _wordConfidencePool;
         }
 

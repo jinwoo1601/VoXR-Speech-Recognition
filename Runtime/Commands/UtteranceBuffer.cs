@@ -2,7 +2,8 @@
 // Purpose:  Accumulates split VOSK results into a single utterance before parsing
 // Layer:    Runtime.Commands
 // Owns:     UtteranceBuffer (internal sealed class)
-// Depends:  VoxrWord, VoxrCommandParser (NoConfidence, SplitSeparator)
+// Depends:  VoxrWord, VoxrCommandParser (NoConfidence, SplitSeparator,
+//           FillAlignedConfidence)
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -92,41 +93,67 @@ namespace VoXR.Commands
                 return;
             }
 
-            if (words.Length == tokenCount)
-            {
-                // One word per token, in order — the shape the decoder actually emits (measured
-                // 1:1 against real libvosk over the committed fixture corpus, [unk] included).
-                for (int i = 0; i < tokenCount; i++)
-                    _confBuf[offset + i] = words[i].Confidence;
+            // One word per token, in order — the shape the decoder actually emits (measured 1:1
+            // against real libvosk over the committed fixture corpus, [unk] included). The
+            // pairing is VERIFIED, not assumed: a bare positional copy would credit a token with
+            // a different word's confidence whenever the two streams merely happen to be the same
+            // length. Verification runs against the text's own token spans so this path still
+            // allocates no string[].
+            if (words.Length == tokenCount && TryFillPositionalVerified(text, words, offset))
                 return;
-            }
 
-            // Ragged within a single result — only a caller-supplied pairing reaches this. Walk
-            // this segment's own tokens against its own words, so a mis-pairing stays inside the
-            // result that caused it instead of shifting every later token.
+            // Ragged within a single result, or length-equal but mis-paired — only a
+            // caller-supplied pairing reaches either. Walk this segment's own tokens against its
+            // own words, so a mis-pairing stays inside the result that caused it instead of
+            // shifting every later token. Splitting is deferred to here so the paths above never
+            // touch the segment text; this rewrites every entry in [offset, offset + tokenCount),
+            // so the partial fill an abandoned verification pass leaves behind is harmless.
             var segTokens = text.Split(
                 VoxrCommandParser.SplitSeparator,
                 StringSplitOptions.RemoveEmptyEntries
             );
-            int j = 0;
-            for (int i = 0; i < tokenCount; i++)
-            {
-                while (j < words.Length && string.IsNullOrEmpty(words[j].Text))
-                    j++;
+            VoxrCommandParser.FillAlignedConfidence(segTokens, words, _confBuf, offset);
+        }
 
-                if (
-                    j < words.Length
-                    && string.Equals(words[j].Text, segTokens[i], StringComparison.Ordinal)
-                )
+        // Fills _confBuf[offset + i] from words[i], but only while each word's text actually
+        // equals the i-th token of text. Returns false at the FIRST mismatch, leaving a partial
+        // fill the caller overwrites via the ragged path.
+        //
+        // Allocation-free: the i-th token is compared as a span over text rather than cut out as
+        // a substring. Token boundaries are the maximal runs of non-' ' chars, identified exactly
+        // as CountTokens does, so the i-th run here is the i-th token of the segment — and the
+        // caller only enters with words.Length == CountTokens(text), which is what keeps the
+        // index in range.
+        //
+        // A null or empty words[i].Text yields an empty span, which can never equal a token run
+        // (always at least one char), so such a word fails verification here and is classified as
+        // foreign by the ragged path instead.
+        bool TryFillPositionalVerified(string text, VoxrWord[] words, int offset)
+        {
+            ReadOnlySpan<char> span = text.AsSpan();
+            int i = 0;
+            int pos = 0;
+
+            while (pos < span.Length)
+            {
+                if (span[pos] == ' ')
                 {
-                    _confBuf[offset + i] = words[j].Confidence;
-                    j++;
+                    pos++;
+                    continue;
                 }
-                else
-                {
-                    _confBuf[offset + i] = VoxrCommandParser.NoConfidence;
-                }
+
+                int start = pos;
+                while (pos < span.Length && span[pos] != ' ')
+                    pos++;
+
+                if (!span.Slice(start, pos - start).SequenceEqual(words[i].Text.AsSpan()))
+                    return false;
+
+                _confBuf[offset + i] = words[i].Confidence;
+                i++;
             }
+
+            return true;
         }
 
         internal bool ShouldFlush(float currentTime, float bufferWindow)

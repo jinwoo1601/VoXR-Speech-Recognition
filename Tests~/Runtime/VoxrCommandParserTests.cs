@@ -460,6 +460,137 @@ namespace VoXR.Tests.Runtime
                 "real word data below minConfidence must still refuse");
         }
 
+        // --- Resynchronisation after a word that belongs to no token (issue #146) ---
+        //
+        // The alignment walk advances the WORD cursor on a mismatch too, once it has asked
+        // which stream is ahead: a word whose text appears in a later token is waiting for its
+        // own token (only the token cursor moves), and a word that appears in no remaining
+        // token is foreign to the transcript (it is dropped and the same token is retried).
+        // Advancing only on a match could not tell those apart.
+
+        [Test]
+        public void ForeignLeadingWord_IsDropped_AndTheRealWordsKeepTheirConfidence()
+        {
+            // A word the transcript does not contain leads the words array — the shape a caller
+            // reaches through InjectText/InjectResult, where text and words are supplied
+            // independently. "please" equals no token at all.
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord("please", 0.9f, 0.0f, 0.2f),
+                new VoxrWord("cease", 0.2f, 0.2f, 0.5f),
+                new VoxrWord("fire", 0.2f, 0.5f, 0.8f),
+            };
+
+            var result = ParseOne(parser, "cease fire", words);
+
+            Assert.AreEqual("cease_fire", result.Command.Intent);
+            // "please" appears in NO remaining token, so it is classified foreign and dropped
+            // and token 0 is retried against the next word. Both tokens then match their own
+            // word: [0.2, 0.2], minimum 0.2.
+            Assert.AreEqual(0.2f, result.Command.Confidence, 0.001f);
+
+            // PRE-HARDENING this produced -1, and that is the whole point of the test. The word
+            // cursor advanced only on a match, so one foreign word PARKED it: token 0
+            // mismatched and took NoConfidence, token 1 was compared against "please" again and
+            // took NoConfidence too. ComputeConfidence found no token with data and reported
+            // -1 — and -1 BYPASSES minConfidence rather than failing it, so this command FIRED
+            // at any threshold, where two words heard at 0.2 should have had it rejected.
+            Assert.Greater(
+                result.Command.Confidence,
+                0f,
+                "one dropped foreign word must not void the confidence of every real one"
+            );
+        }
+
+        [Test]
+        public void WhitespaceOnlyWordText_IsDropped_NotLeftParkingTheCursor()
+        {
+            // The same shape, but the foreign word's text is a single space. It passes a
+            // string.IsNullOrEmpty guard — one character, not zero — yet it can equal no token,
+            // because tokens come from a RemoveEmptyEntries split on ' ' and so never contain
+            // one. AppearsFrom finds it in no remaining token and classifies it foreign, which
+            // is what the explicit IsNullOrEmpty skip used to do for the empty case only.
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord(" ", 0.9f, 0.0f, 0.2f),
+                new VoxrWord("cease", 0.2f, 0.2f, 0.5f),
+                new VoxrWord("fire", 0.2f, 0.5f, 0.8f),
+            };
+
+            var result = ParseOne(parser, "cease fire", words);
+
+            Assert.AreEqual("cease_fire", result.Command.Intent);
+            Assert.AreEqual(0.2f, result.Command.Confidence, 0.001f);
+
+            // PRE-HARDENING: -1, for a nastier reason than an empty string would have given.
+            // The `while (IsNullOrEmpty(words[j].Text)) j++;` skip did NOT fire for " ", so the
+            // whitespace word parked the cursor exactly as "please" does above, every token
+            // took NoConfidence, and the command fired past minConfidence on -1.
+            Assert.Greater(
+                result.Command.Confidence,
+                0f,
+                "a whitespace-only word text must be dropped, not left holding the cursor"
+            );
+        }
+
+        [Test]
+        public void TransposedWords_NoTokenIsCreditedWithAnotherWordsConfidence()
+        {
+            // Equal lengths, wrong order — the one shape an unverified positional copy gets
+            // silently wrong, because length equality is all such a copy consults.
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord("fire", 0.9f, 0.0f, 0.3f),
+                new VoxrWord("cease", 0.8f, 0.3f, 0.6f),
+            };
+
+            // Derived from the live walk, not assumed. i=0/j=0: "fire" != "cease", but "fire"
+            // DOES appear in a later token, so the word is waiting for its own token — token 0
+            // takes NoConfidence and only the token cursor advances. i=1/j=0: "fire" == "fire",
+            // so token 1 takes 0.9. The walk then ends with "cease" (0.8) UNCONSUMED: the token
+            // it belongs to is already behind the cursor, and the walk is forward-only, so it
+            // cannot reach back over a transposition. That is deliberate — reaching back is
+            // what would let a token be credited from anywhere in the word list, which is the
+            // stealing this design refuses.
+            var aligned = new float[2];
+            VoxrCommandParser.FillAlignedConfidence(new[] { "cease", "fire" }, words, aligned, 0);
+
+            // THE PROPERTY UNDER TEST: a token may end up with no data, but it must never hold
+            // a value that came from a different word. Token 0's only available wrong answer is
+            // "fire"'s 0.9, and it does not take it.
+            Assert.AreEqual(
+                VoxrCommandParser.NoConfidence,
+                aligned[0],
+                1e-5f,
+                "token \"cease\" must take no data rather than \"fire\"'s 0.9"
+            );
+            Assert.AreEqual(
+                0.9f,
+                aligned[1],
+                1e-5f,
+                "token \"fire\" takes its OWN word's confidence and no other"
+            );
+
+            var result = ParseOne(parser, "cease fire", words);
+
+            // Minimum over the tokens that HAVE data = 0.9. A positional copy would produce
+            // [0.9, 0.8] — every value on the wrong token — and report 0.8, so 0.8 here would
+            // mean "cease"'s confidence had landed on the "fire" token.
+            Assert.AreEqual(0.9f, result.Command.Confidence, 0.001f);
+
+            // PRE-HARDENING the PARSER-side walk produced this same array: it already held the
+            // word cursor on a mismatch, which is enough for a pure transposition. So this test
+            // is coverage of the no-stealing property, NOT a regression pin. The equivalent
+            // buffer-side case IS a pin — UtteranceBuffer had an unverified positional copy;
+            // see UtteranceBufferTests.Append_EqualLengthButMisPaired_FallsThroughToTheAlignedWalk.
+        }
+
         [Test]
         public void NoMatch_EmptyArray()
         {
@@ -5851,6 +5982,111 @@ namespace VoXR.Tests.Runtime
                 Is.Not.AllocatingGCMemory()
             );
             LogAssert.NoUnexpectedReceived();
+        }
+
+        // ---------- Word-confidence builder cost (issue #146) ----------
+
+        // Assigned inside a measured region so the deliberate allocation that proves the
+        // instrument is live cannot be optimised away. Mirrors ZeroAllocPollPathTests.Sink,
+        // which exists for the same reason.
+        internal static float[] AllocSink;
+
+        [Test]
+        public void BuildWordConfidence_AllocatesNothingPerCall()
+        {
+            // InstanceBuildWordConfidence runs once per utterance on the parse path
+            // (Parse -> InstanceBuildWordConfidence -> FillAlignedConfidence) and is written to
+            // allocate nothing: ordinal comparisons, a write into a pooled float[], and a
+            // mismatch lookahead that is an index scan over the remaining tokens. Nothing
+            // checked that. The two allocation pins above measure
+            // TryEagerCommit(tokens, null, ...), which takes an ALREADY-BUILT float[] and never
+            // calls the builder at all — so for this path they were inert, and a builder that
+            // started allocating per utterance would not have moved either of them.
+            //
+            // Measured with Unity's AllocatingGCMemory constraint and NOT with
+            // GC.GetAllocatedBytesForCurrentThread: that counter is inert in this environment
+            // (0 B moved after a deliberate 1 MB allocation), so an assertion written against
+            // it reads zero whatever the code does. See the two tests above and
+            // ZeroAllocPollPathTests, which was moved off that counter for the same reason.
+            var parser = CreateParser();
+
+            // 40 tokens, and that number is load-bearing — see the warm-up below. Synthetic
+            // rather than grammatical because the builder never consults the grammar: it walks
+            // tokens against words and nothing else.
+            const int TokenCount = 40;
+            var tokens = new string[TokenCount];
+            var paired = new VoxrWord[TokenCount];
+            for (int i = 0; i < TokenCount; i++)
+            {
+                tokens[i] = "w" + i;
+                paired[i] = new VoxrWord(tokens[i], 0.9f, i * 0.1f, i * 0.1f + 0.1f);
+            }
+
+            // The ragged fixture: a word foreign to the transcript (dropped, and the token
+            // retried against the next word) followed by an in-order subsequence (the tokens
+            // between its entries take NoConfidence). BOTH mismatch branches of the walk —
+            // including the AppearsFrom lookahead the hardening added — therefore run inside
+            // the measured region.
+            var ragged = new[]
+            {
+                new VoxrWord("zzz-not-in-transcript", 0.5f, 0f, 0.1f),
+                paired[0],
+                paired[7],
+                paired[19],
+                paired[TokenCount - 1],
+            };
+
+            // WARM-UP, and it is load-bearing rather than ceremony: _wordConfidencePool starts
+            // at 32 floats and grows with Array.Resize, which allocates a new array. 40 > 32,
+            // so the FIRST call at this token count reallocates the pool. Without these calls
+            // outside the region, the assertions below would fail on the pool's one-time growth
+            // rather than on anything the walk does. Both fixtures are warmed for symmetry —
+            // the pool is sized by tokens.Length, so either alone would suffice.
+            parser.InstanceBuildWordConfidence(tokens, paired);
+            parser.InstanceBuildWordConfidence(tokens, ragged);
+
+            // The 1:1 path — the shape real decoder output takes, and the one that runs on
+            // every utterance. The fixtures are hoisted OUT of the delegate: building them
+            // inside would be the test failing on its own garbage.
+            Assert.That(
+                () =>
+                {
+                    for (int i = 0; i < 100; i++)
+                        parser.InstanceBuildWordConfidence(tokens, paired);
+                },
+                Is.Not.AllocatingGCMemory(),
+                "the verified 1:1 walk must allocate nothing per utterance"
+            );
+
+            // The ragged path, which is where the hardening added work. Looped for the reason
+            // the tests above are: an allocation appearing only on a repeat call — a cache that
+            // rebuilds, a pool that regrows — is caught too.
+            Assert.That(
+                () =>
+                {
+                    for (int i = 0; i < 100; i++)
+                        parser.InstanceBuildWordConfidence(tokens, ragged);
+                },
+                Is.Not.AllocatingGCMemory(),
+                "the foreign-word drop and the AppearsFrom lookahead must allocate nothing "
+                    + "either"
+            );
+
+            // NON-VACUITY CONTROL, in the same test and against the same constraint form. A
+            // zero-or-fail constraint also passes when the instrument is dead, so the two
+            // greens above mean nothing on their own; this asserts the converse — that the
+            // very same constraint DOES see a deliberate allocation on this runtime. If this
+            // line goes red, neither assertion above is measuring anything and their greens are
+            // worthless.
+            Assert.That(
+                () =>
+                {
+                    AllocSink = new float[64];
+                },
+                Is.AllocatingGCMemory(),
+                "Unity's AllocatingGCMemory constraint did not observe a deliberate 64-float "
+                    + "allocation, so the two zero-allocation assertions above prove nothing"
+            );
         }
 
         [Test]
