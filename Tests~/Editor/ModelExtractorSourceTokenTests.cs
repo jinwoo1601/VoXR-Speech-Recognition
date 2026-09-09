@@ -18,7 +18,6 @@ namespace VoXR.Tests.Editor
     public class ModelExtractorSourceTokenTests
     {
         const string ArchiveRelativePath = "vosk-model-small-en-us-0.15.zip";
-        const string FallbackPath = "/data/app/fallback/base.apk";
 
         [Test]
         public void JarPath_ResolvesToApkContainer()
@@ -27,7 +26,6 @@ namespace VoXR.Tests.Editor
                 "/data/app/~~abc123/com.example.app-1/base.apk",
                 ModelExtractor.ResolveArchiveContainerPath(
                     "jar:file:///data/app/~~abc123/com.example.app-1/base.apk!/assets",
-                    FallbackPath,
                     ArchiveRelativePath
                 ),
                 "An ordinary Android build must stamp the apk the assets are packed into, "
@@ -43,7 +41,6 @@ namespace VoXR.Tests.Editor
                 ModelExtractor.ResolveArchiveContainerPath(
                     "jar:file:///data/app/~~abc123/com.example.app-1/"
                         + "split_config.arm64_v8a.apk!/assets",
-                    FallbackPath,
                     ArchiveRelativePath
                 ),
                 "The whole reason the container is derived: a model shipped in a new split "
@@ -55,59 +52,75 @@ namespace VoXR.Tests.Editor
         [Test]
         public void PlainPath_ResolvesToTheArchiveFileItself()
         {
-            string streamingAssets = Path.Combine("C:", "Project", "Assets", "StreamingAssets");
+            // "C:" alone is drive-relative ("C:Project\..."), so the root separator is
+            // spelled out: nothing here should depend on that quirk.
+            string streamingAssets = Path.Combine(
+                "C:" + Path.DirectorySeparatorChar,
+                "Project",
+                "Assets",
+                "StreamingAssets"
+            );
 
             Assert.AreEqual(
                 Path.Combine(streamingAssets, ArchiveRelativePath),
-                ModelExtractor.ResolveArchiveContainerPath(
-                    streamingAssets,
-                    FallbackPath,
-                    ArchiveRelativePath
-                ),
+                ModelExtractor.ResolveArchiveContainerPath(streamingAssets, ArchiveRelativePath),
                 "Off Android there is no container: the archive is a loose file, and its own "
                     + "size and mtime are the identity to stamp."
             );
         }
 
         [Test]
-        public void MalformedJarPath_WithoutSeparator_FallsBack()
+        public void MalformedJarPath_WithoutSeparator_ResolvesToNothing()
         {
-            Assert.AreEqual(
-                FallbackPath,
+            Assert.IsNull(
                 ModelExtractor.ResolveArchiveContainerPath(
                     "jar:file:///data/app/~~abc123/com.example.app-1/base.apk",
-                    FallbackPath,
                     ArchiveRelativePath
                 ),
-                "An unrecognised shape must fall back whole rather than throw or hand back a "
-                    + "truncated path — a token that fails to resolve costs a hash, never "
-                    + "correctness."
+                "A jar shape the parser cannot read must yield no container at all: the caller "
+                    + "turns a null container into a full read and hash, whereas any non-null "
+                    + "guess would be stat-ed like a parsed one and could stamp the cache "
+                    + "against a file nobody verified holds the archive."
             );
         }
 
         [Test]
-        public void EmptyStreamingAssetsPath_FallsBack()
+        public void UnparseableJarPath_ResolvesToNothingEvenWhenItNamesARealContainer()
         {
-            Assert.AreEqual(
-                FallbackPath,
-                ModelExtractor.ResolveArchiveContainerPath(null, FallbackPath, ArchiveRelativePath),
-                "A path Unity never supplied cannot be parsed into anything; the fallback is "
-                    + "stat-ed like any other candidate and degrades to the hash if it misses."
+            Assert.IsNull(
+                ModelExtractor.ResolveArchiveContainerPath(
+                    "jar:file:///data/app/~~abc123/com.example.app-1/"
+                        + "main.1.com.example.app.obb",
+                    ArchiveRelativePath
+                ),
+                "Null is the contract for every shape the parser cannot read — not some other "
+                    + "path, and not a plausible one. Whatever is returned gets stat-ed and "
+                    + "stamped, so a container that merely looks right is still unverified: "
+                    + "this is the case where the old Application.dataPath fallback stat-ed "
+                    + "clean on Android, dataPath being the APK itself."
             );
         }
 
         [Test]
-        public void JarPath_EmptyContainer_FallsBack()
+        public void EmptyStreamingAssetsPath_ResolvesToNothing()
         {
-            Assert.AreEqual(
-                FallbackPath,
+            Assert.IsNull(
+                ModelExtractor.ResolveArchiveContainerPath(null, ArchiveRelativePath),
+                "A path Unity never supplied cannot be parsed into anything, and nothing may "
+                    + "be substituted for it — the launch pays a hash instead."
+            );
+        }
+
+        [Test]
+        public void JarPath_EmptyContainer_ResolvesToNothing()
+        {
+            Assert.IsNull(
                 ModelExtractor.ResolveArchiveContainerPath(
                     "jar:file://!/assets",
-                    FallbackPath,
                     ArchiveRelativePath
                 ),
-                "An empty container names no file to stat, so it must fall back rather than "
-                    + "stamp the identity of nothing."
+                "An empty container names no file to stat, so it must resolve to nothing "
+                    + "rather than let some other file stand in for the identity of nothing."
             );
         }
     }

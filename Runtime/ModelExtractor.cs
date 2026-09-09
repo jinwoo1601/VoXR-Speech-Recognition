@@ -290,19 +290,33 @@ namespace VoXR
         // stamping base.apk's identity would then serve a stale cache, which is the one
         // failure direction this design is not allowed to have.
         //
-        // That direction is deliberately one-sided: this over-invalidates, never under. A
-        // token that moves while the bytes stay the same costs one extra hash and no
-        // re-extraction; a token cannot fail to move when the bytes change.
+        // That direction is one-sided wherever the container is a separate file: this
+        // over-invalidates, never under. A token that moves while the bytes stay the same
+        // costs one extra hash and no re-extraction, and the bytes cannot change without an
+        // install replacing the container.
+        //
+        // The Editor and standalone builds are the exception worth knowing about, because
+        // there the "container" resolves to the loose .zip itself — so the identity is that
+        // of the very file whose contents are in question, and it holds only as long as a
+        // replacement moves the mtime. A rewrite that is the same byte length AND carries a
+        // preserved timestamp is not caught: deflating a one-digit edit to a decoder value
+        // in conf/model.conf can land on the identical length, so the mtime is doing the
+        // real work. Ordinary edits and copies move it; timestamp-normalising build
+        // pipelines and deliberate restores do not. Recorded in KNOWN_LIMITATIONS.md rather
+        // than closed, because closing it means never letting the cheap tier settle the
+        // question off Android — which is every Editor launch back to a full 39 MB read.
         internal static string ComputeSourceToken(string archiveRelativePath)
         {
             try
             {
                 string sourcePath = ResolveArchiveContainerPath(
                     Application.streamingAssetsPath,
-                    Application.dataPath,
                     archiveRelativePath
                 );
 
+                // No resolvable container means there is nothing to stat, and nothing may be
+                // substituted for it: the token stays null and the caller reads and hashes
+                // the archive in full, which is slow and always right.
                 if (string.IsNullOrEmpty(sourcePath))
                     return null;
 
@@ -329,26 +343,30 @@ namespace VoXR
         // file itself is the thing to stat.
         //
         // Kept free of Unity statics so the parsing is testable off-device. A shape this
-        // does not recognise falls back rather than throwing or guessing: the fallback is
-        // stat-ed like any other candidate, and a token that fails to resolve degrades to
-        // the hash path, so a bad parse costs performance and never correctness.
+        // does not recognise resolves to nothing rather than throwing or guessing a
+        // container: the caller turns a null container into a null token, a null token means
+        // "hash it", and the launch pays the full read and hash — so a bad parse costs
+        // performance and never correctness. This is why nothing is substituted for an
+        // unreadable shape: the earlier version fell back to Application.dataPath, which on
+        // Android *is* the APK — a real, stat-able file — so the guess produced a full,
+        // confident-looking token for a container nobody had verified held the archive,
+        // exactly the under-invalidation the token design forbids.
         internal static string ResolveArchiveContainerPath(
             string streamingAssetsPath,
-            string fallbackPath,
             string archiveRelativePath
         )
         {
             const string JarPrefix = "jar:file://";
 
             if (string.IsNullOrEmpty(streamingAssetsPath))
-                return fallbackPath;
+                return null;
 
             if (!streamingAssetsPath.StartsWith(JarPrefix, StringComparison.Ordinal))
                 return Path.Combine(streamingAssetsPath, archiveRelativePath);
 
             int separatorIndex = streamingAssetsPath.IndexOf('!');
             if (separatorIndex < 0)
-                return fallbackPath;
+                return null;
 
             string container = streamingAssetsPath.Substring(
                 JarPrefix.Length,
@@ -356,7 +374,7 @@ namespace VoXR
             );
 
             if (container.Length == 0)
-                return fallbackPath;
+                return null;
 
             return Uri.UnescapeDataString(container);
         }

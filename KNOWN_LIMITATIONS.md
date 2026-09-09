@@ -356,10 +356,16 @@ deliberate trade-offs rather than oversights.
   Reinstall the *same* build, byte for byte, and launch again: the archive is read
   and hashed a second time, although nothing about it changed. Launch a third time
   without reinstalling and it is not read at all.
-- **Where seen**: device measurements taken for
+- **Where seen**: the ~19 ms copy, the ~43 MB of managed heap, and the fact that a
+  reinstall moves the container's path and mtime, all come from device
+  measurements taken for
   [#153](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/153) on a
   Quest 3 (Horizon OS / Android 14, 90 Hz, Development build, so the timings are
-  an upper bound).
+  an upper bound). Those runs were taken against the pre-fix code, which read and
+  hashed the archive on every launch, so they are not the provenance for the third
+  launch in the repro above. That a launch finding the recorded identity unchanged
+  never opens the archive is the implemented behaviour of the source-identity
+  tier — it has not been observed on a device.
 - **Root cause**: two independent things.
   - The copy. `downloadHandler.data` hands back a managed array and there is no
     off-main-thread route to it;
@@ -374,12 +380,20 @@ deliberate trade-offs rather than oversights.
     `1` for a freshly rebuilt APK and for a four-month-old build alike, so it
     cannot tell them apart at all.
 - **Why this is recorded rather than fixed**: the failure direction is chosen, not
-  accidental. The token over-invalidates and never under-invalidates: an identity
-  that moves while the bytes did not costs one read and one hash and never a
-  re-extraction, while bytes that change cannot fail to move it. A stickier
-  identity would buy back the reinstall's hash at the price of the one failure
-  this design is not allowed to have — serving a model the archive no longer
-  contains.
+  accidental. The token over-invalidates rather than under-invalidating: an
+  identity that moves while the bytes did not costs one read and one hash and
+  never a re-extraction. How strong the other direction is depends on what the
+  token is taken over. Where the container is a separate file that an install
+  replaces — the APK, on an ordinary Android build — its bytes cannot change
+  without a new install, so bytes that change cannot fail to move the token,
+  provided the container was resolved correctly in the first place (the separate
+  unverified case in the next bullet). In the Editor and in standalone builds
+  there is no separate container: the token is taken over the `.zip` itself, the
+  very file whose contents are in question, and it rests on the last-write time
+  moving — the narrow window that leaves is the entry that follows this one. A
+  stickier identity would buy back the reinstall's hash at the price of the one
+  failure this design is not allowed to have — serving a model the archive no
+  longer contains.
 - **Status of one delivery mode**: **unverified**. `Application.streamingAssetsPath`
   is built by concatenating `jar:file://` with `Application.dataPath`, and the
   container is parsed back out of that string. Where a project ships
@@ -399,6 +413,53 @@ deliberate trade-offs rather than oversights.
     to take effect, force a re-extraction: delete the extracted folder under
     `Application.persistentDataPath/VoxrModels/`, or the `.voxr-model-stamp`
     inside it, as `Documentation~/getting-started.md` describes.
+
+### A same-length replacement archive with a preserved timestamp is served stale in the Editor and standalone builds
+
+- **Symptom**: You swap `Assets/StreamingAssets/<modelName>.zip` for a different
+  archive, run in the Editor or a standalone build, and the previously extracted
+  model keeps being used. Nothing is logged and nothing looks wrong: the launch
+  takes the source-identity fast path, serves the cache off a single `stat`, and
+  never opens the archive to notice that its contents changed. On Android this
+  cannot happen — see **Root cause**.
+- **Repro**: Note the byte length and last-write time of the `.zip` the current
+  cache was extracted from. Put a *different* archive of **exactly** the same byte
+  length in its place, then restore the original last-write time (`touch -r`, a
+  restore that replays a recorded timestamp, or a build pipeline that normalises
+  timestamps). Launch in the Editor. The old model is served.
+- **Where seen**: identified in review of
+  [#153](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/153); not
+  observed in the wild, and not reachable on the platform this package ships on.
+  The same-length half is not the improbable half and was reproduced deliberately:
+  a single-digit edit to a decoder value in `conf/model.conf` (`--beam=13.0` →
+  `12.0`) left the deflated archive at exactly the same length in 2 of 4 trials.
+- **Root cause**: the source-identity token is the container's path, byte length
+  and last-write-UTC ticks. On Android the container is the APK — a separate file
+  the archive is packed into, which an install always replaces — so a changed
+  archive always moves the token. In the Editor and in standalone builds there is
+  no container: the `.zip` itself is what gets stat-ed, so the token is the
+  identity of the very file whose contents are in question, and two of its three
+  fields can survive a replacement outright. That leaves only the timestamp to
+  notice the change, and something has to actively preserve it for the token to
+  hold still. Ordinary copies do not — `cp -p` and `rsync -a` stamp the *new*
+  file's own mtime and are safe here. It takes a deliberate `touch -r`, a restore
+  that replays a recorded timestamp, a timestamp-normalising build pipeline, or a
+  volume whose timestamp granularity is coarse enough to hide the difference.
+- **Why this is recorded rather than fixed**: closing it means not letting the
+  source-identity tier settle the question wherever the container is the archive
+  itself — that is, in the Editor and in every standalone build — which returns
+  every one of those launches to a full ~39 MB read and SHA-256, the cost that tier
+  exists to remove. The window needs two independent coincidences at once, and it
+  does not exist on Android, the platform the package's model ships to. Paying a
+  ~39 MB read and SHA-256 on every Editor and standalone launch to close it is the
+  wrong trade, and it was taken deliberately.
+- **Workaround**: force a re-extraction — delete the extracted folder under
+  `Application.persistentDataPath/VoxrModels/`, or the `.voxr-model-stamp` inside
+  it, as `Documentation~/getting-started.md` describes under *To force a
+  re-extraction*. Any write that updates the `.zip`'s last-write time moves the
+  token too, so a plain `touch` on the replacement archive also clears it. If you
+  generate model archives from a pipeline that normalises timestamps, make one of
+  those part of the swap rather than relying on the identity check.
 
 ### Coverage demotes a command when it explains too little of what was said
 
