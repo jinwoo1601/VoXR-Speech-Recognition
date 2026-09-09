@@ -573,7 +573,7 @@ namespace VoXR.Commands
 
             if (bufferWindow <= 0f)
             {
-                ProcessParsedResultsCore(result.Text, result.Words);
+                ProcessParsedResultsCore(result.Text, result.Words, null);
                 return;
             }
 
@@ -618,7 +618,7 @@ namespace VoXR.Commands
             }
 
             var words = _buffer.GetWordsSpan();
-            ProcessParsedResultsCore(text, words);
+            ProcessParsedResultsCore(text, words, _buffer.ConfidenceBuffer);
             _buffer.ClearWords();
         }
 
@@ -636,12 +636,18 @@ namespace VoXR.Commands
             if (tokens.Length == 0)
                 return EagerCommitVerdict.None;
 
-            var words = _buffer.GetWordsSpan();
-            var wordConfidence = _parser.InstanceBuildWordConfidence(tokens, words);
-            return _parser.TryEagerCommit(tokens, wordConfidence, minScore, minConfidence);
+            // The buffer's array is aligned to the token positions of PeekText(), which is
+            // exactly the text just split here — and the peek does not consume it, so the
+            // alignment still holds.
+            return _parser.TryEagerCommit(
+                tokens, _buffer.ConfidenceBuffer, minScore, minConfidence);
         }
 
-        void ProcessParsedResultsCore(string text, ReadOnlySpan<VoxrWord> words)
+        // wordConfidence is supplied by the buffered path, which builds it per result as the
+        // results arrive (alignment is a per-result property — see UtteranceBuffer). null means
+        // "no buffer segmented this utterance": build it here from the single result's own words.
+        void ProcessParsedResultsCore(string text, ReadOnlySpan<VoxrWord> words,
+            float[] wordConfidence)
         {
             // Split once — shared by pending handlers, diagnostics, and the parser.
             string[] tokens = text.Split(VoxrCommandParser.SplitSeparator,
@@ -649,9 +655,9 @@ namespace VoXR.Commands
             if (tokens.Length == 0)
                 return;
 
-            // Built here rather than by the caller: the per-token confidence array is aligned
-            // to these tokens, so it cannot be built before the split.
-            var wordConfidence = _parser.InstanceBuildWordConfidence(tokens, words);
+            // Built only when unbuffered: the per-token confidence array is aligned to these
+            // tokens, so it cannot be built before the split.
+            wordConfidence ??= _parser.InstanceBuildWordConfidence(tokens, words);
 
 #if UNITY_EDITOR
             // Editor diagnostics need VoxrWord[] — copy once for the editor path only.

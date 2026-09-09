@@ -3953,15 +3953,25 @@ namespace VoXR.Commands
         // (issue #146): a text-keyed carrier gave every later occurrence of a repeated word the
         // FIRST occurrence's confidence, so a span's minimum was wrong in either direction.
         //
-        // On real decoder output words is 1:1 with tokens, but two legitimate shapes are not:
-        // UtteranceBuffer appends text unconditionally and words only when a result supplies
-        // them, and InjectText/InjectResult let a caller pass text and words independently. So
-        // alignment is verified per token instead of assumed — a word is attributed only where
-        // its text matches the token under the cursor. A token that does not match takes
-        // NoConfidence and the word cursor holds, so the walk resynchronises on the next match
-        // and no token is ever credited with a confidence that came from a different word. The
-        // degradation is therefore per token, not per utterance: the tokens that DO have word
-        // data still contribute.
+        // Single-result builder. On real decoder output words is 1:1 with tokens, but a caller
+        // can pass text and words independently via InjectText/InjectResult, so alignment is
+        // verified per token instead of assumed — a word is attributed only where its text
+        // matches the token under the cursor, and no token is ever credited with a confidence
+        // that came from a different word.
+        //
+        // PRECONDITION for graceful degradation: words must be an in-order SUBSEQUENCE of tokens
+        // by text. When it holds, a token with no word takes NoConfidence while the cursor holds,
+        // the walk resynchronises on the next match, and the loss is per token, not per utterance
+        // — the tokens that DO have word data still contribute.
+        //
+        // When it does NOT hold — a word whose text matches no remaining token — the cursor parks
+        // on that word and EVERY later token takes NoConfidence. That reads as -1, which bypasses
+        // minConfidence and eager-flush condition 7 rather than failing them, so the loss is
+        // gate-loosening. Every in-repo producer satisfies the precondition: the JSON parser
+        // copies VOSK's words verbatim 1:1, CreateSimulatedWords splits the same string, and
+        // UtteranceBuffer builds its own per-segment array (alignment is a per-RESULT property,
+        // so it never routes a buffered utterance through this walk). Only a caller-supplied
+        // InjectText/InjectResult pairing can violate it.
         //
         // Returns null when there is no word data at all, which is what keeps the "no
         // confidence known" contract intact — ComputeConfidence reports -1 and both confidence

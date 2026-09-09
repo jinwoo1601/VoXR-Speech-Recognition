@@ -1084,6 +1084,43 @@ namespace VoXR.Tests.Runtime
             Assert.AreEqual(0.41f, results[1].Command.Confidence, 0.001f);
         }
 
+        [Test]
+        public void Sequential_RaggedWordData_ConfidencePropagatedPerCommand()
+        {
+            // The RAGGED-and-repeated shape, as its own test beside the 1:1 one above: the same
+            // two-command utterance, but with only THREE words for four tokens — the second
+            // "fire" has no word at all. Ragged AND repeated together is what the token-indexed
+            // rewrite has to get right, and neither the 1:1 test above nor
+            // PartialWordData_TokensWithoutWords_AreSkipped (ragged, no repeat) covers it.
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord("cease", 0.95f, 0.0f, 0.3f),
+                new VoxrWord("fire", 0.72f, 0.3f, 0.6f),
+                new VoxrWord("resume", 0.88f, 0.7f, 1.0f),
+            };
+
+            var results = parser.Parse("cease fire resume fire", words);
+
+            // InstanceBuildWordConfidence walks the words against the tokens in order:
+            // "cease"->0.95, "fire"->0.72, "resume"->0.88, then the word list is exhausted and
+            // the trailing "fire" takes NoConfidence. Array: [0.95, 0.72, 0.88, -1].
+            Assert.AreEqual(2, results.Length);
+
+            // First command, tokens [0,2): min(0.95, 0.72) = 0.72.
+            // OLD: the text-keyed carrier also reported 0.72 here.
+            Assert.AreEqual(0.72f, results[0].Command.Confidence, 0.001f);
+
+            // Second command, tokens [2,4): token 2 is 0.88 and token 3 is skipped as "no
+            // data", so ComputeConfidence's minimum over the COVERED tokens is 0.88 — a real
+            // confidence, not NoConfidence, because at least one token in the span had a word.
+            // OLD: the text-keyed carrier answered the trailing "fire" from the FIRST
+            // occurrence's entry (0.72) and reported this command at 0.72 — a confidence
+            // invented for a token no word ever covered.
+            Assert.AreEqual(0.88f, results[1].Command.Confidence, 0.001f);
+        }
+
         // --- Command Set Support Tests (v2.4) ---
 
         [Test]
