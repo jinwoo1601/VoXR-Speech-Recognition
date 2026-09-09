@@ -44,7 +44,7 @@ A parsed command with intent and extracted slots.
 |-------|------|-------------|
 | `Intent` | `string` | The matched command intent (e.g. `"launch_weapon"`) |
 | `Slots` | `VoxrSlotMatch[]` | Matched slot name/value pairs |
-| `Confidence` | `float` | Minimum word confidence across matched tokens. `-1` means no word data was available. |
+| `Confidence` | `float` | Minimum word confidence across matched tokens, each read at its own position in the transcript. `-1` means no word data was available *for the matched span* — which is not always the same as the utterance carrying none; see [the two gates](../scoring.md#minconfidence-default-04). |
 | `Score` | `float` | Pattern match quality (0.0--1.0). Higher is better. |
 | `RawText` | `string` | The original VOSK transcript text |
 | `MatchedPatternIndex` | `int` | Index into the definition's `Patterns` array identifying which pattern produced this match. `-1` when unavailable. |

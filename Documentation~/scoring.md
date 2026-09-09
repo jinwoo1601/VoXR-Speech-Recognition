@@ -266,12 +266,22 @@ Minimum, not average — this is the property that surprises people. One weak wo
 
 That command scores a clean `1.00` and is still rejected at the default `0.4` — and note the culprit is not the word you would suspect. "two" came in at its usual ≈0.50, comfortably above the gate; the veto came from a word nobody was watching.
 
-**Repeated words resolve by text, not by position.** The per-word table is built once per utterance, keyed by word *text*, keeping each distinct word's **first** occurrence. Every token in the span is then looked up by text. So if a word appears more than once in the utterance, every occurrence is scored at the first one's confidence — even when that first occurrence lies *outside* the matched span. Two consequences worth knowing:
+**Repeated words resolve by position, not by text.** The per-word table is an array indexed by token *position*, so every token in the span is scored at the confidence of the word actually spoken there. It is built by walking the transcript's tokens and VOSK's per-word results together and attributing a word's confidence to a token only where that word's text matches the token; a token nothing matched carries a "no data" entry and is skipped by the minimum, exactly as an unmatched token always was. Two consequences worth knowing:
 
-- A weak repeat inside the span can be masked by a strong earlier one ("orient heading two **two** zero" reports the first "two"'s confidence for both).
-- A weak word *before* the match can drag the reported confidence down, though it is not part of the command.
+- A word said twice is scored twice, at whatever the decoder made of each occurrence — a weak repeat inside the span vetoes the command even when the same word came through cleanly earlier.
+- A word *outside* the matched span never contributes, however weak it was.
 
-This matters most for `NumberSequence` slots, which are the commands most likely to repeat a word.
+This matters most for `NumberSequence` slots, which are the commands most likely to repeat a word — and so the commands the old text-keyed table got wrong. Before #146 it kept each distinct word's **first** occurrence and looked every token up by text, which scored a repeat at the first occurrence's confidence even when that first occurrence lay outside the match: a weak repeat inside the span was masked by a strong earlier one, and a weak word before the match dragged the reported confidence down though it was not part of the command. It moved the number in both directions, so neither a pass nor a rejection could be trusted on an utterance that repeated a word.
+
+The shipped fixture corpus holds one such utterance, measured against the small English model:
+
+```
+"fire two torpedoes at bravo two"
+  two (index 1)  0.50   <-- inside the match, and the minimum
+  two (index 5)  1.00
+```
+
+The command's own confidence is `0.50` either way here, because the weak occurrence is the earlier one *and* lies inside the matched span. What moves is the `target` slot covering "bravo two", reported at `0.50` and now `1.00` — a figure *derived* from the two measured word confidences and the slot's token span, not separately observed. Per-slot confidence is Editor diagnostics only — the [debug window](editor-testing.md#right-panel-command-matching) and the [session log](#reading-a-session-log) — and no gate reads it, so on this utterance the fix changes what you *see* when you go looking for the weak word, not what fires.
 
 **`-1` means "no data", not "zero confidence".** It means no per-word confidence was available *for the matched span*. Usually that is because the utterance carried no word data at all — injected text, where the `words` array is empty too. It can also happen with `words` populated, when the matched span came from a segment that carried none: the utterance buffer appends text unconditionally but words only when a result supplies them, so a buffer merging a spoken result with an injected one can match on the half that has no word data. Either way the `minConfidence` check is **bypassed entirely** and the command is accepted or rejected on score alone. Treat `-1` as *n/a* in any debug UI — never as a low value.
 

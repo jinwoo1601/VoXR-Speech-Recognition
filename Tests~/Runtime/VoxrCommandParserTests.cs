@@ -297,6 +297,169 @@ namespace VoXR.Tests.Runtime
             Assert.AreEqual(-1f, result.Command.Confidence, 0.001f);
         }
 
+        // --- Token-aligned per-word confidence (issue #146) ---
+        //
+        // Word confidence is carried as a float[] indexed by TOKEN POSITION. The tests below
+        // pin the shapes the old text-keyed Dictionary<string,float> got wrong or could not
+        // express; each records what that carrier would have produced.
+
+        [Test]
+        public void RepeatedWord_WeakSecondOccurrence_LowersCommandConfidence()
+        {
+            // A NumberSequence slot is where a single command's span most readily repeats a
+            // word: "two seven two" is one heading, and the decoder heard the SECOND "two"
+            // badly (0.35 against 0.90).
+            var parser = CreateNumericParser();
+
+            var words = new[]
+            {
+                new VoxrWord("orient", 0.93f, 0.0f, 0.3f),
+                new VoxrWord("to", 0.90f, 0.3f, 0.5f),
+                new VoxrWord("heading", 0.97f, 0.5f, 0.9f),
+                new VoxrWord("two", 0.90f, 0.9f, 1.2f),
+                new VoxrWord("seven", 0.95f, 1.2f, 1.5f),
+                new VoxrWord("two", 0.35f, 1.5f, 1.8f),
+            };
+
+            var result = ParseOne(parser, "orient to heading two seven two", words);
+
+            Assert.AreEqual("set_heading", result.Command.Intent);
+            Assert.AreEqual("two seven two", result.Command.GetSlot("heading"));
+            // Minimum over tokens [0,6) = the weak SECOND "two".
+            // OLD: the text-keyed carrier stored "two" at its first occurrence (0.90), so the
+            // weak second hearing was masked and the command reported 0.90.
+            Assert.AreEqual(0.35f, result.Command.Confidence, 0.001f);
+        }
+
+        [Test]
+        public void RepeatedWord_WeakFirstOccurrenceOutsideSpan_DoesNotLowerCommandConfidence()
+        {
+            // A weak stray "two" leads the utterance, and "two" occurs again INSIDE the match.
+            // No pattern begins with "two", so the sliding start skips token 0 and the match
+            // spans [1,7) — the stray is not part of the command at all. ("cease cease fire"
+            // does not work here: "cease" starts a pattern, so the leading token forms a second,
+            // partial extraction round and the parse returns two results.)
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord("two", 0.20f, 0.0f, 0.2f),
+                new VoxrWord("fire", 0.95f, 0.2f, 0.4f),
+                new VoxrWord("two", 0.90f, 0.4f, 0.6f),
+                new VoxrWord("torpedoes", 0.95f, 0.6f, 0.9f),
+                new VoxrWord("at", 0.95f, 0.9f, 1.0f),
+                new VoxrWord("bravo", 0.95f, 1.0f, 1.2f),
+                new VoxrWord("two", 0.95f, 1.2f, 1.4f),
+            };
+
+            var result = ParseOne(parser, "two fire two torpedoes at bravo two", words);
+
+            Assert.AreEqual("launch_weapon", result.Command.Intent);
+            // Minimum over the IN-SPAN tokens only, each at its own position: the weakest is
+            // the "two" at index 2, at 0.90.
+            // OLD: every "two" resolved to the first occurrence's 0.20 — including the stray
+            // that was never part of the command — so this dragged to 0.20 and the gate could
+            // reject a command every one of whose own words was heard well.
+            Assert.AreEqual(0.90f, result.Command.Confidence, 0.001f);
+        }
+
+        [Test]
+        public void PartialWordData_TokensWithoutWords_AreSkipped()
+        {
+            // The shape UtteranceBuffer produces when it merges an injected result (text only)
+            // with a spoken one (text + words): the words array is an in-order SUBSET of the
+            // tokens. Alignment is verified per token, so the uncovered head takes NoConfidence
+            // and the walk resynchronises on "target".
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord("target", 0.80f, 0.9f, 1.2f),
+                new VoxrWord("hotel", 0.90f, 1.2f, 1.5f),
+                new VoxrWord("one", 0.70f, 1.5f, 1.8f),
+            };
+
+            var result = ParseOne(parser, "launch all missiles target hotel one", words);
+
+            Assert.AreEqual("launch_weapon", result.Command.Intent);
+            // Minimum over the COVERED tokens only = 0.70. The three uncovered tokens are
+            // skipped rather than counted as zero, and rather than voiding the whole span.
+            Assert.AreEqual(0.70f, result.Command.Confidence, 0.001f);
+            Assert.Greater(result.Command.Confidence, 0f,
+                "partial word data must still yield a real confidence, not NoConfidence");
+            // OLD: the text-keyed carrier also reported 0.70 here — this test does not pin a
+            // behaviour change, it pins that the token-indexed rewrite did NOT regress the
+            // buffer-merge shape. A naive design keyed on words.Length == tokens.Length would
+            // have returned -1 and silently bypassed the confidence gate for every merged
+            // utterance.
+        }
+
+        [Test]
+        public void CorpusTranscript_RepeatedDigit_CommandConfidenceUnchanged()
+        {
+            // Measured values, not invented: real libvosk 0.3.45 + vosk-model-small-en-us-0.15
+            // decoding the committed fixture
+            // Tests~/Fixtures/audio/tts/fire_two_torpedoes_at_bravo_two.wav yields the
+            // transcript "fire two torpedoes at bravo two" with per-word confidences
+            // [1.0, 0.5, 1.0, 1.0, 1.0, 1.0] — the two "two"s at 0.5 and 1.0 respectively.
+            var parser = CreateParser();
+
+            var words = new[]
+            {
+                new VoxrWord("fire", 1.0f, 0.00f, 0.30f),
+                new VoxrWord("two", 0.5f, 0.30f, 0.60f),
+                new VoxrWord("torpedoes", 1.0f, 0.60f, 1.10f),
+                new VoxrWord("at", 1.0f, 1.10f, 1.30f),
+                new VoxrWord("bravo", 1.0f, 1.30f, 1.65f),
+                new VoxrWord("two", 1.0f, 1.65f, 1.95f),
+            };
+
+            var result = ParseOne(parser, "fire two torpedoes at bravo two", words);
+
+            Assert.AreEqual("launch_weapon", result.Command.Intent);
+            Assert.AreEqual("two", result.Command.GetSlot("quantity"));
+            Assert.AreEqual("torpedoes", result.Command.GetSlot("weapon"));
+            Assert.AreEqual("bravo two", result.Command.GetSlot("target"));
+
+            // Command-level confidence is UNCHANGED by #146: the weak occurrence is the EARLIER
+            // one and lies inside the span, so the text-keyed carrier happened to look it up
+            // correctly and also reported 0.5. This is the pin that the committed corpus's
+            // fire/no-fire decisions do not move.
+            //
+            // The visible movement in this utterance is in the "target" slot span [4,6):
+            // "bravo two" scored 0.5 under the old carrier (the second "two" inheriting the
+            // first's 0.5) and scores 1.0 now. That figure is reported only in the Editor
+            // diagnostics, never at the command level, so no gate sees it.
+            Assert.AreEqual(0.5f, result.Command.Confidence, 0.001f);
+        }
+
+        [Test]
+        public void NoWordData_BypassesConfidenceGate()
+        {
+            // ComputeConfidence's -1f is "no confidence is known here", not "confidence zero":
+            // the eager gate is `confidence >= 0f && confidence < minConfidence`, so a null
+            // carrier bypasses it rather than failing it. Pinned on TryEagerCommit because it
+            // is the parser-level entry point that takes minConfidence at all.
+            var parser = new VoxrCommandParser(
+                Array.Empty<VoxrSlotDefinition>(),
+                new[]
+                {
+                    new VoxrCommandDefinition("cease_fire", new[] { new[] { "cease", "fire" } }),
+                });
+
+            var tokens = new[] { "cease", "fire" };
+
+            Assert.AreEqual(EagerCommitVerdict.Commit,
+                parser.TryEagerCommit(tokens, null, 0.6f, 0.9f),
+                "no word data must bypass minConfidence, not fail it");
+
+            // Control, so the assertion above is not vacuous: with word data the same gate at
+            // the same threshold refuses.
+            Assert.AreEqual(EagerCommitVerdict.None,
+                parser.TryEagerCommit(tokens, new[] { 0.2f, 0.2f }, 0.6f, 0.9f),
+                "real word data below minConfidence must still refuse");
+        }
+
         [Test]
         public void NoMatch_EmptyArray()
         {
@@ -898,22 +1061,27 @@ namespace VoXR.Tests.Runtime
         {
             var parser = CreateParser();
 
+            // Four tokens, four words — the 1:1 shape a decoder actually emits. "fire" occurs
+            // twice and the decoder heard the second one WORSE (0.41 against 0.72).
             var words = new[]
             {
                 new VoxrWord("cease", 0.95f, 0.0f, 0.3f),
                 new VoxrWord("fire", 0.72f, 0.3f, 0.6f),
                 new VoxrWord("resume", 0.88f, 0.7f, 1.0f),
+                new VoxrWord("fire", 0.41f, 1.0f, 1.3f),
             };
 
-            // "cease fire resume fire" — two commands
-            // "fire" appears in both; word confidence map stores first occurrence (0.72)
+            // "cease fire resume fire" — two commands, each scored over ITS OWN span.
             var results = parser.Parse("cease fire resume fire", words);
 
             Assert.AreEqual(2, results.Length);
-            // First command: min(cease=0.95, fire=0.72) = 0.72
+            // First command, tokens [0,2): min(cease=0.95, fire=0.72) = 0.72
             Assert.AreEqual(0.72f, results[0].Command.Confidence, 0.001f);
-            // Second command: min(resume=0.88, fire=0.72) = 0.72
-            Assert.AreEqual(0.72f, results[1].Command.Confidence, 0.001f);
+            // Second command, tokens [2,4): min(resume=0.88, fire=0.41) = 0.41.
+            // Direct #146 regression pin: the old text-keyed carrier kept only the FIRST
+            // occurrence of each word, so the second "fire" was looked up as 0.72 and this
+            // command was reported at 0.72 — the weaker hearing was invisible to the gate.
+            Assert.AreEqual(0.41f, results[1].Command.Confidence, 0.001f);
         }
 
         // --- Command Set Support Tests (v2.4) ---

@@ -573,7 +573,7 @@ namespace VoXR.Commands
 
             if (bufferWindow <= 0f)
             {
-                ProcessParsedResults(result.Text, result.Words);
+                ProcessParsedResultsCore(result.Text, result.Words);
                 return;
             }
 
@@ -618,7 +618,7 @@ namespace VoXR.Commands
             }
 
             var words = _buffer.GetWordsSpan();
-            ProcessParsedResults(text, words);
+            ProcessParsedResultsCore(text, words);
             _buffer.ClearWords();
         }
 
@@ -637,24 +637,21 @@ namespace VoXR.Commands
                 return EagerCommitVerdict.None;
 
             var words = _buffer.GetWordsSpan();
-            var wordConfidence = _parser.InstanceBuildWordConfidence(words);
+            var wordConfidence = _parser.InstanceBuildWordConfidence(tokens, words);
             return _parser.TryEagerCommit(tokens, wordConfidence, minScore, minConfidence);
         }
 
-        void ProcessParsedResults(string text, VoxrWord[] words)
-            => ProcessParsedResultsCore(text, words, _parser.InstanceBuildWordConfidence(words));
-
-        void ProcessParsedResults(string text, ReadOnlySpan<VoxrWord> words)
-            => ProcessParsedResultsCore(text, words, _parser.InstanceBuildWordConfidence(words));
-
-        void ProcessParsedResultsCore(string text, ReadOnlySpan<VoxrWord> words,
-            Dictionary<string, float> wordConfidence)
+        void ProcessParsedResultsCore(string text, ReadOnlySpan<VoxrWord> words)
         {
             // Split once — shared by pending handlers, diagnostics, and the parser.
             string[] tokens = text.Split(VoxrCommandParser.SplitSeparator,
                 StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length == 0)
                 return;
+
+            // Built here rather than by the caller: the per-token confidence array is aligned
+            // to these tokens, so it cannot be built before the split.
+            var wordConfidence = _parser.InstanceBuildWordConfidence(tokens, words);
 
 #if UNITY_EDITOR
             // Editor diagnostics need VoxrWord[] — copy once for the editor path only.
@@ -727,7 +724,7 @@ namespace VoXR.Commands
             var barredRounds =
                 _parser.LastBarredRounds ?? Array.Empty<VoxrCommandParser.BarredRoundEntry>();
             // wordConfidence is already built above — reuse for diagnostics.
-            Dictionary<string, float> diagWordConf = wordConfidence;
+            float[] diagWordConf = wordConfidence;
 #endif
 
             // ---- Step 4: Determine if any normal result passes standard thresholds ----
@@ -1204,7 +1201,7 @@ namespace VoXR.Commands
             VoxrCommandParser parser,
             int i,
             string[] tokens,
-            Dictionary<string, float> wordConfidence,
+            float[] wordConfidence,
             out VoxrCommand[] choices,
             out string[] choiceValues,
             out VoxrCommandDefinition[] choiceDefinitions,
@@ -1409,7 +1406,7 @@ namespace VoXR.Commands
 
         VoxrMatchAttempt BuildAttempt(VoxrCommand cmd,
             VoxrCommandParser.ParseDiagnosticEntry[] parseDiag, int index,
-            string[] tokens, Dictionary<string, float> wordConf,
+            string[] tokens, float[] wordConf,
             string rejectReason, bool isAccepted)
         {
             string pattern = null;
@@ -1468,7 +1465,7 @@ namespace VoXR.Commands
         VoxrMatchAttempt BuildBarredAttempt(
             in VoxrCommandParser.BarredRoundEntry barred,
             string[] tokens,
-            Dictionary<string, float> wordConf
+            float[] wordConf
         )
         {
             float confidence = VoxrCommandParser.ComputeConfidence(

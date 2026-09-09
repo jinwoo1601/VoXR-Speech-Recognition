@@ -296,9 +296,12 @@ namespace VoXR.Commands
         readonly int[] _bestSlotEndBuf;
 #endif
 
-        // Pooled word-confidence dictionary — cleared and reused each utterance.
-        readonly Dictionary<string, float> _wordConfidencePool =
-            new Dictionary<string, float>(32, StringComparer.Ordinal);
+        // Pooled per-token confidence array — indexed by token position, reused each
+        // utterance and grown only when an utterance is longer than any seen before. Every
+        // entry in [0, tokens.Length) is written on each build, so a longer previous
+        // utterance can leave a stale suffix past tokens.Length; nothing reads it, because
+        // every consumer walks token indices.
+        float[] _wordConfidencePool = new float[32];
 
         // Pre-allocated result buffer — sized to _commands.Length.
         readonly VoxrCommandResult[] _resultBuf;
@@ -2442,7 +2445,7 @@ namespace VoXR.Commands
                 return Array.Empty<VoxrCommandResult>();
             }
 
-            var wordConfidence = InstanceBuildWordConfidence(words);
+            var wordConfidence = InstanceBuildWordConfidence(tokens, words);
             int count = ParseInternal(tokens, text, wordConfidence);
 
             if (count == 0)
@@ -2455,7 +2458,7 @@ namespace VoXR.Commands
         }
 
         internal int ParseInternal(string[] tokens, string text,
-            Dictionary<string, float> wordConfidence)
+            float[] wordConfidence)
         {
             _resultCount = 0;
 
@@ -3154,7 +3157,7 @@ namespace VoXR.Commands
             int resultIdx,
             int n,
             string[] tokens,
-            Dictionary<string, float> wordConfidence
+            float[] wordConfidence
         )
         {
             var rival = TiedSiblingRivalAt(resultIdx, n);
@@ -3946,34 +3949,55 @@ namespace VoXR.Commands
             return TryMatchSlot(tokens, startIdx, slotIdx, out consumed);
         }
 
-        internal static Dictionary<string, float> BuildWordConfidence(VoxrWord[] words)
+        // Per-token confidence, indexed by position in tokens rather than keyed by word text
+        // (issue #146): a text-keyed carrier gave every later occurrence of a repeated word the
+        // FIRST occurrence's confidence, so a span's minimum was wrong in either direction.
+        //
+        // On real decoder output words is 1:1 with tokens, but two legitimate shapes are not:
+        // UtteranceBuffer appends text unconditionally and words only when a result supplies
+        // them, and InjectText/InjectResult let a caller pass text and words independently. So
+        // alignment is verified per token instead of assumed — a word is attributed only where
+        // its text matches the token under the cursor. A token that does not match takes
+        // NoConfidence and the word cursor holds, so the walk resynchronises on the next match
+        // and no token is ever credited with a confidence that came from a different word. The
+        // degradation is therefore per token, not per utterance: the tokens that DO have word
+        // data still contribute.
+        //
+        // Returns null when there is no word data at all, which is what keeps the "no
+        // confidence known" contract intact — ComputeConfidence reports -1 and both confidence
+        // gates are bypassed.
+        internal float[] InstanceBuildWordConfidence(string[] tokens, ReadOnlySpan<VoxrWord> words)
         {
-            if (words == null || words.Length == 0)
+            if (tokens == null || tokens.Length == 0 || words.Length == 0)
                 return null;
 
-            var d = new Dictionary<string, float>(words.Length, StringComparer.Ordinal);
-            foreach (var w in words)
-                if (!string.IsNullOrEmpty(w.Text) && !d.ContainsKey(w.Text))
-                    d[w.Text] = w.Confidence;
-            return d;
-        }
+            if (_wordConfidencePool.Length < tokens.Length)
+                Array.Resize(ref _wordConfidencePool, tokens.Length);
 
-        internal Dictionary<string, float> InstanceBuildWordConfidence(VoxrWord[] words)
-        {
-            if (words == null || words.Length == 0)
-                return null;
-            return InstanceBuildWordConfidence((ReadOnlySpan<VoxrWord>)words);
-        }
+            int j = 0;
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                // A word with no text can match no token — tokens come from a
+                // RemoveEmptyEntries split — so it would hold the cursor forever and cost
+                // every later token its confidence. Skipped instead, which is what the old
+                // text-keyed builder's IsNullOrEmpty guard did.
+                while (j < words.Length && string.IsNullOrEmpty(words[j].Text))
+                    j++;
 
-        internal Dictionary<string, float> InstanceBuildWordConfidence(ReadOnlySpan<VoxrWord> words)
-        {
-            if (words.Length == 0)
-                return null;
+                if (
+                    j < words.Length
+                    && string.Equals(words[j].Text, tokens[i], StringComparison.Ordinal)
+                )
+                {
+                    _wordConfidencePool[i] = words[j].Confidence;
+                    j++;
+                }
+                else
+                {
+                    _wordConfidencePool[i] = NoConfidence;
+                }
+            }
 
-            _wordConfidencePool.Clear();
-            foreach (var w in words)
-                if (!string.IsNullOrEmpty(w.Text) && !_wordConfidencePool.ContainsKey(w.Text))
-                    _wordConfidencePool[w.Text] = w.Confidence;
             return _wordConfidencePool;
         }
 
@@ -4234,11 +4258,16 @@ namespace VoXR.Commands
             return false;
         }
 
+        // "No per-word confidence is known here" — for a single token, and for a whole span
+        // when none of its tokens carried word data. Bypasses minConfidence and eager-flush
+        // condition 7 rather than failing them.
+        internal const float NoConfidence = -1f;
+
         internal static float ComputeConfidence(string[] tokens, int startIdx, int endIdx,
-            Dictionary<string, float> wordConfidence)
+            float[] wordConfidence)
         {
-            if (wordConfidence == null || wordConfidence.Count == 0)
-                return -1f;
+            if (wordConfidence == null || wordConfidence.Length == 0)
+                return NoConfidence;
 
             float minConf = float.MaxValue;
             bool anyMatch = false;
@@ -4248,15 +4277,18 @@ namespace VoXR.Commands
                 if (tokens[i] == UnkToken)
                     continue;
 
-                if (wordConfidence.TryGetValue(tokens[i], out float conf))
-                {
-                    anyMatch = true;
-                    if (conf < minConf)
-                        minConf = conf;
-                }
+                // The pooled array always covers every token, but a caller-built one need not.
+                // A negative entry means the builder found no word aligned to this token — the
+                // direct analogue of the token text missing from the old text-keyed carrier.
+                if (i >= wordConfidence.Length || wordConfidence[i] < 0f)
+                    continue;
+
+                anyMatch = true;
+                if (wordConfidence[i] < minConf)
+                    minConf = wordConfidence[i];
             }
 
-            return anyMatch ? minConf : -1f;
+            return anyMatch ? minConf : NoConfidence;
         }
 
         internal static string ExtractSlotName(string element)
@@ -4419,7 +4451,7 @@ namespace VoXR.Commands
         // mirrors ParseInternal's inner loop (searchStart = 0) exactly so the verdict
         // matches the command the subsequent FlushBuffer will actually fire.
         internal EagerCommitVerdict TryEagerCommit(string[] tokens,
-            Dictionary<string, float> wordConfidence, float minScore, float minConfidence)
+            float[] wordConfidence, float minScore, float minConfidence)
         {
             if (tokens == null || tokens.Length == 0)
                 return EagerCommitVerdict.None;
