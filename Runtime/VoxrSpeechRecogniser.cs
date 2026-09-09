@@ -438,6 +438,35 @@ namespace VoXR
         {
             if (RejectIfBridgeOwnedByOther(nameof(SetGrammar)))
                 return;
+
+            // Validated here rather than in either backend because this is the one managed
+            // point both of them pass through: the Editor backend calls
+            // vosk_recognizer_new_grm directly and the Android path reaches the same call
+            // through vosk_bridge_set_grammar, so guarding here covers the bridge too
+            // without rebuilding the native .so. Debug.LogError as well as OnError for the
+            // same reason as RejectIfBridgeOwnedByOther above — a developer who has not
+            // subscribed to OnError would otherwise see nothing at all.
+            if (
+                !string.IsNullOrEmpty(grammarJson)
+                && !VoxrGrammarValidator.IsWellFormedGrammar(grammarJson, out string reason)
+            )
+            {
+                string message =
+                    $"SetGrammar: the grammar was rejected without being applied — {reason}. "
+                    + "VOSK's vosk_recognizer_new_grm does not return NULL on a malformed "
+                    + "grammar: it segfaults and takes the whole process with it, in the "
+                    + "Editor and on device alike (#150), so a grammar that is not a "
+                    + "non-empty JSON array of strings is never handed to it. The recogniser "
+                    + "currently in use is left untouched and keeps decoding with the grammar "
+                    + "it already had. The usual cause is a double quote inside a command "
+                    + "pattern literal or a slot value: VoxrCommandParser.GenerateGrammarJson "
+                    + "serialises those verbatim with no escaping pass, so one stray quote "
+                    + "breaks the array. Remove the quote from the offending literal — or "
+                    + "escape it, in a hand-written grammar — and set the grammar again.";
+                Debug.LogError(message, this);
+                FireError(VoxrBridgeErrorCode.ModelLoadFailed, message);
+                return;
+            }
 #if UNITY_EDITOR_WIN
             _editorBackend?.SetGrammar(grammarJson, FireError);
 #else
