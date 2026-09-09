@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using NUnit.Framework;
 using VoXR;
 using VoXR.Commands;
@@ -145,11 +144,9 @@ namespace VoXR.Tests.Editor
         public void ComputeConfidence_InternalAccess()
         {
             var tokens = new[] { "cease", "fire" };
-            var wordConf = new Dictionary<string, float>
-            {
-                { "cease", 0.9f },
-                { "fire", 0.7f },
-            };
+            // Indexed by TOKEN POSITION, not keyed by word text (issue #146): entry i is the
+            // confidence of tokens[i], so a repeated word carries its own value at each position.
+            var wordConf = new[] { 0.9f, 0.7f };
 
             float conf = VoxrCommandParser.ComputeConfidence(tokens, 0, 2, wordConf);
             Assert.AreEqual(0.7f, conf, 1e-5f, "Should return min confidence across span");

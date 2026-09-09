@@ -558,6 +558,75 @@ namespace VoXR.Tests.Editor
             Assert.AreEqual("cease_fire", diag.Attempts[2].Intent);
         }
 
+        [Test]
+        public void BufferedSegments_WithCollidingText_ReportConfidencePerRoundInRoundOrder()
+        {
+            // End-to-end pin on the buffer's per-segment confidence build (issue #146).
+            //
+            // WHY THE DIAGNOSTICS AND NOT A FIRE COUNT: the externally observable outcome is
+            // SYMMETRIC. Whichever round holds the words is the one the confidence gate rejects
+            // and the other one fires, so "one command fired" is true under the bug and under
+            // the fix alike. The per-round diagnostics are what say WHICH round was which, and
+            // Attempts are published in the order the extraction rounds actually ran.
+            _recogniser.Configure(MakeSlots(), MakeCommands());
+            _recogniser.BufferWindow = 1.5f;
+            _recogniser.CommandCooldown = 0f;
+
+            // Segment 1: text only, no word data — the shape InjectText produces, and the shape
+            // a VOSK result carries whenever it supplies no per-word array.
+            _recogniser.InjectText("cease fire");
+            // Segment 2, inside the buffer window: the SAME text, this time with real words at
+            // 0.2 — below the default 0.4 minConfidence.
+            _recogniser.InjectText(
+                "cease fire",
+                VoxrSpeechRecogniser.CreateSimulatedWords("cease fire", 0.2f)
+            );
+
+            _recogniser.FlushPendingBuffer();
+
+            var diag = _recogniser.LastMatchDiagnostics;
+            Assert.AreEqual("cease fire cease fire", diag.InputText);
+            Assert.AreEqual(2, diag.Attempts.Length, "one extraction round per buffered segment");
+
+            // Round 1 covers tokens [0,2) — the WORDLESS segment. It supplied no word data, so
+            // its confidence is NoConfidence (-1), which bypasses minConfidence rather than
+            // failing it, and the command fires. That is the correct reading of "no confidence
+            // known here", and it matches what an unbuffered wordless InjectText has always
+            // done.
+            Assert.AreEqual(
+                "cease_fire",
+                diag.Attempts[0].Intent,
+                "round 1 is the wordless segment's span"
+            );
+            Assert.AreEqual(
+                -1f,
+                diag.Attempts[0].AggregateConfidence,
+                1e-5f,
+                "the segment that supplied no words must report no confidence"
+            );
+            Assert.IsTrue(diag.Attempts[0].IsAccepted);
+
+            // Round 2 covers tokens [2,4) — the segment that DID carry words, at 0.2, so it is
+            // refused by the gate.
+            Assert.AreEqual("cease_fire", diag.Attempts[1].Intent);
+            Assert.AreEqual(
+                0.2f,
+                diag.Attempts[1].AggregateConfidence,
+                1e-5f,
+                "the segment that supplied the words must be the one scored by them"
+            );
+            Assert.IsFalse(diag.Attempts[1].IsAccepted);
+            StringAssert.Contains("minConfidence", diag.Attempts[1].RejectReason);
+
+            // THE BUG THIS PINS: building the array with one greedy walk over the JOINED
+            // utterance gave exactly these two rounds the other way round — [0.2, 0.2, -1, -1]
+            // instead of [-1, -1, 0.2, 0.2]. Both words matched the join's leading "cease fire"
+            // by text and were consumed there, so round 1 reported 0.2 and was rejected while
+            // round 2 reported -1, bypassed minConfidence, and fired a command the pre-PR code
+            // rejected. The fire count is 1 either way; only these two AggregateConfidence
+            // values tell the bug and the fix apart.
+        }
+
         // Reject reasons embed scores, and they are read by a human out of an exported session
         // log — often one exported on a machine whose locale is not the reader's. A
         // comma-decimal Editor used to write "score 0,25 < minScore 0,60", which is not what

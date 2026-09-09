@@ -178,7 +178,7 @@ namespace VoXR.Commands
         }
 
         internal VoxrCommand? TryFollowUpSlotFill(string text, string[] tokens,
-            Dictionary<string, float> wordConfidence, VoxrCommandParser parser)
+            float[] wordConfidence, VoxrCommandParser parser)
         {
             var pending = _pendingCommand.Value;
             if (pending.UnfilledSlots == null || pending.UnfilledSlots.Length == 0)

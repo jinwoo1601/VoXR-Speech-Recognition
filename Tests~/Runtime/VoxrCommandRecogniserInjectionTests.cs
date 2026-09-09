@@ -176,6 +176,90 @@ namespace VoXR.Tests.Runtime
             Assert.AreEqual(1, recognised);
         }
 
+        // Issue #146's acceptance: words absent means Confidence == -1 and BOTH confidence
+        // gates bypass it rather than fail it. TryEagerCommit's half is pinned in
+        // VoxrCommandParserTests.NoWordData_BypassesConfidenceGate; the two tests below cover
+        // the other one — VoxrCommandRecogniser's
+        // `cmd.Confidence >= 0f && cmd.Confidence < minConfidence`, the gate that is on by
+        // default. Without the `>= 0f` guard, -1 compares below every positive threshold and
+        // every wordless utterance would be silently swallowed.
+        //
+        // minConfidence has no test setter, so it is reached through the serialized field the
+        // Inspector writes — the same idiom VoxrCommandParserTests already uses for minScore.
+        static void SetMinConfidence(VoxrCommandRecogniser recogniser, float value)
+        {
+            var field = typeof(VoxrCommandRecogniser).GetField(
+                "minConfidence",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            );
+            Assert.IsNotNull(field, "VoxrCommandRecogniser.minConfidence");
+            field.SetValue(recogniser, value);
+        }
+
+        [Test]
+        public void InjectText_NoWordData_BypassesMinConfidenceGate()
+        {
+            ConfigureWithSyncDefaults();
+            // Above 1.0, so NO real confidence can clear it. Anything that fires here fired by
+            // bypassing the gate, not by passing it.
+            SetMinConfidence(_recogniser, 1.01f);
+
+            int recognised = 0;
+            _recogniser.OnCommandRecognised += _ => recognised++;
+
+            _recogniser.InjectText("cease fire");
+
+            Assert.AreEqual(1, recognised, "no word data must bypass minConfidence, not fail it");
+
+            // CONTROL, so the assertion above cannot pass vacuously: the same text at the same
+            // threshold, this time WITH word data at the highest confidence a decoder reports,
+            // is refused. If the gate were dead the count would reach 2.
+            _recogniser.InjectText(
+                "cease fire",
+                VoxrSpeechRecogniser.CreateSimulatedWords("cease fire", 0.99f)
+            );
+
+            Assert.AreEqual(
+                1,
+                recognised,
+                "real word data below minConfidence must still be refused"
+            );
+        }
+
+        [Test]
+        public void FlushPendingBuffer_NoWordData_BypassesMinConfidenceGate()
+        {
+            // The same gate on the BUFFERED path, which since #146 hands it a non-null
+            // all-negative array instead of a null one. Reading "is any confidence known?" off
+            // the array's nullness rather than its CONTENTS would break exactly here, and only
+            // here — the unbuffered test above would still pass.
+            _recogniser.Configure(MakeSlots(), MakeCommands());
+            _recogniser.BufferWindow = 1.5f;
+            _recogniser.CommandCooldown = 0f;
+            SetMinConfidence(_recogniser, 1.01f);
+
+            int recognised = 0;
+            _recogniser.OnCommandRecognised += _ => recognised++;
+
+            _recogniser.InjectText("cease fire");
+            _recogniser.FlushPendingBuffer();
+
+            Assert.AreEqual(1, recognised, "a wordless buffered utterance bypasses the gate too");
+
+            // CONTROL on the same path.
+            _recogniser.InjectText(
+                "cease fire",
+                VoxrSpeechRecogniser.CreateSimulatedWords("cease fire", 0.99f)
+            );
+            _recogniser.FlushPendingBuffer();
+
+            Assert.AreEqual(
+                1,
+                recognised,
+                "a buffered utterance WITH word data below minConfidence is still refused"
+            );
+        }
+
         // -------- Cooldown --------
 
         [Test]
