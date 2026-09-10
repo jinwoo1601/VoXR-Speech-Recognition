@@ -130,6 +130,29 @@ namespace VoXR.Tests.Runtime
         }
 
         [UnityTest]
+        public IEnumerator Playback_LoudSine_RaisesInputLevelThenReturnsToZero()
+        {
+            var backend = _speech.EditorBackend;
+            Assert.AreEqual(0f, _speech.InputLevel, "level must read 0 before playback is armed");
+
+            Assert.IsTrue(backend.StartPlayback(Sine(1f, 0.5f), 48000, null));
+
+            float peak = 0f;
+            while (backend.TickPlayback(_speech.EditorDispatcher))
+            {
+                peak = Mathf.Max(peak, _speech.InputLevel);
+                yield return null;
+            }
+
+            Assert.Greater(
+                peak,
+                0.05f,
+                "a 0.5-peak sine must drive the level well above zero — pre-DSP entry (#147)"
+            );
+            Assert.AreEqual(0f, _speech.InputLevel, "exhausted playback must zero the level");
+        }
+
+        [UnityTest]
         public IEnumerator MicStart_DuringPlayback_Rejected()
         {
             var backend = _speech.EditorBackend;
