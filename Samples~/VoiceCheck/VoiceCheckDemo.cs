@@ -42,7 +42,9 @@ public class VoiceCheckDemo : MonoBehaviour
 
     [Tooltip(
         "Meter scaling: level * this, clamped to 1, is the fraction of the track filled. "
-            + "3 maps 0.0-0.5 RMS to a full bar, matching the Editor debug window's meter."
+            + "3 fills the bar at 0.33 RMS, matching the Editor debug window's meter. "
+            + "Speech rarely exceeds 0.3, so at 3 the bar peaks near full on ordinary "
+            + "speech; lower it if you want more headroom."
     )]
     [SerializeField]
     float meterFullScale = 3f;
@@ -143,6 +145,14 @@ public class VoiceCheckDemo : MonoBehaviour
         _lastStatus = null;
         SetCheck(audioCheckText, "1. Audio reaching the recogniser", false);
         SetCheck(commandCheckText, "2. Command recognised", false);
+        // The button says "run again", so make it mean it: an error that stopped
+        // capture (denied permission, no device) leaves nothing listening, and
+        // clearing the latches alone would show a healthy state over a dead
+        // recogniser. Guarded because restarting a session that is already running
+        // is an error on the device path -- vosk_bridge_start returns
+        // ALREADY_RUNNING and would fire a spurious OnError.
+        if (recogniser != null && !recogniser.IsRecognising)
+            recogniser.StartRecognition();
         RefreshStatus();
     }
 
@@ -151,9 +161,9 @@ public class VoiceCheckDemo : MonoBehaviour
         if (levelBarFill == null || levelBarTrack == null)
             return;
 
-        // Same scaling as VoxrDebugWindow.DrawLevelMeter: 0.0-0.5 RMS maps to a full
-        // bar, because speech rarely exceeds 0.3. Keeping the two in step means a
-        // reading here means the same thing as a reading in the Editor window.
+        // Same * 3f scaling as VoxrDebugWindow.DrawLevelMeter, so the two bars look
+        // alike -- the bar fills at 0.33 RMS, and speech rarely exceeds 0.3. They are
+        // not measuring the same quantity though; see the sample README.
         float fill = Mathf.Clamp01(level * meterFullScale);
         float width = levelBarTrack.rect.width * fill;
         if (Mathf.Approximately(width, _lastFillWidth))

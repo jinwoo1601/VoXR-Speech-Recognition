@@ -83,7 +83,7 @@ public class MicMeter : MonoBehaviour
 
     void Update()
     {
-        // 0.0-0.5 RMS maps to a full bar: speech rarely exceeds 0.3.
+        // Fills at 0.33 RMS; speech rarely exceeds 0.3.
         float f = Mathf.Clamp01(recogniser.InputLevel * 3f);
         var size = fill.sizeDelta;
         size.x = track.rect.width * f;
@@ -92,8 +92,15 @@ public class MicMeter : MonoBehaviour
 }
 ```
 
-The same `* 3f` scaling is used by the Editor's Command Debug Window level
-meters, so a reading here means the same thing as a reading there.
+The Editor's Command Debug Window meters use the same `* 3f` scaling, so the bars
+look alike -- but they do not measure the same thing and will not sit at the same
+height. Those meters show `PreAgcRms` / `PostAgcRms`: instantaneous, taken after the
+48 -> 16 kHz downsample, one of them after AGC gain. `InputLevel` is a rolling
+~300 ms average taken before any DSP, at 48 kHz. Two consequences worth knowing if
+you compare them: the downsampling filter is not unity-gain (its coefficients sum to
+~1.34), so a steady tone reads higher on the window's Pre-AGC meter than here; and
+the AGC drives its own output toward a fixed target, so the Post-AGC bar sits near a
+third of full for almost any audible input.
 
 **The meter reads `0` on platforms with no capture backend.** Per the platform
 support table in [Troubleshooting](../../Documentation~/troubleshooting.md), the

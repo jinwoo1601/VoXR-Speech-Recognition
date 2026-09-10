@@ -227,7 +227,7 @@ namespace VoXR.Editor
             // Background
             EditorGUI.DrawRect(meterRect, new Color(0.15f, 0.15f, 0.15f));
 
-            // RMS bar — scale: 0.0–0.5 RMS maps to full bar (speech rarely exceeds 0.3)
+            // RMS bar — scale: 0.33 RMS fills the bar (speech rarely exceeds 0.3)
             float fill = Mathf.Clamp01(rms * 3f);
             var fillRect = new Rect(meterRect.x, meterRect.y, meterRect.width * fill, meterRect.height);
             EditorGUI.DrawRect(fillRect, color);

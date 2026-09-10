@@ -85,7 +85,11 @@ namespace VoXR.Tests.Editor
             try
             {
                 var speech = go.AddComponent<VoxrSpeechRecogniser>();
-                // _editorBackend is null before InitialiseAsync
+                // Returns at the !OwnsBridge guard: a component that never initialised
+                // never owns the bridge. On the Editor branch that is indistinguishable
+                // from the null-backend path, because a non-owner never has a backend
+                // either -- the guard earns its keep on the device branch, where the
+                // native getter answers for the whole process.
                 Assert.AreEqual(0f, speech.InputLevel);
             }
             finally
