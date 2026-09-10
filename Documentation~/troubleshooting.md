@@ -30,6 +30,7 @@ Add `RECORD_AUDIO` to your Android manifest or enable it in Player Settings > An
 
 ### No transcription output on Quest
 
+- Run the [Voice Check sample](../Samples~/VoiceCheck/README.md) first -- it tells the two failures apart. A flat meter means no audio is reaching the recogniser at all (permission, device, or capture); a moving meter with no command means the audio is arriving but is not being recognised (gain too low for the AGC, or the phrase not said as written).
 - Verify the model extracted successfully -- check the `OnModelReady` event or `IsModelReady` property.
 - Check logcat: `adb logcat -s "vosk-bridge:*" "Unity:*"`
 - Ensure `RECORD_AUDIO` permission is granted.
@@ -37,6 +38,7 @@ Add `RECORD_AUDIO` to your Android manifest or enable it in Player Settings > An
 
 ### No transcription output in Editor
 
+- Run the [Voice Check sample](../Samples~/VoiceCheck/README.md) first -- it tells the two failures apart. A flat meter means no audio is reaching the recogniser at all (permission, device, or capture); a moving meter with no command means the audio is arriving but is not being recognised (gain too low for the AGC, or the phrase not said as written).
 - Check the Console for VOSK model loading errors.
 - Verify a microphone is connected and set as the default Windows input device.
 - On macOS or Linux, the live mic backend is not available -- use the [Text Injection API](editor-testing.md#text-injection-api) instead.

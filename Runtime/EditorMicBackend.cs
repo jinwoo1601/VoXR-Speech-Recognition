@@ -60,6 +60,11 @@ namespace VoXR
         internal float PostAgcRms { get; private set; }
         internal float AgcGain => _agc.CurrentGain;
 
+        // Rolling ~300 ms RMS of pre-DSP audio, linear 0..1. Mirrors
+        // vosk_bridge_get_input_level so the managed and native branches of
+        // VoxrSpeechRecogniser.InputLevel report the same thing.
+        internal float InputLevel { get; private set; }
+
         internal async Task<bool> InitialiseAsync(
             string modelPath,
             float sampleRate,
@@ -195,6 +200,7 @@ namespace VoXR
 
             _downsampler.Reset();
             _agc.Reset();
+            InputLevel = 0f;
             VoxrNative.vosk_recognizer_reset(_recognizer);
 
             IsRunning = true;
@@ -205,6 +211,7 @@ namespace VoXR
         {
             if (!IsRunning) return;
             IsRunning = false;
+            InputLevel = 0f;
 
             // Flush any in-progress utterance so the last command spoken before
             // StopRecognition() is not silently discarded. Matches what the
@@ -378,6 +385,16 @@ namespace VoXR
         // start path (Start for the microphone, StartPlayback for replay).
         void ProcessChunk(float[] samples, int count, EditorJsonDispatcher dispatch)
         {
+            // Measured on the pre-DSP chunk and before the dsCount early-out, which
+            // is where vosk_bridge.cpp:98-113 measures it — right after the read.
+            if (count > 0)
+            {
+                float chunkRms = ComputeRms(samples, count);
+                float chunkMs = count * 1000f / SourceSampleRate;
+                float alpha = 1f - (float)Math.Exp(-chunkMs / 300f);
+                InputLevel += alpha * (chunkRms - InputLevel);
+            }
+
             int dsCount = _downsampler.Process(samples, count, _downsampledBuffer);
             if (dsCount == 0) return;
 
@@ -482,6 +499,7 @@ namespace VoXR
 
             _downsampler.Reset();
             _agc.Reset();
+            InputLevel = 0f;
             _lastPartialLength = 0;
             VoxrNative.vosk_recognizer_reset(_recognizer);
 
@@ -527,6 +545,7 @@ namespace VoXR
         {
             _playbackSamples = null;
             _playbackPos = 0;
+            InputLevel = 0f;
         }
 
         bool PartialMatchesLast(ReadOnlySpan<byte> json)

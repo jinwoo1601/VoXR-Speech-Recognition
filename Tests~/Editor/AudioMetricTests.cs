@@ -76,6 +76,23 @@ namespace VoXR.Tests.Editor
                 Object.DestroyImmediate(go);
             }
         }
+
+        // #147
+        [Test]
+        public void InputLevel_UninitialisedRecogniser_ReturnsZero()
+        {
+            var go = new GameObject("SpeechTest");
+            try
+            {
+                var speech = go.AddComponent<VoxrSpeechRecogniser>();
+                // _editorBackend is null before InitialiseAsync
+                Assert.AreEqual(0f, speech.InputLevel);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
     }
 }
 #endif
