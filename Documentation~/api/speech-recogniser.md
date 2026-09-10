@@ -78,7 +78,7 @@ mode there is no such retry, so prefer the explicit `ReleaseNativeResources()` h
 | `StartRecognitionAsync()` | `async Task`. Asynchronously starts recognition with permission handling. |
 | `StopRecognition()` | Stops audio capture. Model stays loaded for fast restart. |
 | `ResetRecogniser()` | Clears recogniser state without stopping audio. |
-| `SetGrammar(string grammarJson)` | Sets a VOSK grammar JSON string for constrained recognition. Typically called by `VoxrCommandRecogniser` internally. |
+| `SetGrammar(string grammarJson)` | Sets a VOSK grammar JSON string for constrained recognition. Typically called by `VoxrCommandRecogniser` internally. A grammar that is not a non-empty JSON array of strings is rejected before it reaches the decoder: `OnError` fires with `ModelLoadFailed`, an error naming the fault is logged, and any grammar already in use is left untouched. `null` or `""` still means "clear the grammar" and returns the decoder to free dictation. |
 
 ### Injection Methods
 

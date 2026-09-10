@@ -12,8 +12,12 @@ namespace VoXR.Tests.Editor
 {
     // vosk_recognizer_new_grm segfaults rather than returning NULL for every malformed
     // shape measured in #150, so this check is the only thing standing between an author
-    // mistake and a dead process. The rejected cases below include all four measured
-    // crashers ([], prose, an object, and an unescaped quote inside an element).
+    // mistake and a dead process. The rejected cases below include all four crashers #150
+    // recorded ([], prose, an object, and an unescaped quote inside an element) plus three
+    // more that a later measurement against libvosk 0.3.45 with vosk-model-small-en-us-0.15
+    // found to segfault as well: a whitespace-only string, an unterminated string and a
+    // bare "[". The same measurement showed [""] returning non-NULL, which is why the empty
+    // element string sits in the accepted set rather than the rejected one.
     public class VoxrGrammarValidatorTests
     {
         [TestCase("[\"[unk]\", \"fire\", \"cease\"]", TestName = "Accepts_TypicalGrammar")]
@@ -45,10 +49,13 @@ namespace VoXR.Tests.Editor
         [TestCase("[\"a\",]", TestName = "Rejects_TrailingComma")]
         [TestCase("[\"a\"] trailing", TestName = "Rejects_TrailingContent")]
         [TestCase("[\"a\\q\"]", TestName = "Rejects_InvalidEscape")]
-        [TestCase("[\"a\\u12g4\"]", TestName = "Rejects_ShortUnicodeEscape")]
+        [TestCase("[\"a\\u12g4\"]", TestName = "Rejects_BadHexDigitInUnicodeEscape")]
+        [TestCase("[\"a\\u1", TestName = "Rejects_TruncatedUnicodeEscape")]
         [TestCase("[\"a\nb\"]", TestName = "Rejects_RawControlCharacterInString")]
         [TestCase("[\"a\", ]", TestName = "Rejects_TrailingCommaWithSpace")]
         [TestCase("[[\"a\"]]", TestName = "Rejects_NestedArray")]
+        [TestCase("[null]", TestName = "Rejects_NullElement")]
+        [TestCase("[{\"w\":\"a\"}]", TestName = "Rejects_ObjectElement")]
         public void Malformed_IsRejectedWithReason(string grammarJson)
         {
             bool ok = VoxrGrammarValidator.IsWellFormedGrammar(grammarJson, out string reason);

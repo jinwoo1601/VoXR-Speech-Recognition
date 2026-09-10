@@ -19,6 +19,17 @@ namespace VoXR
     // complete JSON array of one or more strings", which is the exact shape the grammar
     // API accepts, and it never builds a value. Hand-rolled over the string like the rest
     // of the JSON handling here (see VoxrJsonParser) — the package takes no JSON dependency.
+    //
+    // Every shape this check accepts was measured safe against libvosk 0.3.45, the empty
+    // element string `[""]` included. In the other direction the check is deliberately
+    // stricter than the decoder: trailing content after the array, an invalid backslash
+    // escape and a raw control character inside a string were each measured to be tolerated
+    // by that libvosk, which parses them leniently — they are refused anyway, because a loud
+    // rejection naming the offending index is better authoring feedback than a grammar word
+    // the decoder silently drops, and because pinning this check to one vendored version's
+    // lenient JSON parsing would be brittle. The rest of the rejected set is load-bearing
+    // rather than tidiness: beyond the shapes #150 recorded, a whitespace-only string, an
+    // unterminated string (`["a`) and a bare `[` were each measured to segfault too.
     internal static class VoxrGrammarValidator
     {
         // Total: never throws, for any input including null, empty, whitespace-only or
@@ -50,18 +61,17 @@ namespace VoXR
                 return false;
             }
 
-            int element = 0;
             while (true)
             {
                 i = SkipWhitespace(grammarJson, i);
                 if (i >= grammarJson.Length)
                 {
-                    reason = $"the grammar ends before element {element} (index {i})";
+                    reason = $"the grammar ends where a string was expected (index {i})";
                     return false;
                 }
                 if (grammarJson[i] != '"')
                 {
-                    reason = $"element {element} is not a string (index {i})";
+                    reason = $"expected a string at index {i}";
                     return false;
                 }
                 if (!ScanString(grammarJson, ref i, out reason))
@@ -76,7 +86,6 @@ namespace VoXR
                 if (grammarJson[i] == ',')
                 {
                     i++;
-                    element++;
                     continue;
                 }
                 if (grammarJson[i] == ']')
@@ -85,7 +94,7 @@ namespace VoXR
                     break;
                 }
 
-                reason = $"expected ',' or ']' after element {element} (index {i})";
+                reason = $"expected ',' or ']' at index {i}";
                 return false;
             }
 
