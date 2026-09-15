@@ -1041,6 +1041,14 @@ namespace VoXR.Commands
                     ? "still pending (partial: unfilled "
                         + $"[{string.Join(", ", _pending.Current.Value.UnfilledSlots)}])"
                     : null;
+
+                // A follow-up fill a resolver completed fires from here, not through the Step 7
+                // loop where BuildAttempt's every call site is, so without this the resolution
+                // that mattered most — the one taken mid-exchange — would be the one resolution
+                // no instrument records. Spoken slots stay absent on this path exactly as they
+                // always have: it has no parse entry behind it to take word spans from, and the
+                // exported log's readme says so.
+                var followUpSlots = BuildResolvedSlotDiagnostics(followUp);
 #endif
                 InterpretResolution(followUpRes);
 #if UNITY_EDITOR
@@ -1049,7 +1057,7 @@ namespace VoXR.Commands
                     new[] { new VoxrMatchAttempt(
                         followUp.Intent, null, followUp.Score,
                         minScore, followUp.Confidence, minConfidence,
-                            null,
+                            followUpSlots,
                             followUpReason,
                             !followUpIncomplete
                         ),
@@ -1731,6 +1739,15 @@ namespace VoXR.Commands
             float runnerUpScore = -1f;
             VoxrDiagnosticSlotMatch[] diagSlots = Array.Empty<VoxrDiagnosticSlotMatch>();
 
+            // How many of cmd.Slots the parser actually matched. Derived from the command itself
+            // rather than from the parser's per-slot span array, which happens to be the same
+            // length today (ParseDiagnosticEntry sizes it at the winner's slot count): index-match
+            // the spans against a slot array that now has resolver-filled entries appended to it
+            // and every resolved slot would be labelled with a span it never had, as a consequence
+            // of an unrelated change to how that array is sized. Correct by the append-last
+            // invariant on VoxrCommand.ResolvedSlots.
+            int matchedCount = cmd.Slots.Length - cmd.ResolvedSlots.Length;
+
             if (parseDiag != null && index < parseDiag.Length)
             {
                 pattern = parseDiag[index].PatternString;
@@ -1739,9 +1756,12 @@ namespace VoXR.Commands
                 runnerUpIntent = parseDiag[index].RunnerUpIntent;
                 runnerUpScore = parseDiag[index].RunnerUpScore;
 
-                if (cmd.Slots.Length > 0 && parseDiag[index].SlotStartWords != null)
+                if (matchedCount > 0 && parseDiag[index].SlotStartWords != null)
                 {
-                    int slotCount = Math.Min(cmd.Slots.Length, parseDiag[index].SlotStartWords.Length);
+                    // Still floored by the span array's own length, as before: clipping a matched
+                    // slot out of the log is what this line has always done when the two disagree,
+                    // and an IndexOutOfRange thrown from inside the diagnostics would be worse.
+                    int slotCount = Math.Min(matchedCount, parseDiag[index].SlotStartWords.Length);
                     diagSlots = new VoxrDiagnosticSlotMatch[slotCount];
                     for (int s = 0; s < slotCount; s++)
                     {
@@ -1752,6 +1772,22 @@ namespace VoXR.Commands
                             cmd.Slots[s].Name, cmd.Slots[s].Value, sw, ew, slotConf);
                     }
                 }
+            }
+
+            // Outside BOTH guards above, deliberately. A command whose only slots came from a
+            // resolver has no matched slot to enter the inner guard with, and diagSlots is
+            // initialised empty before the outer one — so appending anywhere inside either would
+            // leave exactly the case F22 exists to make visible unlogged. Spans and confidence are
+            // -1 because no word was spoken, not because the data was unavailable.
+            if (cmd.ResolvedSlots.Length > 0)
+            {
+                var resolvedSlots = BuildResolvedSlotDiagnostics(cmd);
+                var withResolved =
+                    new VoxrDiagnosticSlotMatch[diagSlots.Length + resolvedSlots.Length];
+                Array.Copy(diagSlots, withResolved, diagSlots.Length);
+                Array.Copy(
+                    resolvedSlots, 0, withResolved, diagSlots.Length, resolvedSlots.Length);
+                diagSlots = withResolved;
             }
 
             return new VoxrMatchAttempt(
@@ -1765,6 +1801,32 @@ namespace VoXR.Commands
                 runnerUpIntent: runnerUpIntent,
                 runnerUpScore: runnerUpScore
             );
+        }
+
+        // The diagnostic entries for a command's resolver-filled slots, in the append-last order
+        // VoxrCommand.ResolvedSlots guarantees. Shared by BuildAttempt and the follow-up accept
+        // path, which is the one fire path that does not go through it, so the two cannot come to
+        // describe the same slot differently.
+        //
+        // Spans and confidence are -1 because nothing was spoken: there is no span to report, and
+        // a confidence over an empty span would be an invented number. It is also what makes a
+        // resolver-filled slot recognisable in an exported log even when the resolver stated no
+        // reason — a spoken slot always carries a real, non-negative span.
+        static VoxrDiagnosticSlotMatch[] BuildResolvedSlotDiagnostics(VoxrCommand cmd)
+        {
+            if (cmd.ResolvedSlots.Length == 0)
+                return Array.Empty<VoxrDiagnosticSlotMatch>();
+
+            int matchedCount = cmd.Slots.Length - cmd.ResolvedSlots.Length;
+            var entries = new VoxrDiagnosticSlotMatch[cmd.ResolvedSlots.Length];
+            for (int r = 0; r < entries.Length; r++)
+            {
+                var filled = cmd.Slots[matchedCount + r];
+                entries[r] = new VoxrDiagnosticSlotMatch(
+                    filled.Name, filled.Value, -1, -1, -1f, cmd.ResolvedSlots[r].Reason);
+            }
+
+            return entries;
         }
 
         // A barred round produced no VoxrCommand, so it cannot go through BuildAttempt: the

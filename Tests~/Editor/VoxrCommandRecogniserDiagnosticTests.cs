@@ -684,5 +684,170 @@ namespace VoXR.Tests.Editor
                 CultureInfo.CurrentCulture = original;
             }
         }
+
+        // ======== Resolver-filled slots in the diagnostics (issue #148, Phase 3) ========
+
+        // Eight required elements with {track} stranded: (7 x 1 - 1) / 8 = 0.75, clear of the
+        // 0.60 gate. A resolver is only ever offered a candidate that already passed the score
+        // gate (F7, D-5), so a shorter pattern would pin the SCORE gate's silence and call it
+        // the resolver's. The same shape the Phase 2 resolver fixtures use.
+        const string BareLaunchOrder = "launch all missiles from tube three at";
+
+        // The same grammar two slots short: {tube} and {track} both stranded, (6 x 1 - 2) / 8 =
+        // 0.50, below the gate — so it is the ordinary allowPartialMatch pending and no
+        // resolution is offered to it. That makes it a clean way to open a pending for a
+        // follow-up utterance to complete.
+        const string PartialLaunchOrder = "launch all missiles from tube at";
+
+        void ConfigureResolvableSync()
+        {
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+        }
+
+        /// <summary>
+        /// D-10 and D-18, and the only place the append-last invariant is observable.
+        /// BuildAttempt index-matches cmd.Slots against the parser's per-slot word spans, so a
+        /// resolved slot inserted at its pattern position — rather than appended — would hand
+        /// every slot after it somebody else's span, silently. The failure is a mislabelled
+        /// session log, not an exception, so it has to be pinned by reading the spans back.
+        /// <para>
+        /// Real word data is supplied deliberately: with injected text alone every spoken slot's
+        /// confidence is also -1, and the resolved slot's -1 would prove nothing.
+        /// </para>
+        /// </summary>
+        [Test]
+        public void ResolvedSlotIsAppendedLastWithNoSpan_AndTheSpokenSlotsKeepTheirs()
+        {
+            ConfigureResolvableSync();
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            var words = VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunchOrder, 0.9f);
+            _recogniser.InjectText(BareLaunchOrder, words);
+
+            var diag = _recogniser.LastMatchDiagnostics;
+            Assert.AreEqual(1, diag.Attempts.Length);
+            Assert.IsTrue(
+                diag.Attempts[0].IsAccepted,
+                "precondition: the resolver completed the command, so it has a resolved slot"
+            );
+
+            var slots = diag.Attempts[0].Slots;
+            Assert.AreEqual(4, slots.Length, "three spoken slots, then the resolved one");
+
+            // The three the parser matched, in pattern order, each still carrying the half-open
+            // span of the words that produced it:
+            //   0 launch  1 all  2 missiles  3 from  4 tube  5 three  6 at
+            var expectedNames = new[] { "quantity", "weapon", "tube" };
+            var expectedValues = new[] { "all", "missiles", "three" };
+            var expectedStarts = new[] { 1, 2, 5 };
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.AreEqual(expectedNames[i], slots[i].Name, $"slot {i} name");
+                Assert.AreEqual(expectedValues[i], slots[i].Value, $"slot {i} value");
+                Assert.AreEqual(expectedStarts[i], slots[i].StartWord, $"slot {i} startWord");
+                Assert.AreEqual(expectedStarts[i] + 1, slots[i].EndWord, $"slot {i} endWord");
+                Assert.AreEqual(0.9f, slots[i].Confidence, 1e-5f, $"slot {i} confidence");
+                Assert.IsNull(
+                    slots[i].ResolutionReason,
+                    $"slot {i} was spoken — null is what MEANS spoken"
+                );
+            }
+
+            // And the resolved one last, with no span at all.
+            var resolved = slots[3];
+            Assert.AreEqual("track", resolved.Name);
+            Assert.AreEqual("alpha", resolved.Value);
+            Assert.AreEqual("main target", resolved.ResolutionReason);
+            Assert.AreEqual(-1, resolved.StartWord, "no word was spoken, so there is no span");
+            Assert.AreEqual(-1, resolved.EndWord);
+            Assert.AreEqual(-1f, resolved.Confidence, "and no confidence over an empty span");
+        }
+
+        /// <summary>
+        /// F22 on the follow-up accept path. That path does not go through BuildAttempt — it
+        /// builds its VoxrMatchAttempt directly — and before Phase 3 it passed null for slots,
+        /// so the resolution taken mid-exchange, the one section 6 argues hardest to include,
+        /// was the one resolution no instrument recorded.
+        /// <para>
+        /// Spoken slots stay absent here, as they always have: this attempt has no parse round
+        /// behind it to take word spans from, and the exported log's readme says so.
+        /// </para>
+        /// </summary>
+        [Test]
+        public void FollowUpFillCompletedByAResolver_RecordsTheResolvedSlot()
+        {
+            ConfigureResolvableSync();
+
+            // Two slots short and below the gate, so this pending is the pre-feature one.
+            _recogniser.InjectText(PartialLaunchOrder);
+            Assert.IsTrue(_recogniser.HasPendingCommand, "precondition: a pending with two gaps");
+
+            // Registered only now, so nothing above it was resolved.
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            // Fills {tube} by voice and stops; {track} is not in this utterance.
+            _recogniser.InjectText("three");
+
+            var diag = _recogniser.LastMatchDiagnostics;
+            Assert.AreEqual(1, diag.Attempts.Length, "the follow-up path logs one attempt");
+            Assert.AreEqual("launch_weapon", diag.Attempts[0].Intent);
+            Assert.IsTrue(
+                diag.Attempts[0].IsAccepted,
+                "precondition: the resolver completed the fill instead of re-arming the pending"
+            );
+            Assert.IsNull(diag.Attempts[0].RejectReason);
+
+            var slots = diag.Attempts[0].Slots;
+            Assert.AreEqual(
+                1,
+                slots.Length,
+                "the resolved slot is recorded — before Phase 3 this path passed null and the "
+                    + "attempt carried no slots at all"
+            );
+            Assert.AreEqual("track", slots[0].Name);
+            Assert.AreEqual("alpha", slots[0].Value);
+            Assert.AreEqual("main target", slots[0].ResolutionReason);
+            Assert.AreEqual(-1, slots[0].StartWord);
+            Assert.AreEqual(-1, slots[0].EndWord);
+            Assert.AreEqual(-1f, slots[0].Confidence);
+        }
     }
 }

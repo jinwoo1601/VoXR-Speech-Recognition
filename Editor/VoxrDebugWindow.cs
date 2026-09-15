@@ -461,6 +461,20 @@ namespace VoXR.Editor
                     EditorGUILayout.LabelField("Slots:", EditorStyles.miniLabel);
                     foreach (var slot in attempt.Slots)
                     {
+                        // A resolver-filled slot has no word span — nobody said it — so printing
+                        // its -1 placeholders here would read as a parse defect in the one place
+                        // an author goes to diagnose one. The reason takes the span's place: it is
+                        // the only surface that says WHY the value is in the command at all, and
+                        // without it a filled slot and a spoken one look identical.
+                        if (slot.ResolutionReason != null)
+                        {
+                            string why =
+                                slot.ResolutionReason.Length > 0 ? $" — {slot.ResolutionReason}" : "";
+                            EditorGUILayout.LabelField(
+                                $"  {slot.Name} = \"{slot.Value}\"  filled by resolver{why}");
+                            continue;
+                        }
+
                         string confStr = slot.Confidence >= 0f ? $" conf={slot.Confidence:F2}" : "";
                         EditorGUILayout.LabelField(
                             $"  {slot.Name} = \"{slot.Value}\"  words[{slot.StartWord}..{slot.EndWord}]{confStr}");

@@ -23,7 +23,7 @@ namespace VoXR.Editor
     [InitializeOnLoad]
     internal static class VoxrDebugSessionLog
     {
-        const int SchemaVersion = 3;
+        const int SchemaVersion = 4;
         const int MaxRetainedSessions = 10;
         const string LogDirName = "VoxrDebugLogs";
 
@@ -55,7 +55,16 @@ namespace VoXR.Editor
             + "injected text, where words is empty) but can also occur with words populated when "
             + "the matched span came from a segment that carried none. Slot startWord/endWord "
             + "are half-open [startWord, endWord) indices into the whitespace-split inputText, "
-            + "not into the words array; they stay valid even when words is empty. tiedRival "
+            + "not into the words array; they stay valid even when words is empty. "
+            + "resolved is true when a registered slot resolver filled that slot from game state "
+            + "instead of the speaker saying it, and it is the field to test: resolvedReason "
+            + "names why the game chose the value ('main target') but is empty when the resolver "
+            + "gave no reason, so an empty resolvedReason does NOT mean the slot was spoken. A "
+            + "resolved slot also carries startWord, endWord and confidence of -1, since no words "
+            + "were said — corroborating, not the discriminator. On the follow-up slot-fill "
+            + "attempt described above, slots lists the resolved slots ONLY: that attempt has no "
+            + "parse round behind it, so the spoken slots of the command it completes are not "
+            + "repeated there. tiedRival "
             + "names the equally-good rival the attempt beat on registration order alone, as "
             + "'intent (pattern N)'; it is empty when nothing tied it, so a coin-flip win is "
             + "distinguishable from a clean one. tiedRivalIsSibling is true when that rival was "
@@ -273,6 +282,14 @@ namespace VoXR.Editor
                         startWord = slots[s].StartWord,
                         endWord = slots[s].EndWord,
                         confidence = slots[s].Confidence,
+                        // Two fields where the struct needs one. JsonUtility cannot express a
+                        // null string — it writes "" — so the struct's "non-null reason means
+                        // resolver-filled" collapses on export for a resolver that gave no
+                        // reason, and an empty resolvedReason would be indistinguishable from a
+                        // spoken slot. `resolved` carries the distinction the way `barred` does,
+                        // as a bool; resolvedReason carries only the prose.
+                        resolved = slots[s].ResolutionReason != null,
+                        resolvedReason = slots[s].ResolutionReason ?? "",
                     };
                 }
 
@@ -345,6 +362,8 @@ namespace VoXR.Editor
             public int startWord;
             public int endWord;
             public float confidence;
+            public bool resolved;
+            public string resolvedReason;
         }
     }
 }
