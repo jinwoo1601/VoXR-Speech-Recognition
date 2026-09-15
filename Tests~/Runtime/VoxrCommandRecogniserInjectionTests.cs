@@ -2460,5 +2460,480 @@ namespace VoXR.Tests.Runtime
             LogAssert.NoUnexpectedReceived();
         }
 
+
+        // ======== Slot resolvers on the accept path (issue #148, Phase 2) ========
+
+        // The resolver rows need an incomplete candidate that CLEARS minScore, which this
+        // fixture's own MakeCommands cannot give: a resolver is offered only a candidate that
+        // already passed the score gate (F7, made explicit by D-5). Eight elements, seven matched
+        // and {track} stranded: (7 x 1 - 1) / 8 = 0.75 — the same arithmetic
+        // VoxrPendingCommandTests.PartialMatch_AboveGateButIncomplete_EntersPendingInsteadOfFiring
+        // derives, and above the gate by a margin rather than on it, so a scoring change cannot
+        // quietly turn these into score-gate tests.
+        const string BareLaunchOrder = "launch all missiles from tube three at";
+
+        void ConfigureResolvableSync(bool allowPartial = true)
+        {
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: allowPartial
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+        }
+
+        [Test]
+        public void Resolver_FillsAnOmittedRequiredSlot_TheCommandFiresCarryingItAndItsReason()
+        {
+            // #148(a), F7 / F18 / F21. The aggressive-order fantasy: a captain says "launch
+            // missiles", not the full designation, and today only the full form fires.
+            ConfigureResolvableSync(allowPartial: true);
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.IsTrue(received.HasValue, "the command the speaker omitted an argument of fires");
+            Assert.IsFalse(pending.HasValue, "and the speaker is not asked for what the game knew");
+            Assert.AreEqual("launch_weapon", received.Value.Intent);
+
+            // F18: a handler that does not ask cannot tell the difference.
+            Assert.IsTrue(received.Value.HasSlot("track"));
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"));
+            Assert.AreEqual("missiles", received.Value.GetSlot("weapon"), "the spoken slots stand");
+
+            // F21: and one that DOES ask gets both which and why.
+            Assert.AreEqual("main target", received.Value.GetSlotResolutionReason("track"));
+            Assert.AreEqual(
+                1,
+                received.Value.ResolvedSlots.Length,
+                "exactly the one slot the speaker omitted is reported resolver-filled"
+            );
+            Assert.AreEqual("track", received.Value.ResolvedSlots[0].Name);
+            Assert.AreEqual("main target", received.Value.ResolvedSlots[0].Reason);
+            Assert.IsNull(
+                received.Value.GetSlotResolutionReason("weapon"),
+                "a spoken slot reports no reason — non-null is what MEANS resolver-filled"
+            );
+        }
+
+        [Test]
+        public void Resolver_IsNeverConsultedForABarredRound()
+        {
+            // #148(c), F9 / F10, and the most important row in the feature. Ruling 3 is absolute:
+            // a pattern's first required element is never supplied by a resolver. It holds
+            // STRUCTURALLY rather than by a gate — a barred round constructs no VoxrCommand at
+            // all — so what is asserted is that the game was never even ASKED. "Nothing fired" on
+            // its own would pass with the resolver wired in and its answer discarded downstream,
+            // which is a different feature with the same silence.
+            //
+            // Both halves are built to clear the score gate. Eight elements, seven matched and
+            // one required slot missed: (7 x 1 - 1) / 8 = 0.75 either way, so D-5's score gate
+            // cannot be the thing that keeps the resolver away from the barred half. The only
+            // difference between the two utterances is WHERE the missed slot sits.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("bearing", new[] { "north east", "south west" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "steer_track",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "{track}",
+                                "come",
+                                "to",
+                                "course",
+                                "steady",
+                                "on",
+                                "heading",
+                                "{bearing}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            int trackCalls = 0;
+            int bearingCalls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () =>
+                {
+                    trackCalls++;
+                    return new VoxrSlotResolution("alpha", "only hostile");
+                }
+            );
+            _recogniser.RegisterSlotResolver(
+                "bearing",
+                () =>
+                {
+                    bearingCalls++;
+                    return new VoxrSlotResolution("north east", "intercept course");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            // The anchor {track} was never spoken.
+            _recogniser.InjectText("come to course steady on heading south west");
+
+            Assert.AreEqual(
+                0,
+                trackCalls,
+                "the game is never even ASKED about a pattern's first required element"
+            );
+            Assert.AreEqual(
+                0,
+                bearingCalls,
+                "nor about any other slot of a barred round — there is no command to offer"
+            );
+            Assert.IsFalse(received.HasValue, "so nothing fires");
+            Assert.IsFalse(pending.HasValue, "and nothing is held open");
+            Assert.IsFalse(_recogniser.HasPendingCommand);
+            Assert.AreEqual("come to course steady on heading south west", unrecognised);
+
+            // The control, and what makes the silence above about POSITION rather than score or
+            // registration: the same grammar, the same one missed required slot, the same
+            // (7 - 1) / 8 = 0.75 — the miss has only moved to the tail. Here the resolver IS
+            // consulted and the command fires, so a resolver that is simply unreachable on this
+            // grammar cannot explain the zero above.
+            _recogniser.InjectText("alpha come to course steady on heading");
+
+            Assert.IsTrue(received.HasValue, "a tail miss on the same grammar resolves and fires");
+            Assert.AreEqual(1, bearingCalls, "and the game WAS asked, once");
+            Assert.AreEqual("north east", received.Value.GetSlot("bearing"));
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"), "the spoken anchor");
+            Assert.AreEqual(
+                0,
+                trackCalls,
+                "and still never asked about {track}, which the speaker supplied"
+            );
+            Assert.GreaterOrEqual(
+                received.Value.Score,
+                _recogniser.MinScore,
+                "both utterances clear the gate the resolution pass reads, so the score gate is "
+                    + "not what separated them"
+            );
+        }
+
+        [Test]
+        public void Resolver_AndValueProviderOnTheSameSlot_KeepProviderSemanticsForMatching()
+        {
+            // #148(d), F16. The two extension points are orthogonal by design: a PROVIDER narrows
+            // what the parser will MATCH and needs a rebuild; a RESOLVER fills what the parser did
+            // NOT match and needs none. The resolver is not filtered through the provider's active
+            // set, and the provider is not consulted for a resolution — so a game can deliver a
+            // value no grammar word could have produced, which is the documented cost of #148(d)
+            // and is pinned here rather than left as prose.
+            ConfigureResolvableSync(allowPartial: true);
+
+            _recogniser.RegisterSlotValueProvider("track", () => new[] { "alpha" });
+            _recogniser.NotifySlotChanged();
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () => new VoxrSlotResolution("charlie", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            // 1. The value the provider still allows matches, and a SPOKEN slot is not overridden
+            //    by the resolver and not reported as resolver-filled.
+            _recogniser.InjectText("launch all missiles from tube three at alpha");
+            Assert.IsTrue(received.HasValue);
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"));
+            Assert.IsNull(
+                received.Value.GetSlotResolutionReason("track"),
+                "a slot the parser matched is never resolver-filled"
+            );
+
+            // 2. The value the provider excluded still does not match. It cannot become the slot's
+            //    value by any route — the resolver's answer is what lands there instead.
+            received = null;
+            _recogniser.InjectText("launch all missiles from tube three at bravo");
+            Assert.IsTrue(received.HasValue);
+            Assert.AreNotEqual(
+                "bravo",
+                received.Value.GetSlot("track"),
+                "the provider's exclusion still governs what the parser will match"
+            );
+            Assert.AreEqual("charlie", received.Value.GetSlot("track"));
+            Assert.AreEqual("main target", received.Value.GetSlotResolutionReason("track"));
+
+            // 3. And the bare form resolves to whatever the resolver returns, unfiltered: the
+            //    provider's active set is ["alpha"] and "charlie" is not in the grammar at all.
+            received = null;
+            _recogniser.InjectText(BareLaunchOrder);
+            Assert.IsTrue(received.HasValue);
+            Assert.AreEqual(
+                "charlie",
+                received.Value.GetSlot("track"),
+                "a resolution is not filtered through the provider's active values"
+            );
+            Assert.AreEqual("main target", received.Value.GetSlotResolutionReason("track"));
+        }
+
+        [Test]
+        public void Resolver_FilledSlot_DoesNotChangeTheScoreOrConfidence()
+        {
+            // F19. Resolution is not evidence: the slot was never spoken, so nothing about the
+            // transcript changed and nothing about the score may. The comparison is against the
+            // SAME utterance with the resolver unregistered — which also discharges F2's second
+            // half, that unregistering restores the pre-feature behaviour exactly.
+            ConfigureResolvableSync(allowPartial: true);
+
+            var words = VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunchOrder, 0.9f);
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder, words);
+            Assert.IsTrue(received.HasValue, "resolved, so it fires");
+            var fired = received.Value;
+            Assert.GreaterOrEqual(
+                fired.Score,
+                _recogniser.MinScore,
+                "and it cleared the gate on what was actually spoken"
+            );
+
+            Assert.IsTrue(_recogniser.UnregisterSlotResolver("track"));
+
+            _recogniser.InjectText(BareLaunchOrder, words);
+            Assert.IsTrue(pending.HasValue, "unregistered, so the same utterance pends again");
+            var unresolved = pending.Value;
+
+            Assert.AreEqual(
+                unresolved.Score,
+                fired.Score,
+                1e-5f,
+                "a slot nobody spoke earns no score — the resolved command keeps the number the "
+                    + "transcript earned"
+            );
+            Assert.AreEqual(
+                unresolved.Confidence,
+                fired.Confidence,
+                1e-5f,
+                "and the confidence is the word data's, which resolution does not touch"
+            );
+        }
+
+        // -------- Sibling tie x resolver (issue #148, architecture 5.5 / D-11) --------
+        //
+        // disambiguateSiblingTies is frozen into the parser at Configure time, so it is set
+        // BEFORE Configure here exactly as it is in the disambiguation block above.
+        //
+        // Nine elements, differing only at element 5 ("mode" / "level"), with a trailing required
+        // {track}. Spoken without the discriminator AND without the track: seven matched and one
+        // required slot missed, (7 x 1 - 1) / 9 = 0.667 for BOTH siblings, so they tie clear of
+        // the 0.60 gate and the winner is incomplete until a resolver fills it.
+        void ConfigureAskingWithAResolvableTail()
+        {
+            _recogniser.DisambiguateSiblingTies = true;
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("ship", new[] { "alpha" }),
+                    new VoxrSlotDefinition("track", new[] { "hotel", "india" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "set_mode",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "helm",
+                                "set",
+                                "{ship}",
+                                "drive",
+                                "mode",
+                                "to",
+                                "standby",
+                                "target",
+                                "{track}",
+                            },
+                        }
+                    ),
+                    new VoxrCommandDefinition(
+                        "set_level",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "helm",
+                                "set",
+                                "{ship}",
+                                "drive",
+                                "level",
+                                "to",
+                                "standby",
+                                "target",
+                                "{track}",
+                            },
+                        }
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 1.5f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+        }
+
+        const string TiedBareOrder = "helm set alpha drive to standby target";
+
+        [Test]
+        public void Resolver_FilledWinnerOfASiblingTie_StillCarriesTheSlotWhenTheTieIsAnswered()
+        {
+            // Architecture 5.5 / D-11, and F12's hardest gate. PendingCommandHandler fires the
+            // CHOICE the speaker picked, not the pending's own command, and it re-tests nothing:
+            // issue #73's gate proved the WINNER complete, and after this feature the winner is
+            // proved complete only in its RESOLVED form. If the choice list is built by re-reading
+            // the parser's pooled buffer, choices[0] is the UNRESOLVED command and answering with
+            // the winner's own discriminator fires a command missing its required argument — the
+            // exact shape #73 refuses, reintroduced by the feature that promised not to.
+            LogAssert.Expect(LogType.Warning, new Regex("differ only at element"));
+            ConfigureAskingWithAResolvableTail();
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () => new VoxrSlotResolution("hotel", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+            int pendingCount = 0;
+            _recogniser.OnCommandPending += _ => pendingCount++;
+
+            _recogniser.InjectText(TiedBareOrder);
+            _recogniser.FlushPendingBuffer();
+
+            Assert.AreEqual(1, pendingCount, "the tie is asked about rather than coin-flipped");
+            Assert.IsFalse(received.HasValue, "and nothing fires yet");
+            Assert.IsNotNull(_recogniser.PendingAmbiguity, "it is an ambiguity, not a confirmation");
+
+            // The winner's own discriminating value. Index 0 is a choice too.
+            Answer("mode");
+
+            Assert.IsTrue(received.HasValue, "answering fires the winner");
+            Assert.AreEqual("set_mode", received.Value.Intent);
+            Assert.IsTrue(
+                received.Value.HasSlot("track"),
+                "and it still carries the slot the resolver filled — a command that reaches a "
+                    + "handler missing a required argument is the shape issue #73 refuses"
+            );
+            Assert.AreEqual("hotel", received.Value.GetSlot("track"));
+            Assert.AreEqual("main target", received.Value.GetSlotResolutionReason("track"));
+        }
+
+        [Test]
+        public void Resolver_IsAskedAtMostOncePerUtterance_AcrossTheWinnerAndItsTiedRival()
+        {
+            // F17. Ruling 9's "must be cheap" is the package's obligation as well as the game's:
+            // the hook runs inside the recognition callback, and an utterance whose candidates
+            // all miss {track} must not multiply one question into several.
+            //
+            // The winner and its tied rival are two candidates missing the SAME slot — which is
+            // sound to answer once because slot names are global, so {track} in any pattern of any
+            // command binds to one entry. The second half of this test is what stops the count
+            // assertion being vacuous: answering with the RIVAL's discriminator fires the rival
+            // carrying the resolved slot, so both candidates really were offered resolution and
+            // the count of 1 is a cache doing its job rather than a second candidate that never
+            // existed.
+            LogAssert.Expect(LogType.Warning, new Regex("differ only at element"));
+            ConfigureAskingWithAResolvableTail();
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                () =>
+                {
+                    calls++;
+                    return new VoxrSlotResolution("india", "only hostile");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(TiedBareOrder);
+            _recogniser.FlushPendingBuffer();
+
+            int callsAfterTheUtterance = calls;
+            Assert.AreEqual(
+                1,
+                callsAfterTheUtterance,
+                "one utterance, one question — however many of its candidates missed the slot"
+            );
+
+            Answer("level");
+
+            Assert.IsTrue(received.HasValue, "the rival fires when the speaker picks it");
+            Assert.AreEqual("set_level", received.Value.Intent);
+            Assert.IsTrue(
+                received.Value.HasSlot("track"),
+                "and the rival was offered the same resolution the winner was, so there really "
+                    + "were two candidates missing {track} in that one utterance"
+            );
+            Assert.AreEqual("india", received.Value.GetSlot("track"));
+            Assert.AreEqual("only hostile", received.Value.GetSlotResolutionReason("track"));
+        }
     }
 }

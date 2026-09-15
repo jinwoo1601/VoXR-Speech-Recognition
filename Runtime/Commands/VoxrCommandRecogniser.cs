@@ -183,6 +183,26 @@ namespace VoXR.Commands
         // Pre-allocated buffer for accepted commands (avoids per-utterance List allocation)
         VoxrCommand[] _acceptedBuf;
 
+        // Slot-resolution state. All four are per-utterance scratch owned by the recogniser and
+        // reused rather than reallocated: an utterance where nothing resolves — which is every
+        // utterance in a game that registered no resolver, and most of them in one that did —
+        // must not allocate.
+        //
+        // One answer per slot per utterance. Cleared at the top of Step 3b, which is also the
+        // only thing that keeps a resolution from outliving the utterance it was given for.
+        Dictionary<string, VoxrSlotResolution> _resolutionCache;
+
+        // A single candidate's resolution attempt, in progress. Nothing is materialised into a
+        // VoxrCommand until every unfilled required slot has resolved, so these hold the answers
+        // that would be thrown away if the next slot comes back empty.
+        List<VoxrSlotMatch> _resolveSlotScratch;
+        List<VoxrResolvedSlot> _resolveRecordScratch;
+
+        // The resolved form of each result-buffer entry. Null means no resolver is registered at
+        // all, and the read sites fall back to the parser's own command — one branch and no copy,
+        // which is what makes the unused feature cost nothing.
+        VoxrCommand[] _effectiveBuf;
+
         public string[] ActiveSetNames => _setManager.ActiveSetNames;
 
         public bool HasPendingCommand => _pending.HasPending;
@@ -335,6 +355,37 @@ namespace VoXR.Commands
         public bool UnregisterSlotValueProvider(string slotName)
         {
             return _slotManager.Unregister(slotName);
+        }
+
+        // -------- Dynamic slot resolvers --------
+
+        /// <summary>
+        /// Registers the delegate asked to fill slot <paramref name="slotName"/> when the speaker
+        /// omitted it. A second registration for the same slot replaces the first silently.
+        /// </summary>
+        /// <remarks>
+        /// Unlike a value provider this changes no grammar, so it needs neither a parser rebuild
+        /// nor a <see cref="NotifySlotChanged"/> call -- it takes effect on the next utterance.
+        /// The resolver is consulted only when a parsed command is otherwise complete and its only
+        /// defect is one or more unfilled required slots, and it can never supply a pattern's
+        /// first required element: a command whose leading required element went unspoken is
+        /// refused before any command is built, so there is nothing to offer a resolver. The
+        /// delegate runs synchronously on the main thread inside the recognition callback, so it
+        /// must be cheap; see <see cref="VoxrSlotResolution"/> for the rest of the contract.
+        /// </remarks>
+        public void RegisterSlotResolver(string slotName, Func<VoxrSlotResolution> resolver)
+        {
+            _slotManager.RegisterResolver(slotName, resolver);
+        }
+
+        /// <summary>
+        /// Removes the resolver for <paramref name="slotName"/> and returns whether one was
+        /// removed. No parser rebuild or <see cref="NotifySlotChanged"/> call is needed; from the
+        /// next utterance the slot resolves no longer.
+        /// </summary>
+        public bool UnregisterSlotResolver(string slotName)
+        {
+            return _slotManager.UnregisterResolver(slotName);
         }
 
         public void NotifySlotChanged()
@@ -759,6 +810,82 @@ namespace VoXR.Commands
             // parsers mid-loop.
             var parser = _parser;
             var resultBuf = parser.ResultBuffer;
+
+            // ---- Step 3b: Fill omitted required slots from the game's registered resolvers ----
+            //
+            // Resolution happens once, here, and every site that consults the completeness ruling
+            // below — Step 4's flag, Step 5's follow-up split, Step 7's own gate — reads the
+            // result rather than asking again. That is the whole of the uniformity guarantee:
+            // those sites cannot disagree about whether a command is complete because there is
+            // nothing left for them to disagree about.
+            //
+            // BEHIND the parser snapshot above, deliberately. This is the first and only game code
+            // this method calls between the parse and the Step 7 loop, and a resolver is as free
+            // to answer by calling Configure — which sets _parser to null — as any event
+            // subscriber is. In front of the snapshot that is a live NullReferenceException on the
+            // `parser.ResultBuffer` read; behind it, it inherits the protection the snapshot
+            // exists to give and the caveat below covers it unchanged.
+            //
+            // The cache is cleared BEFORE the early-out, not after, and that ordering is
+            // load-bearing: Step 5 is reachable with resultCount == 0 — a follow-up fill on an
+            // utterance the parser produced nothing for — and it resolves through this same cache.
+            // Clearing after the early-out would leave the previous utterance's answers live on
+            // exactly that path, which is the cross-utterance memory this feature is defined by
+            // not having. A resolution that can go stale can aim a weapon at a dead target.
+            _resolutionCache?.Clear();
+            // The effective buffer is cleared here rather than at the end of the utterance,
+            // because there is no end that covers it: it is filled in this block, ahead of three
+            // early returns — the follow-up branch, the no-results branch, and the acceptedCount
+            // == 0 one, which is the ordinary outcome whenever every candidate went pending or was
+            // rejected. A tail clear would reach one path in four and leave the staleness
+            // path-dependent, which is harder to reason about than never clearing at all.
+            // Whole buffer, not the first resultCount entries: a longer previous utterance leaves
+            // a tail of commands this one never overwrites, and those are exactly the entries that
+            // would otherwise keep a VoxrCommand and its slot arrays reachable indefinitely. Ahead
+            // of the HasResolvers gate for the same reason the cache clear is, so unregistering
+            // every resolver mid-session drops what the last one filled.
+            if (_effectiveBuf != null)
+                Array.Clear(_effectiveBuf, 0, _effectiveBuf.Length);
+            VoxrCommand[] effective = null;
+            if (_slotManager.HasResolvers && resultCount > 0)
+            {
+                if (_effectiveBuf == null || _effectiveBuf.Length < resultCount)
+                    _effectiveBuf = new VoxrCommand[resultCount];
+                effective = _effectiveBuf;
+
+                for (int i = 0; i < resultCount; i++)
+                {
+                    var candidate = resultBuf[i].Command;
+                    effective[i] = candidate;
+
+                    // Gated on minScore for correctness, not economy. A below-minScore incomplete
+                    // command on a definition with AllowPartialMatch enters pending today;
+                    // resolving it empties ComputeUnfilledSlots, the pending branch is skipped,
+                    // and the candidate falls through to the reject instead. Resolution is allowed
+                    // to change the completeness answer and nothing else — never which side of
+                    // another gate a command lands on.
+                    if (candidate.Score < minScore)
+                        continue;
+
+                    if (
+                        _setManager.TryLookupCommand(candidate.Intent, out var candidateDef)
+                        && TryResolveMissingSlots(candidate, candidateDef, out var resolvedCandidate)
+                    )
+                    {
+                        effective[i] = resolvedCandidate;
+                    }
+                }
+            }
+
+            // A resolver may have cancelled the pending this fill was built against — CancelPendingCommand
+            // and Configure both clear it, and Step 3b above is the first game code this method has ever run
+            // between Step 2's fill and Step 5's use of it. The fill merged INTO that pending, so without it
+            // there is nothing for Step 5 to complete or re-arm, and every read in that branch assumes it is
+            // still there: both the resolution gate's definition read and the shipped Complete(...) one.
+            // Discarded at the premise rather than guarded at each read, so the two cannot disagree.
+            if (followUpResult.HasValue && !_pending.HasPending)
+                followUpResult = null;
+
             // Snapshotting the parser does not make this loop re-entrant. These are the
             // parser's pooled arrays, not copies, so a subscriber that answers one of the events
             // below by calling InjectText synchronously re-enters ParseInternal on this same
@@ -766,7 +893,10 @@ namespace VoXR.Commands
             // handlers should queue rather than inject.
             for (int i = 0; i < resultCount; i++)
             {
-                var cmd = resultBuf[i].Command;
+                // The resolved form when a resolver filled this candidate's missing slots, the
+                // parser's own command otherwise. Step 7 reads it the same way, from the same
+                // array, so the two completeness answers are the same answer.
+                var cmd = effective != null ? effective[i] : resultBuf[i].Command;
                 if (cmd.Score >= minScore && !IsIncomplete(cmd))
                 {
                     if (cmd.Confidence < 0f || cmd.Confidence >= minConfidence)
@@ -794,7 +924,44 @@ namespace VoXR.Commands
                 // Keeping the pending alive rather than discarding the fill is what makes this a
                 // refusal to fire rather than a refusal to progress: each utterance fills what it
                 // can and the command waits for the rest.
-                bool followUpIncomplete = IsIncomplete(followUpResult.Value);
+                var followUp = followUpResult.Value;
+                bool followUpIncomplete = IsIncomplete(followUp);
+
+                // The same resolution Step 3b offers a fresh parse, on the one site that would
+                // otherwise disagree with it. Without it the SAME utterance completes or re-arms
+                // depending only on whether a pending happened to be live, and nothing in the
+                // suite, the session log or the debug window would show the split — the first
+                // report arrives as "sometimes it fills the target, sometimes it asks".
+                //
+                // `Score > 0f` is not tidiness. This path has no minScore gate by design (#77,
+                // #113); its fire-floor is the `Score <= 0` refusal below, and that refusal sits
+                // BELOW the completeness split precisely so a partial fill re-arms instead of
+                // stalling. Resolving a non-positive fill moves it across that split and turns
+                // today's "keep the progress and ask again" into "refuse and report
+                // unrecognised" — the exact stall the placement exists to prevent. The gate here
+                // is exactly complementary to the floor below.
+                //
+                // Resolved against the PENDING's definition, because that is the one Complete
+                // fires under. Taken only if the definition IsIncomplete reads agrees the result
+                // is now complete: the comment below documents one intent resolving to two
+                // different definitions as reachable, and a resolution satisfying the firing one
+                // while the other still charges the command for unfilled required slots would
+                // fire a command one of them calls incomplete. All-or-nothing, extended from
+                // slots to definitions.
+                if (
+                    followUpIncomplete
+                    && followUp.Score > 0f
+                    && TryResolveMissingSlots(
+                        followUp,
+                        _pending.Current.Value.Definition,
+                        out var followUpResolved
+                    )
+                    && !IsIncomplete(followUpResolved)
+                )
+                {
+                    followUp = followUpResolved;
+                    followUpIncomplete = false;
+                }
 
                 // The `Score <= 0` floor both flush paths carry (CompareCandidate's first test
                 // and ParseInternal's bestScore check), on the one fire path that never had it
@@ -830,18 +997,18 @@ namespace VoXR.Commands
                 // ordinary endings — confirm, cancel, preemption, CancelPendingCommand(),
                 // replacement, timeout. What it can no longer do is progress by further
                 // follow-up speech, since the same fill re-scores non-positive every time.
-                if (!followUpIncomplete && followUpResult.Value.Score <= 0f)
+                if (!followUpIncomplete && followUp.Score <= 0f)
                 {
 #if UNITY_EDITOR
                     LastMatchDiagnostics = new VoxrMatchDiagnostics(
                         text, diagWords,
                         new[] { new VoxrMatchAttempt(
-                            followUpResult.Value.Intent, null,
-                            followUpResult.Value.Score, minScore,
-                            followUpResult.Value.Confidence, minConfidence,
+                            followUp.Intent, null,
+                            followUp.Score, minScore,
+                            followUp.Confidence, minConfidence,
                             null,
                             FormattableString.Invariant(
-                                $"follow-up re-score {followUpResult.Value.Score:F2} <= 0"
+                                $"follow-up re-score {followUp.Score:F2} <= 0"
                             ),
                             false) },
                         Time.frameCount);
@@ -855,12 +1022,12 @@ namespace VoXR.Commands
                 }
 
                 var followUpRes = followUpIncomplete
-                    ? _pending.AdvanceSlotFill(followUpResult.Value, Time.time)
+                    ? _pending.AdvanceSlotFill(followUp, Time.time)
                     // The pending's own definition: this path fills a slot on the command that
                     // is already pending, so the winner IS the resolved command. Only the
                     // disambiguation path resolves to a different one.
                     : _pending.Complete(
-                        followUpResult.Value,
+                        followUp,
                         _pending.Current.Value.Definition,
                         Time.time
                     );
@@ -880,8 +1047,8 @@ namespace VoXR.Commands
                 LastMatchDiagnostics = new VoxrMatchDiagnostics(
                     text, diagWords,
                     new[] { new VoxrMatchAttempt(
-                        followUpResult.Value.Intent, null, followUpResult.Value.Score,
-                        minScore, followUpResult.Value.Confidence, minConfidence,
+                        followUp.Intent, null, followUp.Score,
+                        minScore, followUp.Confidence, minConfidence,
                             null,
                             followUpReason,
                             !followUpIncomplete
@@ -969,7 +1136,8 @@ namespace VoXR.Commands
                 }
 #endif
 
-                var cmd = resultBuf[i].Command;
+                // Step 3b's result, as Step 4 read it. Same array, same index, same answer.
+                var cmd = effective != null ? effective[i] : resultBuf[i].Command;
 
                 // Below score threshold, OR missing a required argument — either way this is
                 // not a command to fire. Check AllowPartialMatch before rejecting.
@@ -1074,6 +1242,7 @@ namespace VoXR.Commands
                     && TryBuildAmbiguity(
                         parser,
                         i,
+                        cmd,
                         tokens,
                         wordConfidence,
                         out var choices,
@@ -1203,9 +1372,18 @@ namespace VoXR.Commands
         // itself stays allocation-free (the parser records rivals into preallocated buffers);
         // this is the boundary where that stops being true, following the same rule
         // PendingCommandHandler already applies to anything reaching a subscriber.
+        //
+        // `winner` is passed in rather than re-read from parser.ResultBuffer[i], and that is
+        // load-bearing too, for a different reason: a resolver may have filled a required slot the
+        // speaker omitted, and the pooled buffer still holds the command as the parser produced
+        // it. PendingCommandHandler fires the CHOICE the speaker picked, not the pending's own
+        // command, so a re-read here would make choices[0] the unresolved form and answering the
+        // question would fire a command missing its argument — the shape issue #73 refuses, and a
+        // direct contradiction of the comment there recording that the winner was proved complete.
         bool TryBuildAmbiguity(
             VoxrCommandParser parser,
             int i,
+            VoxrCommand winner,
             string[] tokens,
             float[] wordConfidence,
             out VoxrCommand[] choices,
@@ -1223,7 +1401,8 @@ namespace VoXR.Commands
             if (record.RivalCount == 0)
                 return false;
 
-            var winner = parser.ResultBuffer[i].Command;
+            // The intent is what the lookup needs, and resolution does not change it, so the
+            // caller's command and the buffer's would answer this identically.
             if (!_setManager.TryLookupCommand(winner.Intent, out var winnerDef))
                 return false;
 
@@ -1284,7 +1463,17 @@ namespace VoXR.Commands
                     continue;
                 }
 
-                choiceBuf.Add(parser.BuildSiblingRivalCommand(i, n, tokens, wordConfidence));
+                var rival = parser.BuildSiblingRivalCommand(i, n, tokens, wordConfidence);
+                // Offered the same all-or-nothing resolution the winner got, against its own
+                // definition. A rival is a different pattern that can miss the same slot, and
+                // since the handler fires the chosen CHOICE, an unresolved rival offered beside a
+                // resolved winner is a command that fires with its required slot still unfilled
+                // the moment the speaker picks it. The cache is already warm, so this costs a
+                // dictionary hit; a rival that does not resolve is offered exactly as before.
+                if (TryResolveMissingSlots(rival, rivalDef, out var resolvedRival))
+                    rival = resolvedRival;
+
+                choiceBuf.Add(rival);
                 valueBuf.Add(parser.TiedSiblingRivalAt(i, n).Value);
                 defBuf.Add(rivalDef);
             }
@@ -1315,6 +1504,123 @@ namespace VoXR.Commands
         {
             return _setManager.TryLookupCommand(cmd.Intent, out var def)
                 && VoxrCommandParser.HasUnfilledRequiredSlot(cmd, def);
+        }
+
+        // -------- Slot resolution --------
+
+        // The game is asked about a slot at most once per utterance, however many candidates that
+        // utterance produced and however many of them miss the same slot. Memoising is safe
+        // because slot names are global: the parser's slot table is built once from the flat
+        // VoxrSlotDefinition registry, so `{track}` in any pattern of any command binds to one
+        // entry, and two candidates missing `track` are missing the SAME slot.
+        //
+        // A resolver's exception propagates uncaught, which is the treatment DynamicSlotManager
+        // already gives a value provider. Catching it would turn a bug in the game into a
+        // resolution that merely returned nothing, and the command would quietly go pending — a
+        // working-looking feature with the real failure hidden behind it.
+        VoxrSlotResolution ResolveOnce(string slotName)
+        {
+            if (_resolutionCache == null)
+                _resolutionCache = new Dictionary<string, VoxrSlotResolution>(StringComparer.Ordinal);
+            else if (_resolutionCache.TryGetValue(slotName, out var cached))
+                return cached;
+
+            VoxrSlotResolution resolution;
+            if (_slotManager.TryGetResolver(slotName, out var resolver))
+                resolution = resolver();
+            else
+                resolution = VoxrSlotResolution.None;
+
+            _resolutionCache[slotName] = resolution;
+            return resolution;
+        }
+
+        // Offers every unfilled REQUIRED slot of the command's matched pattern to its registered
+        // resolver, and answers with the filled command only if every one of them resolved.
+        //
+        // The walk mirrors HasUnfilledRequiredSlot element for element, through the same two
+        // helpers and the same three guards, so the set of slots a resolver is offered is exactly
+        // the set that makes IsIncomplete say true. Any divergence there is a command that
+        // resolves and still does not fire, or fires still missing an argument.
+        //
+        // The definition is a parameter rather than a lookup, and that is what the follow-up path
+        // needs: it must resolve against the definition the command will actually fire under,
+        // which is not always the one IsIncomplete reads.
+        //
+        // All-or-nothing. The first required slot that does not resolve ends the attempt with
+        // nothing materialised and nothing allocated, and the caller keeps exactly the command
+        // the parser produced.
+        bool TryResolveMissingSlots(
+            in VoxrCommand cmd,
+            VoxrCommandDefinition def,
+            out VoxrCommand resolved
+        )
+        {
+            resolved = default;
+
+            if (!_slotManager.HasResolvers)
+                return false;
+
+            // All three of HasUnfilledRequiredSlot's guards, not two. MatchedPatternIndex == -1 is
+            // the public constructor's default and reaches here through the pending machinery, and
+            // without the Patterns test the length comparison dereferences the null array a failed
+            // lookup's default(VoxrCommandDefinition) carries.
+            if (
+                def.Patterns == null
+                || cmd.MatchedPatternIndex < 0
+                || cmd.MatchedPatternIndex >= def.Patterns.Length
+            )
+                return false;
+
+            if (_resolveSlotScratch == null)
+            {
+                _resolveSlotScratch = new List<VoxrSlotMatch>();
+                _resolveRecordScratch = new List<VoxrResolvedSlot>();
+            }
+            _resolveSlotScratch.Clear();
+            _resolveRecordScratch.Clear();
+
+            var pattern = def.Patterns[cmd.MatchedPatternIndex];
+            for (int p = 0; p < pattern.Length; p++)
+            {
+                string slotName = VoxrCommandParser.ExtractSlotName(pattern[p]);
+                if (
+                    slotName == null
+                    || VoxrCommandParser.IsOptionalSlot(pattern[p])
+                    || cmd.HasSlot(slotName)
+                )
+                    continue;
+
+                var resolution = ResolveOnce(slotName);
+                if (!resolution.HasValue)
+                    return false;
+
+                _resolveSlotScratch.Add(new VoxrSlotMatch(slotName, resolution.Value));
+                // A null reason is normalised to the empty string, because that is what lets
+                // GetSlotResolutionReason answer "which slots" and "why" in one call: non-null
+                // there means resolver-filled, always. Leave the null through and the single
+                // accessor becomes a lie for a resolver that stated no reason.
+                _resolveRecordScratch.Add(
+                    new VoxrResolvedSlot(slotName, resolution.Reason ?? string.Empty)
+                );
+            }
+
+            // Nothing to resolve: the command was already complete, so there is no resolution to
+            // report and the caller should keep the original.
+            if (_resolveRecordScratch.Count == 0)
+                return false;
+
+            // Appended AFTER the parser's matched slots, never interleaved. The Editor
+            // diagnostics index-match Slots[s] against the parser's per-slot word spans, so an
+            // interleaved resolved slot silently mislabels every diagnostic slot after it — and
+            // recovering the matched count as Slots.Length - ResolvedSlots.Length depends on it.
+            var slots = new VoxrSlotMatch[cmd.Slots.Length + _resolveSlotScratch.Count];
+            Array.Copy(cmd.Slots, slots, cmd.Slots.Length);
+            for (int s = 0; s < _resolveSlotScratch.Count; s++)
+                slots[cmd.Slots.Length + s] = _resolveSlotScratch[s];
+
+            resolved = cmd.WithResolvedSlots(slots, _resolveRecordScratch.ToArray());
+            return true;
         }
 
         // -------- Pending resolution interpreter --------
