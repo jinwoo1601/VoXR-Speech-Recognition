@@ -34,6 +34,11 @@
       "displayName": "Push-to-Talk",
       "description": "Demonstrates the VoxrPushToTalkController with hold-to-talk gating, continuous mode switching, and UnityEvent wiring.",
       "path": "Samples~/PushToTalk"
+    },
+    {
+      "displayName": "Voice Check",
+      "description": "Demonstrates a first-run microphone check with a live InputLevel meter and independent audio and command pass/fail readouts.",
+      "path": "Samples~/VoiceCheck"
     }
   ]
 }

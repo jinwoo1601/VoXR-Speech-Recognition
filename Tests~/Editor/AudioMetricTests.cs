@@ -76,6 +76,27 @@ namespace VoXR.Tests.Editor
                 Object.DestroyImmediate(go);
             }
         }
+
+        // #147
+        [Test]
+        public void InputLevel_UninitialisedRecogniser_ReturnsZero()
+        {
+            var go = new GameObject("SpeechTest");
+            try
+            {
+                var speech = go.AddComponent<VoxrSpeechRecogniser>();
+                // Returns at the !OwnsBridge guard: a component that never initialised
+                // never owns the bridge. On the Editor branch that is indistinguishable
+                // from the null-backend path, because a non-owner never has a backend
+                // either -- the guard earns its keep on the device branch, where the
+                // native getter answers for the whole process.
+                Assert.AreEqual(0f, speech.InputLevel);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
     }
 }
 #endif

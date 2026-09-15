@@ -82,6 +82,36 @@ namespace VoXR
         internal float EditorAgcGain => _editorBackend?.AgcGain ?? 1f;
 #endif
 
+        // Rolling ~300 ms RMS of the audio reaching the recogniser, linear 0..1.
+        // 0 while nothing is being captured or replayed, and 0 on a component that
+        // does not own the bridge. Safe to poll every frame: allocates nothing.
+        // Main thread only.
+        public float InputLevel
+        {
+            get
+            {
+                // The level is process-wide, like vosk_bridge_is_running(); only the
+                // owner can be the one producing audio (#57).
+                if (!OwnsBridge)
+                    return 0f;
+#if UNITY_EDITOR_WIN
+                return _editorBackend?.InputLevel ?? 0f;
+#else
+                if (!_bridgeAvailable)
+                    return 0f;
+                try
+                {
+                    return BridgeNative.vosk_bridge_get_input_level();
+                }
+                catch (DllNotFoundException)
+                {
+                    MarkBridgeUnavailable();
+                    return 0f;
+                }
+#endif
+            }
+        }
+
         public bool IsModelReady { get; private set; }
 
         public bool IsInitialised

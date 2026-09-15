@@ -178,6 +178,7 @@ Import samples via **Package Manager > VoXR Speech Recognition > Samples**.
 | **Basic Transcription** | Live speech-to-text with on-screen display. Demonstrates `VoxrSpeechRecogniser` events, partial/final results, and per-word confidence. |
 | **Command Recognition** | Full command parsing with slots, command sets, mode switching, utterance buffering, and sequential extraction. Includes an Inspector authoring toggle and 20 ScriptableObject assets covering every slot type and pattern form. |
 | **Push-to-Talk** | Hold-to-talk gating with `VoxrPushToTalkController`, runtime switching between push-to-talk and continuous modes, `UnityEvent` wiring for a recording indicator, and optional command-recogniser flush on release. |
+| **Voice Check** | A first-run microphone check: a live level meter driven by `VoxrSpeechRecogniser.InputLevel`, a prompt rendered from the active grammar, and two independent latched checks -- audio reaching the recogniser, and a command actually recognised -- so the two silent setup failures are told apart. |
 
 ## Architecture
 

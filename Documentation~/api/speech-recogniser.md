@@ -66,6 +66,7 @@ mode there is no such retry, so prefer the explicit `ReleaseNativeResources()` h
 | `IsInitialised` | `bool` | True after `Initialise()` succeeds, false after `ReleaseNativeResources()`. Always false while another component owns the bridge |
 | `IsRecognising` | `bool` | True between `StartRecognition()` and `StopRecognition()`. Always false while another component owns the bridge |
 | `IsModelReady` | `bool` | True once model extraction and validation completes |
+| `InputLevel` | `float` | Rolling ~300 ms RMS of the audio reaching the recogniser, linear `0..1` -- the same quantity on device and in the Windows Editor. `0` when nothing is being captured or replayed, and always `0` while another component owns the bridge. Safe to poll every frame: allocates nothing, main thread only |
 
 ## Methods
 
@@ -97,6 +98,7 @@ For full setup and lifecycle examples, see the [Getting Started](../getting-star
 - [Getting Started](../getting-started.md) -- setup walkthrough and first recognition
 - [Push-to-Talk](../push-to-talk.md) -- start/stop lifecycle pattern
 - [Editor Testing](../editor-testing.md) -- injection workflows
+- [Voice Check sample](../../Samples~/VoiceCheck/README.md) -- a live `InputLevel` meter and a first-run microphone check
 - [VoxrCommandRecogniser](command-recogniser.md) -- command parsing layer
 - [Data Types](data-types.md) -- `VoxrResult`, `VoxrWord`
 - [Error Codes](error-codes.md) -- `VoxrBridgeErrorCode` values
