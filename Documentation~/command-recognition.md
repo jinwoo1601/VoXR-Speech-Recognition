@@ -42,7 +42,10 @@ Sequential Extraction
 Threshold Filter
     |  rejects commands below minScore or minConfidence
     |  confidence of -1 (no data) bypasses the minConfidence check
-    |  rejects commands missing a required slot, at ANY score --
+    |  a candidate that clears every gate and lacks only required slots
+    |  offers each of them to its registered slot resolver, if one is
+    |  registered -- all of them resolve, or none is applied
+    |  rejects commands still missing a required slot, at ANY score --
     |  with allowPartialMatch they enter pending state instead
     v
 Debounce
@@ -537,6 +540,75 @@ Sometimes a command partially matches (some required slots are unfilled), or nee
 
 The third kind is [ambiguity](#ambiguous-commands-ask-instead-of-guessing), and it only ever arises with `disambiguateSiblingTies` enabled. Everything in this section applies to it — preemption, cancellation, `CancelPendingCommand()` — **with one exception, called out under Timeout Behaviour below.**
 
+### Slot Resolvers: When the Game Knows What the Speaker Left Out
+
+A captain says "concentrate all fire" and means the target already on the screen. The package cannot know which one that is; the game can. `RegisterSlotResolver` is the hook that lets the game answer for a **required** slot the speaker omitted, at the moment the command is parsed.
+
+The step sits **before** the missing-required-slot ruling. A candidate is offered the question only if it would otherwise have fired -- it has cleared the round's score floor, and on the ordinary path `minConfidence` and its intent's debounce cooldown too -- and its only remaining defect is one or more unfilled required slots. Each of those slots is then offered to the delegate registered for it:
+
+- **Every missing slot resolves** — the values go into the command and it proceeds through the normal gates: confidence, debounce, sibling-tie disambiguation, `requiresConfirmation`. None of them is bypassed or reordered.
+- **Any one of them does not** — exactly today's behaviour. The command is refused, or held pending under `allowPartialMatch` with the same unfilled slots, and `OnUnrecognisedSpeech` reports as it always did. Resolution is **all-or-nothing**: a partly-resolved command is never built, so a resolver for one of two missing slots changes nothing at all.
+
+Registering takes effect on the **next utterance**. Unlike a [value provider](#dynamic-slot-filtering) a resolver changes no grammar, so it needs no `NotifySlotChanged()` and no parser rebuild — and the two are orthogonal: a provider decides what the parser will **match**, a resolver fills what the parser did **not** match.
+
+```csharp
+recogniser.RegisterSlotResolver("track", request =>
+{
+    // Slot names are GLOBAL. This delegate is asked about {track} in every command
+    // that uses it, including ones you would never want filled silently. Read the
+    // request and answer only for the intents you mean.
+    if (request.Intent != "concentrate_fire")
+        return VoxrSlotResolution.None;
+
+    var designated = TargetingComputer.Designated;
+    if (designated == null)
+        return VoxrSlotResolution.None;          // nothing obvious — let it ask
+
+    return new VoxrSlotResolution(designated.TrackId, "designated target");
+});
+```
+
+The request carries `SlotName`, the `Intent` of the command that would fire, and its `MatchedPatternIndex`. `VoxrSlotResolution.None` — or `default`, or a resolution carrying an empty value — all mean "I do not know"; there is no separate flag to set. `UnregisterSlotResolver("track")` removes it and returns whether one was there.
+
+To the handler the filled slot is an ordinary slot. `GetSlot` and `HasSlot` cannot tell it from a spoken one, which is the point — a handler that does not care never learns the difference. A handler that does care asks:
+
+```csharp
+recogniser.OnCommandRecognised += cmd =>
+{
+    string track = cmd.GetSlot("track");               // spoken or resolved, same call
+    string why = cmd.GetSlotResolutionReason("track"); // null when the speaker said it
+    Readback(why == null
+        ? $"Concentrating fire on {track}."
+        : $"Concentrating fire on {track} — {why}.");  // why may be "" if none was given
+};
+```
+
+`cmd.ResolvedSlots` lists every resolver-filled slot with its reason. In the Editor the same fact reaches the [debug window](editor-testing.md#command-debug-window), which prints `filled by resolver` in place of the word span, and the [session log](editor-testing.md#what-is-recorded), where each slot carries `resolved` and `resolvedReason`.
+
+#### What a resolver must not do
+
+The delegate runs **synchronously on the Unity main thread, inside the recognition callback**, so it must be cheap: a delegate that scans the world or blocks delays every recognised command. It is asked at most once per *distinct* question per utterance — the same slot asked about on behalf of two different intents is two questions and both are put.
+
+- **It must not call back into the parse entry points** — `InjectText`, either `Configure` overload, or `SetActiveSets`. Each re-enters the very parse that is asking the question and clears the per-utterance state the outer resolution is still using, which can pair one utterance's slots with another's. Queue the work and do it after the callback returns. This is stricter than the "queue rather than inject" advice for event subscribers, and for a stricter reason: a subscriber re-enters *between* commands, a resolver re-enters inside the machinery building one.
+- **`CancelPendingCommand()` is the exception and is safe.** It parses nothing, and both sites that would go on to read a pending re-establish that premise after the resolver returns. Cancelling from a resolver ends the exchange; it does not corrupt the utterance in progress.
+- **An exception thrown by a resolver propagates.** The package neither swallows it nor substitutes "none", so a bug in your resolver stays visible instead of reading as a command that quietly refused to fill — the same treatment a slot value provider already gets.
+- **The value is not validated.** It is not checked against the slot's registered values, and not filtered through a value provider's active set. A resolver can deliver a value no grammar word could have produced, and the package will pass it through to your handler. That is the price of filling what the parser never matched.
+
+#### Two limits worth knowing before you author against it
+
+**A round's winner is never asked for its pattern's first required element.** That is structural rather than a rule the resolver machinery enforces: a winner that missed its own first required element is [barred](scoring.md#the-leading-required-miss-bar) before any command is built, so by the time there is something to offer a resolver, nothing of that shape is left. A tied sibling rival is never offered resolution at all, for the same reason read the other way — a rival did not have to survive the bar to exist, so resolving one *could* supply the anchor the bar refused. Either way, you cannot open "self destruct" by saying nothing.
+
+**Resolution does not change the score — and that is why short patterns never reach it.** The slot was not spoken, so it earns no credit; the command keeps the score the transcript actually produced, and the score gate is consulted *before* the completeness ruling. A missed required slot costs a full element, and that costs proportionally most on the short patterns aggressive orders tend to be. Counting `D` **required** elements in the matched pattern:
+
+| The speaker omits | Score | Clears the default `minScore` of 0.6 at |
+|---|---|---|
+| the slot only | `(D − 2) / D` | `D ≥ 5` |
+| the slot *and* the literal that introduced it | `(D − 3) / D` | `D ≥ 8` |
+
+So `launch missiles target {track}` spoken as "launch missiles" scores `(4 − 3) / 4` = **0.25** and never reaches a resolver at all, while `gunnery concentrate all fire on {track}` spoken as "gunnery concentrate all fire on" scores `(6 − 2) / 6` = **0.67** and does. Drop the "on" as well and the same pattern falls to `(6 − 3) / 6` = **0.5** and does not.
+
+Your levers are **pattern length** and a **lowered global `minScore`** — there is no per-slot or per-command threshold. Marking the introducing literal optional (see [Never leave a required function word between a bare pattern and its slot](#never-leave-a-required-function-word-between-a-bare-pattern-and-its-slot)) turns the second row into the first on the same pattern, which helps but does not by itself rescue a short one: the omitted optional leaves the ratio entirely, so `D` drops with it. **A resolvable slot that never fires is almost always a pattern too short to clear the gate**, not a resolver that was asked and declined. [Known Limitations](../KNOWN_LIMITATIONS.md) records the arithmetic and where the question is open.
+
 ### Partial Match with Follow-Up Slot-Fill
 
 Set `allowPartialMatch: true` on a command definition to let it enter pending state when matched with unfilled required slots, instead of being refused. The diversion is decided by completeness alone, independently of `minScore` -- a command scoring `0.8` with a missing argument routes to pending exactly as a sub-threshold one does. One thing is consulted before completeness: [the leading-required-miss bar](scoring.md#the-leading-required-miss-bar). A winner that missed its own first required element is refused outright, so it never reaches this diversion at any score.
@@ -593,7 +665,7 @@ Configure `pendingTimeout` (default 5s) and `pendingTimeoutBehavior` on `VoxrCom
 
 ### The two ways an incomplete command still fires
 
-A command missing a required argument does not fire on the ordinary path: it is refused outright, or, with `allowPartialMatch`, held pending for slot-fill. (A third case reaches neither branch: a winner that missed its *first required element* is [barred](scoring.md#the-leading-required-miss-bar) before completeness is consulted, so it is not rejected for incompleteness and not held pending either — the round simply yields nothing.) Two opt-ins deliberately override the ordinary path, and both hand your handler a command with arguments absent:
+A command missing a required argument does not fire on the ordinary path -- unless a [slot resolver](#slot-resolvers-when-the-game-knows-what-the-speaker-left-out) supplies the value from game state first. Without one -- or where it declines -- it is refused outright, or, with `allowPartialMatch`, held pending for slot-fill. (A third case reaches neither branch: a winner that missed its *first required element* is [barred](scoring.md#the-leading-required-miss-bar) before completeness is consulted, so it is not rejected for incompleteness and not held pending either — the round simply yields nothing.) Two opt-ins deliberately override the ordinary path, and both hand your handler a command with arguments absent:
 
 - **Confirming a partial match.** Saying a confirm phrase while a command waits for slot-fill fires it as it stands. The confirm check runs before slot-fill, and it is taken at face value — the user has been shown what is missing (via `OnCommandPending`) and said go anyway.
 - **`FireAsIs` on timeout.** The name is the contract: whatever was filled when the window closed is what fires.
@@ -612,6 +684,8 @@ commandRecogniser.OnCommandConfirmed += cmd =>
 ```
 
 Test with `HasSlot`, not with the value: `GetSlot` returns `string.Empty` for a slot that was never filled, so a null check will not catch it.
+
+**One more route hands your handler a slot the speaker never said -- and neither test above sees it.** Where a [slot resolver](#slot-resolvers-when-the-game-knows-what-the-speaker-left-out) filled it from game state the argument is not *absent* but *present and unspoken*: `HasSlot` is true and `GetSlot` returns the value. `GetSlotResolutionReason(name)` is what tells the two apart -- non-null means the game supplied it, `null` means the speaker did.
 
 ### Preemption
 
@@ -640,7 +714,7 @@ When speech passes through the pipeline but no command is produced, `OnUnrecogni
 
 1. **No pattern match** -- the parser could not match any command pattern against the transcript.
 2. **Every match fell under `minScore`** -- patterns matched, but no candidate scored high enough to fire.
-3. **A match was missing a required argument** -- the command may have scored well, but a required slot went unfilled and the command does not set `allowPartialMatch`. The completeness rule is independent of score, so this is the one case where "unrecognised" does not mean "scored badly".
+3. **A match was missing a required argument** -- the command may have scored well, but a required slot went unfilled and the command does not set `allowPartialMatch`. The completeness rule is independent of score, so this is the one case where "unrecognised" does not mean "scored badly". A registered [slot resolver](#slot-resolvers-when-the-game-knows-what-the-speaker-left-out) is consulted before that ruling, so reaching this reason with one registered means either that the resolver declined a slot, or -- the commoner case -- that the candidate never cleared `minScore` and so was never offered the question.
 4. **The winning candidate's first required element was never heard** -- the round's winner was [barred](scoring.md#the-leading-required-miss-bar). It may have scored well above `minScore`; the refusal is positional, not arithmetic. The round does leave a session-log attempt behind, flagged `barred`, so the pattern it matched and the score it reached are both on the record.
 5. **A follow-up fill was refused for re-scoring at or below zero** -- follow-up speech completed a pending command, but the re-score landed at or below zero, so the same floor the flush paths apply refused it (see [the session-log table](scoring.md#reading-a-session-log)). The pending is left standing. Reaching this at all means two definitions share one intent.
 

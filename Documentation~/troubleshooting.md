@@ -122,6 +122,7 @@ The two are easy to tell apart once you know to ask, and in the log they tell th
 
 This typically occurs when VOSK mishears a word due to phonetic similarity. For example, "to" may be transcribed as "two", or "all" as "fall" when a phonetically similar word is prominent in the grammar.
 
+- **First check whether the value was spoken at all.** With a [slot resolver](command-recognition.md#slot-resolvers-when-the-game-knows-what-the-speaker-left-out) registered, a required slot the speaker omitted is filled from game state, so the value your handler reads never came from the decoder and no amount of transcript-chasing will explain it. `cmd.GetSlotResolutionReason(name)` is non-null for exactly those slots, and the [session log](editor-testing.md#what-is-recorded) marks them `resolved`. Slot names are **global**, so one resolver is asked for every command that uses that slot -- see [Known Limitations](../KNOWN_LIMITATIONS.md).
 - Check the raw transcript (via `OnUnrecognisedSpeech` or the Command Debug Window) to see what VOSK actually heard.
 - Try grammar mode if you are in free speech mode -- constrained grammar greatly reduces homophone confusion.
 - Add slot value aliases for common mishearings (e.g. `"a"` -> `"one"`).
