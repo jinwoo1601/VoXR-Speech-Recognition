@@ -497,7 +497,7 @@ namespace VoXR.Tests.Editor
                 // Null Reason: legal, and reads as "filled, reason unstated".
                 recogniser.RegisterSlotResolver(
                     "track",
-                    () => new VoxrSlotResolution("alpha", null)
+                    _ => new VoxrSlotResolution("alpha", null)
                 );
 
                 recogniser.InjectText(BareLaunchOrder);

@@ -44,6 +44,11 @@ namespace VoXR.Commands
 
         public readonly int MatchedPatternIndex;
 
+        // Append-last is an invariant, not an implementation detail: a resolver-filled slot is
+        // always appended after the parser's matched slots in Slots, never interleaved, because
+        // the Editor diagnostics index-match Slots[s] against the parser's per-slot word spans.
+        // Interleaving would silently mislabel every diagnostic slot after the first resolved one,
+        // and it is what lets the matched count be recovered as Slots.Length - ResolvedSlots.Length.
         /// <summary>
         /// The slots a registered resolver filled because the speaker omitted them, each with the
         /// reason the resolver gave. Empty for a command whose slots were all spoken.
@@ -52,11 +57,6 @@ namespace VoXR.Commands
         /// The values live in <see cref="Slots"/> alongside the spoken ones, so a handler that
         /// does not care reads them through <see cref="GetSlot"/> and never learns the difference.
         /// </remarks>
-        // Append-last is an invariant, not an implementation detail: a resolver-filled slot is
-        // always appended after the parser's matched slots in Slots, never interleaved, because
-        // the Editor diagnostics index-match Slots[s] against the parser's per-slot word spans.
-        // Interleaving would silently mislabel every diagnostic slot after the first resolved one,
-        // and it is what lets the matched count be recovered as Slots.Length - ResolvedSlots.Length.
         public readonly VoxrResolvedSlot[] ResolvedSlots;
 
         readonly string[] _registeredSlotNames;

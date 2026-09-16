@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
@@ -2518,7 +2519,7 @@ namespace VoXR.Tests.Runtime
 
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("alpha", "main target")
+                _ => new VoxrSlotResolution("alpha", "main target")
             );
 
             VoxrCommand? received = null;
@@ -2602,7 +2603,7 @@ namespace VoXR.Tests.Runtime
             int bearingCalls = 0;
             _recogniser.RegisterSlotResolver(
                 "track",
-                () =>
+                _ =>
                 {
                     trackCalls++;
                     return new VoxrSlotResolution("alpha", "only hostile");
@@ -2610,7 +2611,7 @@ namespace VoXR.Tests.Runtime
             );
             _recogniser.RegisterSlotResolver(
                 "bearing",
-                () =>
+                _ =>
                 {
                     bearingCalls++;
                     return new VoxrSlotResolution("north east", "intercept course");
@@ -2681,7 +2682,7 @@ namespace VoXR.Tests.Runtime
             _recogniser.NotifySlotChanged();
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("charlie", "main target")
+                _ => new VoxrSlotResolution("charlie", "main target")
             );
 
             VoxrCommand? received = null;
@@ -2736,7 +2737,7 @@ namespace VoXR.Tests.Runtime
 
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("alpha", "main target")
+                _ => new VoxrSlotResolution("alpha", "main target")
             );
 
             VoxrCommand? received = null;
@@ -2854,7 +2855,7 @@ namespace VoXR.Tests.Runtime
 
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("hotel", "main target")
+                _ => new VoxrSlotResolution("hotel", "main target")
             );
 
             VoxrCommand? received = null;
@@ -2884,28 +2885,40 @@ namespace VoXR.Tests.Runtime
         }
 
         [Test]
-        public void Resolver_IsAskedAtMostOncePerUtterance_AcrossTheWinnerAndItsTiedRival()
+        public void Resolver_IsNotOfferedToATiedRival_AndTheChosenRivalFiresUnresolved()
         {
-            // F17. Ruling 9's "must be cheap" is the package's obligation as well as the game's:
-            // the hook runs inside the recognition callback, and an utterance whose candidates
-            // all miss {track} must not multiply one question into several.
+            // Was Resolver_IsAskedAtMostOncePerUtterance_AcrossTheWinnerAndItsTiedRival, which
+            // asserted ONE question across the winner AND its tied rival and then fired the
+            // rival carrying the resolved slot. Both halves are wrong now, for two independent
+            // reasons:
             //
-            // The winner and its tied rival are two candidates missing the SAME slot — which is
-            // sound to answer once because slot names are global, so {track} in any pattern of any
-            // command binds to one entry. The second half of this test is what stops the count
-            // assertion being vacuous: answering with the RIVAL's discriminator fires the rival
-            // carrying the resolved slot, so both candidates really were offered resolution and
-            // the count of 1 is a cache doing its job rather than a second candidate that never
-            // existed.
+            //   1. Ruling 3 / issue #126. A rival is no longer offered resolution at all. The
+            //      winner satisfies ruling 3 structurally — a round whose leading required
+            //      element went unheard is barred inside the parser and constructs no command —
+            //      but a rival carries no such guarantee: #126 ruled LeadingRequiredMissed
+            //      "recorded, not gated", so a leading-missed rival CAN fire, here, by being
+            //      chosen. Resolving one would let game state supply the very anchor the bar
+            //      refused.
+            //   2. The per-utterance memo key widened from the slot to (slot, intent, matched
+            //      pattern). The winner and the rival differ in INTENT, so even had the rival
+            //      still been offered, "one question" would no longer be the contract — two
+            //      intents are two questions, deliberately.
+            //
+            // What is pinned instead is the asymmetry itself, including the cost it accepts
+            // knowingly: the chosen rival fires still missing its required argument. The
+            // disambiguation arm does not re-test the chosen alternative for completeness (see
+            // PendingCommandHandler.TryHandleConfirmCancel), and that is the documented trade —
+            // an incomplete choice is a question answered badly; a resolved barred rival would
+            // be a command firing on words nobody said.
             LogAssert.Expect(LogType.Warning, new Regex("differ only at element"));
             ConfigureAskingWithAResolvableTail();
 
-            int calls = 0;
+            var asked = new List<VoxrSlotResolutionRequest>();
             _recogniser.RegisterSlotResolver(
                 "track",
-                () =>
+                req =>
                 {
-                    calls++;
+                    asked.Add(req);
                     return new VoxrSlotResolution("india", "only hostile");
                 }
             );
@@ -2916,24 +2929,628 @@ namespace VoXR.Tests.Runtime
             _recogniser.InjectText(TiedBareOrder);
             _recogniser.FlushPendingBuffer();
 
-            int callsAfterTheUtterance = calls;
             Assert.AreEqual(
                 1,
-                callsAfterTheUtterance,
-                "one utterance, one question — however many of its candidates missed the slot"
+                asked.Count,
+                "the winner asks; the rival is not offered resolution at all"
             );
+            Assert.AreEqual("set_mode", asked[0].Intent, "and the asker is the WINNER");
+            Assert.AreEqual("track", asked[0].SlotName);
+            Assert.AreEqual(0, asked[0].MatchedPatternIndex);
+            Assert.IsFalse(received.HasValue, "nothing fires while the question is open");
+            Assert.IsNotNull(_recogniser.PendingAmbiguity, "it is an ambiguity, not a confirmation");
 
+            // The RIVAL's discriminating value — the half that stops the count above being
+            // vacuous. A second candidate really was there, it really did miss {track}, and it
+            // really can fire.
             Answer("level");
 
             Assert.IsTrue(received.HasValue, "the rival fires when the speaker picks it");
             Assert.AreEqual("set_level", received.Value.Intent);
+            Assert.AreEqual(
+                1,
+                asked.Count,
+                "and answering the question asks the game nothing further"
+            );
+            Assert.IsFalse(
+                received.Value.HasSlot("track"),
+                "the rival was never offered resolution, so it fires as the parser built it — "
+                    + "still missing the argument the winner had filled"
+            );
+            Assert.AreEqual(
+                0,
+                received.Value.ResolvedSlots.Length,
+                "and it reports nothing as resolver-filled"
+            );
+        }
+
+        // ======== The per-utterance memo (issue #148, PR #159 review) ========
+
+        [Test]
+        public void Resolver_AnsweringDifferentlyOnTheNextUtterance_IsTheAnswerThatFires()
+        {
+            // F-6. Nothing pinned the `_resolutionCache?.Clear()` at the top of Step 3b: delete
+            // it and the whole suite still passed, because every other resolver test asks its
+            // question once. A memo that outlives its utterance is exactly the cross-utterance
+            // memory this feature is defined by NOT having — a resolution that can go stale can
+            // aim a weapon at a target that has since died.
+            ConfigureResolvableSync(allowPartial: true);
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return calls == 1
+                        ? new VoxrSlotResolution("alpha", "first target")
+                        : new VoxrSlotResolution("bravo", "second target");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder);
+            Assert.IsTrue(received.HasValue, "the first utterance resolves and fires");
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"));
+
+            received = null;
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.AreEqual(2, calls, "the same question is put afresh on the next utterance");
+            Assert.IsTrue(received.HasValue, "which still fires");
+            Assert.AreEqual(
+                "bravo",
+                received.Value.GetSlot("track"),
+                "carrying the answer the game gave THIS time, not the one it gave last time"
+            );
+            Assert.AreEqual("second target", received.Value.GetSlotResolutionReason("track"));
+        }
+
+        [Test]
+        public void Resolver_ThatRefusedOnTheLastUtterance_IsAskedAgainOnTheNext()
+        {
+            // F-6's nastier half, and the one a value-to-value test cannot reach: a cached
+            // REFUSAL freezes the slot as unresolvable for the rest of the session. The game
+            // acquires a target between the two utterances and the package never notices.
+            ConfigureResolvableSync(allowPartial: true);
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return calls == 1
+                        ? VoxrSlotResolution.None
+                        : new VoxrSlotResolution("bravo", "acquired since");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder);
+            Assert.AreEqual(1, calls, "asked, and it had nothing");
+            Assert.IsFalse(received.HasValue, "so nothing fires");
+            Assert.IsTrue(pending.HasValue, "and the speaker is asked instead");
+
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.AreEqual(2, calls, "a refusal is not remembered either");
+            Assert.IsTrue(received.HasValue, "the game knows now, so the command fires");
+            Assert.AreEqual("bravo", received.Value.GetSlot("track"));
+            Assert.AreEqual("acquired since", received.Value.GetSlotResolutionReason("track"));
+        }
+
+        // ======== The request's context (F-5) ========
+
+        [Test]
+        public void ResolutionRequest_CarriesTheAskingCommandsSlotIntentAndMatchedPattern()
+        {
+            // F-5's first half. The delegate went from Func<VoxrSlotResolution> to
+            // Func<VoxrSlotResolutionRequest, VoxrSlotResolution> so a game can tell WHICH
+            // command is asking; the three fields have to be that command's, not a plausible
+            // default.
+            //
+            // Two patterns, and the one that matches is the SECOND — so a request built with a
+            // hardcoded 0, or with the first pattern's index, is distinguishable here and
+            // nowhere in the single-pattern fixtures above.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[] { "cease", "fire", "at", "{track}" },
+                            new[]
+                            {
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            var asked = new List<VoxrSlotResolutionRequest>();
+            _recogniser.RegisterSlotResolver(
+                "track",
+                req =>
+                {
+                    asked.Add(req);
+                    return new VoxrSlotResolution("alpha", "main target");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.IsTrue(received.HasValue, "precondition: the command resolved and fired");
+            Assert.AreEqual(1, asked.Count);
+            Assert.AreEqual("track", asked[0].SlotName, "the slot that is unfilled");
+            Assert.AreEqual("launch_weapon", asked[0].Intent, "the intent that would fire");
+            Assert.AreEqual(
+                1,
+                asked[0].MatchedPatternIndex,
+                "the SECOND pattern is the one that matched"
+            );
+            Assert.AreEqual(
+                received.Value.MatchedPatternIndex,
+                asked[0].MatchedPatternIndex,
+                "and it is the asking command's own index, read off the candidate rather than "
+                    + "assumed"
+            );
+        }
+
+        [Test]
+        public void Resolver_AskedForTwoIntentsInOneUtterance_MayRefuseOneAndAnswerTheOther()
+        {
+            // F-5's second half, and the hazard the widened memo key exists to remove. Slot
+            // names are global — {track} in any pattern of any command binds to one entry — so
+            // before the key widened, the FIRST intent's answer was silently reused for the
+            // second, which is precisely the case a resolver is now given context in order to
+            // refuse.
+            //
+            // Two questions inside ONE utterance, which is what makes this about the key rather
+            // than about the per-utterance clear: Step 3b asks for the fresh parse's intent and
+            // Step 5 asks for the live pending's, and the game answers them differently.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "fire_torpedoes",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "helm",
+                                "fire",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            // Answers for fire_torpedoes and refuses for launch_weapon. A game that cannot tell
+            // the two apart can do neither.
+            var asked = new List<VoxrSlotResolutionRequest>();
+            _recogniser.RegisterSlotResolver(
+                "track",
+                req =>
+                {
+                    asked.Add(req);
+                    return req.Intent == "fire_torpedoes"
+                        ? new VoxrSlotResolution("alpha", "the boat's own target")
+                        : VoxrSlotResolution.None;
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            // (7 x 1 - 2) / 9 = 0.556, BELOW the gate, so this is the ordinary allowPartialMatch
+            // pending and no resolution is offered to it — the clean way to get a live pending
+            // of one intent underneath an utterance of another.
+            _recogniser.InjectText("helm fire all torpedoes from tube at");
+            Assert.IsTrue(_recogniser.HasPendingCommand, "precondition: a pending two slots short");
+            Assert.AreEqual(
+                0,
+                asked.Count,
+                "precondition: the below-gate pending was never offered resolution"
+            );
+
+            // One utterance, two questions. It carries a {tube} value, so it fills the pending's
+            // first outstanding slot (Step 5 asks about {track} for fire_torpedoes); it also
+            // parses as launch_weapon missing {track} (Step 3b asks about {track} for
+            // launch_weapon).
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.AreEqual(
+                2,
+                asked.Count,
+                "two candidates of DIFFERENT intents missing the same slot are two questions"
+            );
+            Assert.AreEqual(
+                "launch_weapon",
+                asked[0].Intent,
+                "the fresh parse asks first, from Step 3b"
+            );
+            Assert.AreEqual(
+                "fire_torpedoes",
+                asked[1].Intent,
+                "and the live pending's follow-up fill asks second, from Step 5 — which a memo "
+                    + "keyed on the slot alone would have answered from the refusal above"
+            );
+
+            Assert.IsTrue(received.HasValue, "the intent the game answered for is the one to fire");
+            Assert.AreEqual("fire_torpedoes", received.Value.Intent);
+            Assert.AreEqual("three", received.Value.GetSlot("tube"), "the spoken fill");
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"), "and the resolved one");
+            Assert.AreEqual(
+                "the boat's own target",
+                received.Value.GetSlotResolutionReason("track")
+            );
+            Assert.IsFalse(
+                _recogniser.HasPendingCommand,
+                "the exchange the game answered for is closed"
+            );
+        }
+
+        // ======== The divergence mirror (F-8, issue #160) ========
+        //
+        // TryResolveMissingSlots walks the matched pattern through the SAME two helpers and the
+        // same guards as VoxrCommandParser.HasUnfilledRequiredSlot, so the set of slots a
+        // resolver is offered is exactly the set that makes IsIncomplete say true. Any
+        // divergence is a command that resolves and still does not fire, or fires still missing
+        // an argument. Today that mirror is maintained by a comment; issue #160 tracks folding
+        // the two walks into one. Until it lands, these are the executable form of it — the
+        // guards are pinned one by one so that a walk which drifts from the other is red
+        // somewhere rather than merely commented about.
+        //
+        // The fourth guard, a pattern whose REQUIRED SLOT LEADS, is pinned by
+        // Resolver_IsNeverConsultedForABarredRound above: the protection there is structural
+        // (the parser bars the round and builds no command at all), so it is asserted as "the
+        // game was never even ASKED" rather than as a mirror property, and is not repeated here.
+
+        [Test]
+        public void Resolver_IsOfferedOnlyTheSlotsThatMakeTheCommandIncomplete()
+        {
+            // Two of the loop's three skips in one utterance: an OPTIONAL slot left unspoken is
+            // not a missing argument (the line issue #66 draws at the eager gate and #73 at the
+            // flush one), and a slot the parser already FILLED is not a question at all. Both
+            // have resolvers registered here, so silence is a decision rather than an absence.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                    new VoxrSlotDefinition("flavour", new[] { "hot", "cold" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "launch",
+                                "{?flavour}",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            var asked = new List<string>();
+            _recogniser.RegisterSlotResolver(
+                "flavour",
+                req =>
+                {
+                    asked.Add(req.SlotName);
+                    return new VoxrSlotResolution("hot", "an optional the game would have filled");
+                }
+            );
+            _recogniser.RegisterSlotResolver(
+                "quantity",
+                req =>
+                {
+                    asked.Add(req.SlotName);
+                    return new VoxrSlotResolution("two", "a slot the speaker already gave");
+                }
+            );
+            _recogniser.RegisterSlotResolver(
+                "track",
+                req =>
+                {
+                    asked.Add(req.SlotName);
+                    return new VoxrSlotResolution("alpha", "main target");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            // The unsatisfied optional leaves the denominator at 8: (7 x 1 - 1) / 8 = 0.75, the
+            // same arithmetic the fixtures above use, so the score gate is not what is speaking.
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.IsTrue(received.HasValue, "the one genuinely missing argument resolved");
+            Assert.AreEqual(
+                new[] { "track" },
+                asked.ToArray(),
+                "exactly the slot set that makes the command incomplete — no optional, and "
+                    + "nothing the speaker already said"
+            );
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"));
+            Assert.AreEqual("all", received.Value.GetSlot("quantity"), "the spoken value stands");
+            Assert.IsFalse(
+                received.Value.HasSlot("flavour"),
+                "an omitted optional stays omitted — filling it would put a value in a handler's "
+                    + "hands that neither the speaker nor the completeness rule asked for"
+            );
+            Assert.AreEqual(
+                1,
+                received.Value.ResolvedSlots.Length,
+                "and exactly one slot is reported resolver-filled"
+            );
+        }
+
+        [Test]
+        public void Resolver_ASlotNamedTwiceInOnePattern_IsOneQuestionAndFillsBothOccurrences()
+        {
+            // The memo doing its actual job, and the only shape that still puts the SAME
+            // (slot, intent, matched pattern) triple twice in one utterance now that rivals are
+            // not offered resolution. Ruling 9's "must be cheap" is the package's obligation as
+            // well as the game's: the hook runs inside the recognition callback, and one
+            // question must not be multiplied by the number of pattern elements that ask it.
+            //
+            // It is also the mirror's second skip, from the other side: HasUnfilledRequiredSlot
+            // answers on the FIRST unfilled occurrence, and TryResolveMissingSlots has to fill
+            // every one of them or the command it hands back is one the completeness rule still
+            // refuses.
+            //
+            // Thirteen elements, eleven matched and both {track} occurrences stranded:
+            // (11 x 1 - 2) / 13 = 0.692, clear of the 0.60 gate.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "helm",
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "bearing",
+                                "north",
+                                "east",
+                                "{track}",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return new VoxrSlotResolution("alpha", "main target");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText("helm launch all missiles from tube three at bearing north east");
+
+            Assert.AreEqual(
+                1,
+                calls,
+                "one distinct question, however many pattern elements put it — the memo is what "
+                    + "makes that true"
+            );
+            Assert.IsTrue(received.HasValue, "and the command resolves and fires");
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"));
+            Assert.AreEqual(
+                1,
+                received.Value.ResolvedSlots.Length,
+                "one question, one answer, ONE record — a second entry for the same name would be "
+                    + "a doubled row in the debug window and the session log, describing a fill "
+                    + "that happened once"
+            );
             Assert.IsTrue(
                 received.Value.HasSlot("track"),
-                "and the rival was offered the same resolution the winner was, so there really "
-                    + "were two candidates missing {track} in that one utterance"
+                "and one entry satisfies BOTH occurrences, which is why deduping is safe: "
+                    + "HasUnfilledRequiredSlot asks cmd.HasSlot(slotName) per pattern element, and "
+                    + "HasSlot is a lookup BY NAME (VoxrCommand.FindSlotIndex) — so the single "
+                    + "record answers every {track} in the pattern and the command is complete"
             );
-            Assert.AreEqual("india", received.Value.GetSlot("track"));
-            Assert.AreEqual("only hostile", received.Value.GetSlotResolutionReason("track"));
+        }
+
+        [Test]
+        public void Resolver_IsNotOfferedWhenTheMatchedPatternIndexIsOutOfRange()
+        {
+            // The third of the three guards TryResolveMissingSlots shares with
+            // HasUnfilledRequiredSlot, and the only one whose absence is an exception rather
+            // than a wrong answer.
+            //
+            // Reached through the duplicate-intent divergence (issue #113/#120): the parse wins
+            // on the FIRST definition's second pattern, while the command-set lookup keeps the
+            // LAST registration, which has one pattern. MatchedPatternIndex 1 applied to that
+            // definition is out of range — so both walks decline, the command counts as
+            // complete, and it fires exactly as it does with no resolver registered.
+            LogAssert.Expect(
+                LogType.Warning,
+                new Regex("Intent 'launch_weapon' is registered by 2 command definitions")
+            );
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[] { "cease", "fire" },
+                            new[]
+                            {
+                                "helm",
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                    // Last registration, so this is the one the lookup keeps — and it has a
+                    // single pattern, which is what puts index 1 out of range.
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[] { new[] { "standby" } },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return new VoxrSlotResolution("alpha", "main target");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            // (8 x 1 - 1) / 9 = 0.778, clear of the gate.
+            _recogniser.InjectText("helm launch all missiles from tube three at");
+
+            Assert.AreEqual(
+                0,
+                calls,
+                "a pattern index the definition cannot be read with is not a question — reading "
+                    + "it anyway is an IndexOutOfRangeException inside the recognition callback"
+            );
+            Assert.IsTrue(received.HasValue, "and the command fires, as it does with no resolver");
+            Assert.AreEqual(1, received.Value.MatchedPatternIndex, "on the second pattern");
+            Assert.IsFalse(
+                received.Value.HasSlot("track"),
+                "unresolved, because the same guard makes the completeness walk call it complete "
+                    + "— the two answers agree, which is the whole of the mirror"
+            );
         }
     }
 }

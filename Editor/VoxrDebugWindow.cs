@@ -361,8 +361,27 @@ namespace VoXR.Editor
             if (p.Command.Slots.Length > 0)
             {
                 EditorGUILayout.LabelField("Filled slots:", EditorStyles.miniLabel);
+                // A resolver-filled command reaches a PENDING too — by the confirmation route and
+                // by the disambiguation one — so this panel has to mark those slots exactly as
+                // the attempt panel below does. Unmarked, the author reads a value nobody spoke
+                // as one the speaker said, in the panel they open to find out what the speaker
+                // said. Same wording as DrawLastMatchBreakdown, deliberately: one vocabulary for
+                // one fact. A non-null reason IS the resolver-filled test (see
+                // VoxrCommand.GetSlotResolutionReason); empty means filled but unexplained.
                 foreach (var slot in p.Command.Slots)
+                {
+                    string resolutionReason = p.Command.GetSlotResolutionReason(slot.Name);
+                    if (resolutionReason != null)
+                    {
+                        string why =
+                            resolutionReason.Length > 0 ? $" — {resolutionReason}" : "";
+                        EditorGUILayout.LabelField(
+                            $"  {slot.Name} = \"{slot.Value}\"  filled by resolver{why}");
+                        continue;
+                    }
+
                     EditorGUILayout.LabelField($"  {slot.Name} = \"{slot.Value}\"");
+                }
             }
 
             if (p.UnfilledSlots != null && p.UnfilledSlots.Length > 0)

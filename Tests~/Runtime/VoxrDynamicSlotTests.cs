@@ -122,7 +122,7 @@ namespace VoXR.Tests.Runtime
         public void RegisterSlotResolver_NullSlotName_Throws()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                _recogniser.RegisterSlotResolver(null, () => VoxrSlotResolution.None));
+                _recogniser.RegisterSlotResolver(null, _ => VoxrSlotResolution.None));
         }
 
         [Test]
@@ -148,7 +148,7 @@ namespace VoXR.Tests.Runtime
         [Test]
         public void UnregisterSlotResolver_Registered_ReturnsTrue()
         {
-            _recogniser.RegisterSlotResolver("target", () => VoxrSlotResolution.None);
+            _recogniser.RegisterSlotResolver("target", _ => VoxrSlotResolution.None);
 
             Assert.IsTrue(_recogniser.UnregisterSlotResolver("target"));
         }
@@ -161,7 +161,7 @@ namespace VoXR.Tests.Runtime
             // "bearing" is in no slot definition and no pattern
             Assert.DoesNotThrow(() =>
                 _recogniser.RegisterSlotResolver("bearing",
-                    () => new VoxrSlotResolution("090", "unknown slot")));
+                    _ => new VoxrSlotResolution("090", "unknown slot")));
 
             VoxrCommand? received = null;
             _recogniser.OnCommandRecognised += cmd => received = cmd;
@@ -488,11 +488,11 @@ namespace VoXR.Tests.Runtime
 
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("alpha", "first resolver")
+                _ => new VoxrSlotResolution("alpha", "first resolver")
             );
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("bravo", "second resolver")
+                _ => new VoxrSlotResolution("bravo", "second resolver")
             );
 
             VoxrCommand? received = null;
@@ -536,7 +536,7 @@ namespace VoXR.Tests.Runtime
             string grammarBefore = _recogniser.TestGrammarJson;
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("alpha", "main target")
+                _ => new VoxrSlotResolution("alpha", "main target")
             );
             Assert.AreEqual(
                 grammarBefore,
@@ -566,7 +566,7 @@ namespace VoXR.Tests.Runtime
 
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("", "main target")
+                _ => new VoxrSlotResolution("", "main target")
             );
 
             VoxrCommand? received = null;
@@ -596,7 +596,7 @@ namespace VoXR.Tests.Runtime
             ConfigureResolvableSync(allowPartial: true);
 
             var boom = new InvalidOperationException("the game's resolver threw");
-            _recogniser.RegisterSlotResolver("track", () => throw boom);
+            _recogniser.RegisterSlotResolver("track", _ => throw boom);
 
             VoxrCommand? received = null;
             _recogniser.OnCommandRecognised += cmd => received = cmd;

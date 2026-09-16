@@ -753,7 +753,7 @@ namespace VoXR.Tests.Editor
             ConfigureResolvableSync();
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("alpha", "main target")
+                _ => new VoxrSlotResolution("alpha", "main target")
             );
 
             var words = VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunchOrder, 0.9f);
@@ -820,7 +820,7 @@ namespace VoXR.Tests.Editor
             // Registered only now, so nothing above it was resolved.
             _recogniser.RegisterSlotResolver(
                 "track",
-                () => new VoxrSlotResolution("alpha", "main target")
+                _ => new VoxrSlotResolution("alpha", "main target")
             );
 
             // Fills {tube} by voice and stops; {track} is not in this utterance.
