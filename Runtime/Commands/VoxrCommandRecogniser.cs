@@ -959,6 +959,23 @@ namespace VoXR.Commands
                     //
                     // A -1 confidence means no word data, which DISABLES the confidence gate
                     // rather than failing it, so it is not a reason to decline resolution.
+                    //
+                    // The debounce floor is measured as of the START of the utterance, and that
+                    // is a real limit rather than a rounding of one. This pass runs before Step 7
+                    // records any of THIS utterance's fires, so a later candidate sharing an
+                    // intent with one Step 7 has already accepted reads as off-cooldown here and
+                    // on-cooldown there: resolved for that reason, it skips Step 7's incomplete
+                    // branch and is dropped by the debounce, where unresolved it would have
+                    // entered pending and asked the speaker for the missing slot. What is lost is
+                    // the prompt, not the utterance — acceptedCount is already non-zero from the
+                    // sibling that fired, so OnUnrecognisedSpeech stays suppressed either way.
+                    //
+                    // Left rather than chased. Closing it means predicting here what Step 7 will
+                    // record later, and a gate that models another gate's future is a second
+                    // place for the two to disagree — the exact failure this whole three-floor
+                    // rule exists to prevent. The honest statement of the rule is therefore that
+                    // resolution moves no command across a gate as the gate stands when the
+                    // utterance arrives.
                     if (
                         candidate.Score < minScore
                         || (candidate.Confidence >= 0f && candidate.Confidence < minConfidence)

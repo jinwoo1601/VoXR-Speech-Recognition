@@ -2964,6 +2964,257 @@ namespace VoXR.Tests.Runtime
             );
         }
 
+        // ======== Ruling 3: a resolver never supplies a barred RIVAL's anchor (#148, F-2) ========
+        //
+        // PR #159's review found that TryBuildAmbiguity offered resolution to each sibling rival
+        // before adding it to the choice list, and the fix deletes those two lines outright. The
+        // test above pins that deletion on a rival whose missing slot is its pattern's TAIL,
+        // which is the COST half of the trade. This pair pins the HAZARD half: a rival whose
+        // missing slot is its own ANCHOR — the first element that credits MatchedRequired —
+        // which is the thing ruling 3 forbids absolutely and which nothing else in this suite
+        // constructs.
+        //
+        // Why the grammar below is shaped the way it is. None of it is decoration:
+        //
+        //   MIXED anchors. Siblings differ at exactly one required literal, so the only way two
+        //   of them can disagree about WHICH element is first-required is the {?track}/{track}
+        //   fold in NormalizeElement: both frames read "{track}", and both score the same,
+        //   because a matched slot credits MatchScore whether it was optional or required. Only
+        //   the REQUIRED one credits MatchedRequired. So with {target} elided, alpha has already
+        //   credited its anchor when it misses {target} and bravo has not — bravo latches
+        //   LeadingRequiredMissed, alpha never does. This is the same fold the three
+        //   MixedAnchorSet tests above rest on; what is new here is that the barred member's
+        //   unheard anchor is a SLOT, so a resolver is able to supply it.
+        //
+        //   Issue #126, "recorded, not gated". The bar stops a leading-missed candidate from
+        //   WINNING a round; it does not stop one being recorded as a tied rival, and a rival
+        //   fires by being chosen. So bravo really does reach a handler here.
+        //
+        //   Eight elements, because the tie has to clear the gate: both siblings match k
+        //   required elements after the anchor, miss the required {target} (-1) and miss their
+        //   own discriminator (0), over a denominator of k + 3 — so k / (k + 3) >= minScore, and
+        //   k = 5 gives 5/8 = 0.6250 against the 0.60 default. The four-element form the review
+        //   sketched ties nowhere: CompareCandidate refuses MissedRequired > MatchedRequired
+        //   before any comparison key is read. Do not shorten this grammar to tidy it.
+        //
+        // What must never happen: the resolver registered for {target} — the one the WINNER
+        // needs — filling the RIVAL's {target}. That would let game state supply the very anchor
+        // the bar refused. #126 ruled it acceptable for THE SPEAKER to supply a missing anchor by
+        // answering the question, never for the game to supply it from state.
+        //
+        // A later reader will be tempted to "simplify" this asymmetry away by resolving both
+        // sides, because the chosen rival visibly fires INCOMPLETE and that looks like the bug.
+        // It is not. An incomplete choice is a question answered badly; a resolved barred rival
+        // is a command that fires on words nobody said.
+
+        // disambiguateSiblingTies is frozen into the parser at Configure time, so it is set
+        // BEFORE Configure here, exactly as in the blocks above.
+        void ConfigureMixedAnchorWithAResolvableAnchor()
+        {
+            _recogniser.DisambiguateSiblingTies = true;
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "one" }),
+                    new VoxrSlotDefinition("target", new[] { "zulu" }),
+                },
+                new[]
+                {
+                    // Registered FIRST, so it takes the round: ties never displace an incumbent.
+                    // In the other order the barred member wins and the bar refuses it, and the
+                    // round yields nothing at all — no question, nothing to pin.
+                    new VoxrCommandDefinition(
+                        "set_course_alpha",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "{track}",
+                                "{target}",
+                                "set",
+                                "course",
+                                "for",
+                                "the",
+                                "gate",
+                                "alpha",
+                            },
+                        }
+                    ),
+                    new VoxrCommandDefinition(
+                        "set_course_bravo",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "{?track}",
+                                "{target}",
+                                "set",
+                                "course",
+                                "for",
+                                "the",
+                                "gate",
+                                "bravo",
+                            },
+                        }
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 1.5f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+        }
+
+        // {target} and the discriminator both elided. Both siblings score 5/8 = 0.6250 and tie
+        // on every CompareCandidate key (start index, score, consumed end, literal count —
+        // MatchedRequired is not among them), so bravo is recorded as alpha's tied rival.
+        const string BareGateOrder = "one set course for the gate";
+
+        // The control's utterance: the same order with {target} SPOKEN. Both siblings rise to
+        // 7/8 and still tie, but bravo's anchor now matches, so it latches nothing.
+        const string SpokenAnchorGateOrder = "one zulu set course for the gate";
+
+        [Test]
+        public void Resolver_NeverSuppliesTheAnchorOfALeadingMissedRival()
+        {
+            // The sibling set is warned about at Configure time. Matched loosely on purpose: the
+            // element index in that message is authoring trivia here, and pinning it would let
+            // this test fail for a reason unrelated to anything it asserts.
+            LogAssert.Expect(LogType.Warning, new Regex("differ only at element"));
+            ConfigureMixedAnchorWithAResolvableAnchor();
+
+            var asked = new List<VoxrSlotResolutionRequest>();
+            _recogniser.RegisterSlotResolver(
+                "target",
+                req =>
+                {
+                    asked.Add(req);
+                    return new VoxrSlotResolution("zulu", "the only hostile");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(BareGateOrder);
+            _recogniser.FlushPendingBuffer();
+
+            // The WINNER is resolved, and asserting that is what stops the rest of this test
+            // being vacuous rather than a second way of writing "no resolver ran at all". alpha
+            // misses {target} exactly as bravo does; unresolved it is incomplete, Step 7's
+            // completeness branch takes it, and the disambiguation branch below is never reached
+            // — no question, no choice list, no rival to fire. The same resolver that opens the
+            // door is the one that must not fill the rival's anchor.
+            Assert.AreEqual(1, asked.Count, "exactly one candidate is offered resolution");
+            Assert.AreEqual(
+                "set_course_alpha",
+                asked[0].Intent,
+                "and it is the round WINNER — the rival is never asked about"
+            );
+            Assert.AreEqual("target", asked[0].SlotName);
+
+            Assert.IsFalse(received.HasValue, "nothing fires while the question is open");
+            Assert.IsNotNull(_recogniser.PendingAmbiguity, "it is an ambiguity, not a confirmation");
+            CollectionAssert.AreEqual(
+                new[] { "alpha", "bravo" },
+                _recogniser.PendingAmbiguity.Value.DiscriminatingValues,
+                "both siblings are offered, in registration order"
+            );
+
+            // The asymmetry, read straight off the list the speaker is choosing from.
+            var choices = _recogniser.PendingAmbiguity.Value.Choices;
+            Assert.AreEqual("set_course_alpha", choices[0].Intent);
+            Assert.IsTrue(
+                choices[0].HasSlot("target"),
+                "the winner carries the slot the resolver filled — {target} is not its anchor, "
+                    + "and the bar guarantees structurally that a winner's anchor was heard"
+            );
+            Assert.AreEqual("set_course_bravo", choices[1].Intent);
+            Assert.IsFalse(
+                choices[1].HasSlot("target"),
+                "the rival, whose ANCHOR that same slot is, does not"
+            );
+
+            // Answered with the RIVAL's discriminator, which is the live fire path #126 ruled
+            // recorded-not-gated: a leading-missed candidate cannot win a round, but it can fire
+            // by being picked.
+            Answer("bravo");
+
+            Assert.IsTrue(received.HasValue, "the barred rival fires when the speaker picks it");
+            Assert.AreEqual("set_course_bravo", received.Value.Intent);
+            Assert.AreEqual(1, asked.Count, "and answering asks the game nothing further");
+            Assert.IsFalse(
+                received.Value.HasSlot("target"),
+                "it fires INCOMPLETE — its first required element came from neither the speaker "
+                    + "nor the game, which is the cost the fix accepts knowingly"
+            );
+            Assert.AreEqual(
+                0,
+                received.Value.ResolvedSlots.Length,
+                "nothing on it is resolver-filled: ruling 3 holds"
+            );
+        }
+
+        [Test]
+        public void Resolver_NeverSuppliesTheAnchorOfALeadingMissedRival_ControlWithTheAnchorSpoken()
+        {
+            // The control, shipped beside the test rather than left in a PR body. A zero
+            // assertion proves nothing on its own — a grammar that refuses everything satisfies
+            // it just as well — so this is the discriminating input: same grammar, same
+            // resolver, same answer, and the ONE difference is that {target} is spoken. bravo's
+            // anchor then matches, it latches nothing, and the slot the test above finds missing
+            // is present. That is what makes the zero above the leading-miss bar rather than an
+            // unrelated refusal or a pattern that could never carry the slot.
+            LogAssert.Expect(LogType.Warning, new Regex("differ only at element"));
+            ConfigureMixedAnchorWithAResolvableAnchor();
+
+            var asked = new List<VoxrSlotResolutionRequest>();
+            _recogniser.RegisterSlotResolver(
+                "target",
+                req =>
+                {
+                    asked.Add(req);
+                    return new VoxrSlotResolution("zulu", "the only hostile");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(SpokenAnchorGateOrder);
+            _recogniser.FlushPendingBuffer();
+
+            Assert.IsFalse(received.HasValue, "the tie is still a tie, and still asked about");
+            Assert.IsNotNull(_recogniser.PendingAmbiguity);
+            CollectionAssert.AreEqual(
+                new[] { "alpha", "bravo" },
+                _recogniser.PendingAmbiguity.Value.DiscriminatingValues,
+                "the same two choices, reached the same way"
+            );
+            Assert.AreEqual(
+                0,
+                asked.Count,
+                "neither candidate is incomplete now, so no resolver is consulted at all"
+            );
+
+            Answer("bravo");
+
+            Assert.IsTrue(received.HasValue);
+            Assert.AreEqual("set_course_bravo", received.Value.Intent);
+            Assert.IsTrue(
+                received.Value.HasSlot("target"),
+                "the rival carries the slot when the SPEAKER supplied it — so what is missing "
+                    + "above is an anchor that went unheard, not a pattern unable to carry it"
+            );
+            Assert.AreEqual("zulu", received.Value.GetSlot("target"));
+            Assert.AreEqual(
+                0,
+                received.Value.ResolvedSlots.Length,
+                "and it is the speaker's word, not the resolver's. The resolver above answers "
+                    + "with the same value on purpose, so ResolvedSlots is the only thing that "
+                    + "tells the two sources apart"
+            );
+        }
+
         // ======== The per-utterance memo (issue #148, PR #159 review) ========
 
         [Test]
