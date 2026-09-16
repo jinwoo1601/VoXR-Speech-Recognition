@@ -44,10 +44,36 @@ namespace VoXR.Commands
 
         public readonly int MatchedPatternIndex;
 
+        // Append-last is an invariant, not an implementation detail: a resolver-filled slot is
+        // always appended after the parser's matched slots in Slots, never interleaved, because
+        // the Editor diagnostics index-match Slots[s] against the parser's per-slot word spans.
+        // Interleaving would silently mislabel every diagnostic slot after the first resolved one,
+        // and it is what lets the matched count be recovered as Slots.Length - ResolvedSlots.Length.
+        /// <summary>
+        /// The slots a registered resolver filled because the speaker omitted them, each with the
+        /// reason the resolver gave. Empty for a command whose slots were all spoken.
+        /// </summary>
+        /// <remarks>
+        /// The values live in <see cref="Slots"/> alongside the spoken ones, so a handler that
+        /// does not care reads them through <see cref="GetSlot"/> and never learns the difference.
+        /// </remarks>
+        public readonly VoxrResolvedSlot[] ResolvedSlots;
+
         readonly string[] _registeredSlotNames;
 
         public VoxrCommand(string intent, VoxrSlotMatch[] slots, float confidence, float score,
             string rawText, string[] registeredSlotNames = null, int matchedPatternIndex = -1)
+            : this(intent, slots, confidence, score, rawText, registeredSlotNames,
+                matchedPatternIndex, null)
+        { }
+
+        // The all-fields constructor the copy-withs below route through. It is private rather than
+        // an added optional parameter on the public one because ResolvedSlots is filled inside the
+        // package only: keeping it off the public signature means no existing construction site
+        // has to be read or edited to gain it.
+        VoxrCommand(string intent, VoxrSlotMatch[] slots, float confidence, float score,
+            string rawText, string[] registeredSlotNames, int matchedPatternIndex,
+            VoxrResolvedSlot[] resolvedSlots)
         {
             Intent = intent;
             Slots = slots ?? Array.Empty<VoxrSlotMatch>();
@@ -56,6 +82,7 @@ namespace VoXR.Commands
             RawText = rawText;
             MatchedPatternIndex = matchedPatternIndex;
             _registeredSlotNames = registeredSlotNames;
+            ResolvedSlots = resolvedSlots ?? Array.Empty<VoxrResolvedSlot>();
         }
 
         // A copy carrying a different score (issue #113), for re-arming a pending with a fill
@@ -66,7 +93,16 @@ namespace VoXR.Commands
         internal VoxrCommand WithScore(float score)
         {
             return new VoxrCommand(Intent, Slots, Confidence, score, RawText,
-                _registeredSlotNames, MatchedPatternIndex);
+                _registeredSlotNames, MatchedPatternIndex, ResolvedSlots);
+        }
+
+        // A copy whose slots include the resolver-filled ones, for the resolution pass. Same
+        // reason as WithScore for living here, plus one of its own: Slots and ResolvedSlots have
+        // to move together or the append-last invariant above is broken by the caller.
+        internal VoxrCommand WithResolvedSlots(VoxrSlotMatch[] slots, VoxrResolvedSlot[] resolved)
+        {
+            return new VoxrCommand(Intent, slots, Confidence, Score, RawText,
+                _registeredSlotNames, MatchedPatternIndex, resolved);
         }
 
         /// <summary>
@@ -120,6 +156,27 @@ namespace VoXR.Commands
         /// <see cref="GetSlot"/> for the value and the shape it takes.
         /// </summary>
         public bool HasSlot(string name) => FindSlotIndex(name) >= 0;
+
+        /// <summary>
+        /// Returns the reason a registered resolver gave for filling the named slot, or null if
+        /// the slot was spoken, unfilled, or never declared.
+        /// </summary>
+        /// <remarks>
+        /// A non-null return always means the slot was resolver-filled rather than spoken -- that
+        /// is the one question this answers, and it is why there is no separate
+        /// <c>IsSlotResolved</c>. A resolver may leave its reason unstated, in which case the
+        /// return is <see cref="string.Empty"/>: still resolver-filled, just unexplained. Test the
+        /// return against null, never against emptiness.
+        /// </remarks>
+        public string GetSlotResolutionReason(string name)
+        {
+            for (int i = 0; i < ResolvedSlots.Length; i++)
+            {
+                if (string.Equals(ResolvedSlots[i].Name, name, StringComparison.Ordinal))
+                    return ResolvedSlots[i].Reason;
+            }
+            return null;
+        }
 
         int FindSlotIndex(string name)
         {

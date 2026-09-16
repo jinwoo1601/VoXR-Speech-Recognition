@@ -131,14 +131,27 @@ namespace VoXR.Commands
 
         public readonly float Confidence;
 
+        /// <summary>
+        /// The reason a registered resolver gave for filling this slot from game state ("main
+        /// target"), or null when the speaker said it. Its presence <em>is</em> the distinction —
+        /// the same shape <see cref="VoxrMatchAttempt.Barred"/> took. A resolver-filled slot was
+        /// never spoken, so it has no word span: <see cref="StartWord"/>, <see cref="EndWord"/>
+        /// and <see cref="Confidence"/> are all -1 on one.
+        /// </summary>
+        public readonly string ResolutionReason;
+
+        // Optional and trailing, like VoxrMatchAttempt's `barred`: every existing construction
+        // site describes a spoken slot and stays unedited.
         public VoxrDiagnosticSlotMatch(string name, string value,
-            int startWord, int endWord, float confidence)
+            int startWord, int endWord, float confidence,
+            string resolutionReason = null)
         {
             Name = name;
             Value = value;
             StartWord = startWord;
             EndWord = endWord;
             Confidence = confidence;
+            ResolutionReason = resolutionReason;
         }
     }
 }

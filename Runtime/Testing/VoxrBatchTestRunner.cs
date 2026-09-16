@@ -201,6 +201,20 @@ namespace VoXR.Testing
             // same reason it is independent of score there. Without it this harness would report
             // PASS for an utterance the runtime refuses — certifying a grammar against behaviour
             // the user will never see, on exactly the case the runtime fix exists to catch.
+            //
+            // It is no longer fully in step, and cannot be brought back into step here (#148).
+            // A registered slot resolver lets the runtime fill a required slot the speaker
+            // omitted, from game state, and that registry lives on VoxrCommandRecogniser: this
+            // harness builds its own parser with no recogniser behind it, so it has nothing to
+            // consult and rules on the utterance alone. Against a grammar whose game registers a
+            // resolver for a slot, the verdict below is the exact inverse of the failure the
+            // paragraph above describes — "required slot unfilled" for an utterance the runtime
+            // fires. Read a FAIL carrying that reason as "incomplete as spoken", not as "will not
+            // fire", and check whether the game resolves that slot before changing the grammar.
+            //
+            // Not fixed here deliberately: a resolver is game code, a corpus run has no game
+            // running, and wiring a registry through is a feature of its own rather than a line
+            // in this method.
             if (
                 _defsByIntent.TryGetValue(cmd.Intent, out var def)
                 && VoxrCommandParser.HasUnfilledRequiredSlot(cmd, def)

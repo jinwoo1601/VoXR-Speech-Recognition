@@ -1,8 +1,10 @@
 // ============================================================================
-// Purpose:  Manages runtime slot value providers that filter which values the parser accepts
+// Purpose:  Holds the two runtime slot registries: value providers that filter which values the
+//           parser accepts, and resolvers that fill a required slot the speaker omitted
 // Layer:    Runtime.Commands
-// Owns:     DynamicSlotManager (internal sealed class)
-// Depends:  VoxrSlotDefinition, VoxrSlotType
+// Owns:     DynamicSlotManager (internal sealed class: the provider and resolver registries)
+// Depends:  VoxrSlotDefinition, VoxrSlotType, VoxrSlotResolutionRequest,
+//           VoxrSlotResolution
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,16 @@ namespace VoXR.Commands
     internal sealed class DynamicSlotManager
     {
         Dictionary<string, Func<string[]>> _providers;
+
+        // Resolvers are a second registry rather than entries in _providers because the two answer
+        // different questions at different moments: a provider narrows what the parser will MATCH
+        // and takes effect only on a parser rebuild, while a resolver fills what the parser did
+        // NOT match and needs no rebuild at all. Merging them would tie a resolver's registration
+        // to a grammar rebuild it has no reason to trigger.
+        // Keyed by slot name alone, deliberately: the ASK carries which command is asking
+        // (VoxrSlotResolutionRequest), the REGISTRATION stays per-slot, so a game registers one
+        // delegate for `{track}` and decides inside it which intents it will answer for.
+        Dictionary<string, Func<VoxrSlotResolutionRequest, VoxrSlotResolution>> _resolvers;
 
         internal bool HasProviders => _providers != null && _providers.Count > 0;
 
@@ -91,6 +103,45 @@ namespace VoXR.Commands
             }
 
             return effective ?? baseSlots;
+        }
+
+        internal bool HasResolvers => _resolvers != null && _resolvers.Count > 0;
+
+        internal void RegisterResolver(
+            string slotName,
+            Func<VoxrSlotResolutionRequest, VoxrSlotResolution> resolver
+        )
+        {
+            if (slotName == null) throw new ArgumentNullException(nameof(slotName));
+            if (resolver == null) throw new ArgumentNullException(nameof(resolver));
+
+            if (_resolvers == null)
+                _resolvers = new Dictionary<
+                    string,
+                    Func<VoxrSlotResolutionRequest, VoxrSlotResolution>
+                >(StringComparer.Ordinal);
+
+            _resolvers[slotName] = resolver;
+        }
+
+        internal bool UnregisterResolver(string slotName)
+        {
+            if (slotName == null) throw new ArgumentNullException(nameof(slotName));
+            return _resolvers != null && _resolvers.Remove(slotName);
+        }
+
+        internal bool TryGetResolver(
+            string slotName,
+            out Func<VoxrSlotResolutionRequest, VoxrSlotResolution> resolver
+        )
+        {
+            if (_resolvers == null)
+            {
+                resolver = null;
+                return false;
+            }
+
+            return _resolvers.TryGetValue(slotName, out resolver);
         }
     }
 }

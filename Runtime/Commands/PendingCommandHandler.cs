@@ -189,7 +189,16 @@ namespace VoXR.Commands
 
             _followUpSlotBuf.Clear();
             var existingSlots = pending.Command.Slots;
-            for (int i = 0; i < existingSlots.Length; i++)
+
+            // Only the MATCHED prefix goes in ahead of the fill. VoxrCommand.ResolvedSlots is
+            // append-last: any resolver-filled slot sits at the tail of Slots, and the tail is
+            // re-appended after the fill below so it stays there. Copying the whole array in
+            // here would let this utterance's spoken fills land after the resolved ones and
+            // break the invariant that makes Slots.Length - ResolvedSlots.Length the matched
+            // count. Identical to the old whole-array copy on every reachable input today —
+            // a partial-match pending carries no resolved slots (see the return below).
+            int matchedCount = existingSlots.Length - pending.Command.ResolvedSlots.Length;
+            for (int i = 0; i < matchedCount; i++)
                 _followUpSlotBuf.Add(existingSlots[i]);
 
             int tokenIdx = 0;
@@ -218,8 +227,14 @@ namespace VoXR.Commands
             }
 
             // Must have filled at least one new slot
-            if (_followUpSlotBuf.Count == existingSlots.Length)
+            if (_followUpSlotBuf.Count == matchedCount)
                 return null;
+
+            // The resolved tail, back on the end where the invariant needs it — and ahead of
+            // ScoreFollowUp, which scored against the full slot set before this split and must
+            // go on doing so.
+            for (int i = matchedCount; i < existingSlots.Length; i++)
+                _followUpSlotBuf.Add(existingSlots[i]);
 
             float followUpConf = VoxrCommandParser.ComputeConfidence(
                 tokens, 0, tokens.Length, wordConfidence);
@@ -243,7 +258,22 @@ namespace VoXR.Commands
                 pending.Command.Intent, pending.Command.MatchedPatternIndex,
                 _followUpSlotBuf);
 
-            return new VoxrCommand(
+            // Routed through the copy-with rather than returned straight from the public
+            // constructor, which cannot carry ResolvedSlots and would silently drop it — the
+            // same contract gap WithScore's comment says that copy-with exists to close for
+            // _registeredSlotNames.
+            //
+            // Unreachable today: a pending in the PartialMatch state is one Step 3b declined to
+            // resolve (all-or-nothing, so a resolved candidate never enters pending missing an
+            // argument), and the confirmation and disambiguation states do not reach this method
+            // at all. It is written for the record's sake anyway, because the failure it would
+            // cause is silent: the values stay in Slots and only the PROVENANCE is lost, so the
+            // command still fires correctly while the debug window, the session log and
+            // GetSlotResolutionReason all report a resolver-filled slot as spoken. Nothing
+            // asserts, nothing logs, and the matched count recovered as
+            // Slots.Length - ResolvedSlots.Length silently starts counting a resolved slot as
+            // matched.
+            var merged = new VoxrCommand(
                 pending.Command.Intent,
                 slotsArray,
                 mergedConfidence,
@@ -251,6 +281,8 @@ namespace VoXR.Commands
                 pending.Command.RawText + " " + text,
                 null,
                 pending.Command.MatchedPatternIndex);
+
+            return merged.WithResolvedSlots(slotsArray, pending.Command.ResolvedSlots);
         }
 
         // A follow-up that filled some — but not all — of the still-unfilled required slots.

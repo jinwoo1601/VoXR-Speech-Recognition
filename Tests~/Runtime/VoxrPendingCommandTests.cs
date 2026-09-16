@@ -1874,7 +1874,783 @@ namespace VoXR.Tests.Runtime
             );
         }
 
+        // ======== Slot resolver x pending machinery (issue #148, Phase 2) ========
+
+        // The resolver rows need an incomplete candidate that CLEARS minScore, which this
+        // fixture's own MakeCommands cannot give: a resolver is offered only a candidate that
+        // already passed the score gate (F7, made explicit by D-5), and `launch {weapon} target
+        // {target}` with its trailing slot stranded scores 0.50 against a 0.60 gate. A resolver
+        // test built on that shape asserts the SCORE gate's silence and calls it the resolver's.
+        //
+        // Eight elements, seven matched and {track} stranded: (7 x 1 - 1) / 8 = 0.75 — the same
+        // arithmetic PartialMatch_AboveGateButIncomplete_EntersPendingInsteadOfFiring derives,
+        // and above the gate by a margin rather than on it.
+        const string BareLaunch = "launch all missiles from tube three at";
+
+        // The same grammar two slots short instead of one: {tube} and {track} both stranded, for
+        // (6 x 1 - 2) / 8 = 0.50. BELOW the gate, so it is the ordinary allowPartialMatch pending
+        // and no resolution is offered to it — which is what makes it a clean way to get a live
+        // pending underneath a later utterance.
+        const string PartialLaunch = "launch all missiles from tube at";
+
+        void ConfigureResolvableSync(bool allowPartial = true, bool requiresConfirm = false)
+        {
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartial,
+                        requiresConfirm
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+        }
+
+        [Test]
+        public void Resolver_ReturnsNone_StillEntersPendingWithTheSlotUnfilled()
+        {
+            // #148(b) and F13: not resolved means today's behaviour, unchanged. The resolver is
+            // registered and IS consulted — it simply answers "I do not know" — so this is the
+            // difference between a feature that declines and a feature that is absent.
+            ConfigureResolvableSync(allowPartial: true);
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return VoxrSlotResolution.None;
+                }
+            );
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            _recogniser.InjectText(BareLaunch);
+
+            Assert.AreEqual(1, calls, "the resolver was asked, and answered nothing");
+            Assert.IsFalse(recognised.HasValue, "so nothing fires");
+            Assert.IsTrue(pending.HasValue, "and the speaker is asked, exactly as before");
+            Assert.IsFalse(pending.Value.HasSlot("track"));
+            Assert.AreEqual(0, pending.Value.ResolvedSlots.Length);
+            Assert.IsNull(
+                unrecognised,
+                "and the integrator is not told the speech was not understood in the same frame "
+                    + "it was asked to prompt about it"
+            );
+
+            var stored = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(stored.HasValue);
+            Assert.AreEqual(
+                new[] { "track" },
+                stored.Value.UnfilledSlots,
+                "and the pending's own unfilled list is untouched by the refusal"
+            );
+        }
+
+        [Test]
+        public void Resolver_ReturnsNone_WithoutAllowPartialMatch_IsStillRejected()
+        {
+            // F13's other arm. The resolver here returns `default` rather than the named None, to
+            // pin F4's claim that a resolver which returns nothing needs no ceremony.
+            ConfigureResolvableSync(allowPartial: false);
+
+            _recogniser.RegisterSlotResolver("track", _ => default(VoxrSlotResolution));
+
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            _recogniser.InjectText(BareLaunch);
+
+            Assert.IsFalse(recognised.HasValue, "nothing fires");
+            Assert.IsFalse(pending.HasValue, "and without the flag nothing is held open either");
+            Assert.AreEqual(BareLaunch, unrecognised, "the utterance is reported unrecognised");
+        }
+
+        [Test]
+        public void Resolver_ForOnlyOneOfTwoMissingSlots_FillsNeitherAndPendsWithBothUnfilled()
+        {
+            // F8, all-or-nothing. A partial application would fire nothing either — the command
+            // is still incomplete — so the observable difference is in the PENDING: a half-filled
+            // pending asks the speaker one fewer question than it should, and the slot the game
+            // silently filled is never spoken about again.
+            //
+            // Twelve elements, ten matched and {tube} and {track} both stranded:
+            // (10 x 1 - 2) / 12 = 0.667, clear of the 0.60 gate, so D-5 does not decline this
+            // candidate before all-or-nothing gets to. The eight-element pattern above cannot be
+            // used: two slots short it scores 0.50 and the score gate would answer for the rule
+            // under test. No token of the utterance is a {tube} or {quantity} value except the
+            // one meant for it, so there is nothing later in the sentence for a stranded slot to
+            // reach forward and claim.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all" }),
+                    new VoxrSlotDefinition("tube", new[] { "three", "four" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "helm",
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "bearing",
+                                "north",
+                                "east",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            // Only {track} has a resolver. {tube} has none, so nothing may be applied.
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+
+            _recogniser.InjectText("helm launch all missiles from tube at bearing north east");
+
+            Assert.IsFalse(recognised.HasValue, "a command two slots short still does not fire");
+            Assert.IsTrue(pending.HasValue, "it goes to slot-fill, as it did before the feature");
+            Assert.GreaterOrEqual(
+                pending.Value.Score,
+                _recogniser.MinScore,
+                "and it must CLEAR the score gate, or D-5 declined it and all-or-nothing was "
+                    + "never the rule that answered"
+            );
+            Assert.IsFalse(
+                pending.Value.HasSlot("track"),
+                "the one slot that COULD resolve is left unfilled, because the other could not"
+            );
+            Assert.IsFalse(pending.Value.HasSlot("tube"));
+            Assert.AreEqual(
+                0,
+                pending.Value.ResolvedSlots.Length,
+                "and the command reports nothing as resolver-filled"
+            );
+
+            var stored = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(stored.HasValue);
+            Assert.AreEqual(
+                new[] { "tube", "track" },
+                stored.Value.UnfilledSlots,
+                "both slots are still outstanding — the speaker is asked about everything they "
+                    + "were asked about before the feature existed"
+            );
+        }
+
+        [Test]
+        public void Resolver_OnACommandRequiringConfirmation_StillAsksBeforeFiring()
+        {
+            // F12. Resolution changes exactly one thing, the completeness answer; it may not move
+            // a command across any other gate. The confirmation gate is the one a speaker would
+            // notice being skipped, because the command it skips is a command they never
+            // completed out loud.
+            ConfigureResolvableSync(allowPartial: true, requiresConfirm: true);
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+
+            _recogniser.InjectText(BareLaunch);
+
+            Assert.IsFalse(
+                recognised.HasValue,
+                "a resolved command is still only a command — it asks before it fires"
+            );
+            Assert.IsTrue(pending.HasValue, "the confirmation is requested");
+            Assert.IsTrue(_recogniser.HasPendingCommand);
+            Assert.AreEqual(
+                "alpha",
+                pending.Value.GetSlot("track"),
+                "and the command it is asking about already carries the resolved argument"
+            );
+
+            _recogniser.InjectText("confirm");
+
+            Assert.IsTrue(recognised.HasValue, "and confirming fires it");
+            Assert.AreEqual(
+                "alpha",
+                recognised.Value.GetSlot("track"),
+                "still carrying the resolution across the gate"
+            );
+            Assert.AreEqual("main target", recognised.Value.GetSlotResolutionReason("track"));
+        }
+
+        [Test]
+        public void Resolver_BelowMinScoreWithAllowPartialMatch_StillEntersPendingUnfilled()
+        {
+            // D-5's regression guard, and it is a guard on EXISTING behaviour rather than a test
+            // of the resolver — which is why every assertion below is about the pending.
+            //
+            // Without the score gate on the resolution pass, this candidate resolves, its
+            // unfilled-slot list comes back empty, the allowPartialMatch branch is skipped
+            // because there is nothing to prompt for, and the command falls through to the
+            // REJECT — turning a pending into an unrecognised utterance. That is resolution
+            // moving a command across a gate other than completeness, which F13 forbids and the
+            // one rule of architecture section 2 forbids in general.
+            //
+            // Reuses the fixture's own four-element grammar precisely because it scores 0.50:
+            // "launch missiles target" is below the 0.60 gate with {target} stranded, which is
+            // the shape the guard is about.
+            ConfigureSync(allowPartial: true);
+
+            _recogniser.RegisterSlotResolver(
+                "target",
+                _ => new VoxrSlotResolution("hotel one", "main target")
+            );
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            _recogniser.InjectText("launch missiles target");
+
+            Assert.IsTrue(pending.HasValue, "the below-gate incomplete command still pends");
+            Assert.Less(
+                pending.Value.Score,
+                _recogniser.MinScore,
+                "and it is genuinely below the gate, or this guards nothing"
+            );
+            Assert.IsFalse(
+                pending.Value.HasSlot("target"),
+                "with its slot unfilled: a resolver may not reach a candidate the gate refused"
+            );
+            Assert.IsFalse(recognised.HasValue);
+            Assert.IsNull(unrecognised, "and it is not rejected");
+            Assert.IsTrue(_recogniser.HasPendingCommand);
+        }
+
+        [Test]
+        public void Resolver_CompletesAFollowUpFill_FiresInsteadOfReArmingThePending()
+        {
+            // F11's second half, and D-3. The speaker fills one of the two outstanding slots by
+            // voice; the game knows the other. Without resolution on this site the pending
+            // re-arms and asks again for something the game could have answered — and the SAME
+            // utterance would have completed had no pending been live, which is the invisible
+            // split section 6 argues against.
+            ConfigureResolvableSync(allowPartial: true);
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+
+            _recogniser.InjectText(PartialLaunch);
+            Assert.IsTrue(pending.HasValue, "two slots short, so a pending opens");
+            var stored = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(stored.HasValue);
+            Assert.AreEqual(new[] { "tube", "track" }, stored.Value.UnfilledSlots);
+
+            // Registered only now, so the pending above is the pre-feature one in every respect.
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            // Fills {tube} by voice and stops: {track} is not in this utterance. Before the
+            // feature that is a re-arm (issue #77), because the fill is progress and not the
+            // command.
+            _recogniser.InjectText("three");
+
+            Assert.IsTrue(
+                recognised.HasValue,
+                "the follow-up completes the command instead of re-arming the pending"
+            );
+            Assert.AreEqual("three", recognised.Value.GetSlot("tube"), "the spoken fill");
+            Assert.AreEqual("alpha", recognised.Value.GetSlot("track"), "and the resolved one");
+            Assert.AreEqual("main target", recognised.Value.GetSlotResolutionReason("track"));
+            Assert.IsNull(
+                recognised.Value.GetSlotResolutionReason("tube"),
+                "the slot the speaker filled is not reported as resolver-filled"
+            );
+            Assert.IsFalse(_recogniser.HasPendingCommand, "and the question is closed");
+        }
+
+        [Test]
+        public void Resolver_WithAPendingLive_ProducesTheSameOutcomeAsWithNone()
+        {
+            // F11's first half. The failure it guards is not a crash: it is the same utterance,
+            // with the same resolvers and the same grammar, producing a different outcome
+            // depending only on whether a pending happened to be live — and nothing in the
+            // suite, the session log or the debug window would show it.
+            ConfigureResolvableSync(allowPartial: true);
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            // With no pending live.
+            _recogniser.InjectText(BareLaunch);
+            Assert.IsTrue(recognised.HasValue, "the resolved command fires");
+            var withoutPending = recognised.Value;
+            Assert.IsFalse(_recogniser.HasPendingCommand);
+
+            // Now put a pending underneath it. This one is below the gate and two slots short, so
+            // no resolution reaches it and it is the ordinary allowPartialMatch pending.
+            recognised = null;
+            pending = null;
+            _recogniser.InjectText(PartialLaunch);
+            Assert.IsTrue(pending.HasValue, "a pending is live");
+            Assert.IsTrue(_recogniser.HasPendingCommand);
+
+            // The identical utterance, spoken over it.
+            _recogniser.InjectText(BareLaunch);
+
+            Assert.IsTrue(recognised.HasValue, "and it still fires");
+            var withPending = recognised.Value;
+
+            Assert.AreEqual(withoutPending.Intent, withPending.Intent);
+            Assert.AreEqual(withoutPending.GetSlot("track"), withPending.GetSlot("track"));
+            Assert.AreEqual(
+                withoutPending.GetSlotResolutionReason("track"),
+                withPending.GetSlotResolutionReason("track")
+            );
+            Assert.AreEqual(withoutPending.Score, withPending.Score, 1e-5f);
+            // The sharpest of the four. A command that came through the follow-up path instead
+            // carries the pending's transcript glued to this one's, so this is what says the same
+            // utterance was read the same way rather than merely landing on the same intent.
+            Assert.AreEqual(
+                withoutPending.RawText,
+                withPending.RawText,
+                "the same utterance, read as the same utterance — not merged into the pending's"
+            );
+            Assert.IsFalse(
+                _recogniser.HasPendingCommand,
+                "the pending's own cancellation is the only difference F11 allows"
+            );
+        }
+
+        [Test]
+        public void Resolver_ThatCancelsThePending_DoesNotThrow()
+        {
+            // D-15. Step 3b is the first game code ever to run between the follow-up fill and its
+            // use, and "cancel the pending and ask the crew myself" is a plausible thing for a
+            // game's resolver to do. The fill was merged INTO that pending, so every read in the
+            // follow-up branch assumes it is still there — including the shipped Complete(...)
+            // one, which is why guarding the new read alone would leave a safe new path beside a
+            // crashing old one.
+            //
+            // The resolver answers None deliberately: a resolution would make the fresh candidate
+            // complete, Step 4 would preempt, and the follow-up branch — the one that dereferences
+            // the pending — would never be entered at all.
+            ConfigureResolvableSync(allowPartial: true);
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.InjectText(PartialLaunch);
+            Assert.IsTrue(pending.HasValue, "a pending is live and {tube} is fillable from below");
+            Assert.IsTrue(_recogniser.HasPendingCommand);
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    _recogniser.CancelPendingCommand();
+                    return VoxrSlotResolution.None;
+                }
+            );
+
+            // The utterance carries a {tube} value, so the follow-up slot-fill produces a result
+            // before the resolver is ever called — which is the precondition of the hazard.
+            Assert.DoesNotThrow(() => _recogniser.InjectText(BareLaunch));
+
+            Assert.AreEqual(1, calls, "the resolver ran, so the pending really was cancelled");
+            Assert.IsTrue(
+                _recogniser.HasPendingCommand,
+                "and the utterance still ran to its own end: the fresh candidate is incomplete "
+                    + "and opens a pending of its own"
+            );
+            var stored = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(stored.HasValue);
+            Assert.AreEqual(
+                new[] { "track" },
+                stored.Value.UnfilledSlots,
+                "the NEW candidate's pending, not the cancelled one resurrected"
+            );
+        }
+
+        [Test]
+        public void Resolver_ThatCancelsThePendingFromTheFollowUpSite_DoesNotThrow()
+        {
+            // The blocker (F-1), and the site Resolver_ThatCancelsThePending_DoesNotThrow above
+            // cannot reach. That one covers Step 3b's discard; this covers Step 5's own
+            // resolution attempt, which is routinely the utterance's FIRST resolver call — Step
+            // 3b resolves nothing at all when the parse produced no results, so the discard at
+            // the top of the method cannot have covered this.
+            //
+            // The follow-up utterance parses to ZERO results deliberately: "three" is a {tube}
+            // value and nothing else, so no round scores above zero and Step 3b is skipped
+            // entirely. What reaches the resolver is the Step 5 attempt, and by returning a
+            // VALUE it takes the arm that ends in _pending.Complete(...) — which dereferences a
+            // pending its own resolver has just cleared.
+            ConfigureResolvableSync(allowPartial: true);
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.InjectText(PartialLaunch);
+            Assert.IsTrue(pending.HasValue, "precondition: a pending two slots short");
+            Assert.IsTrue(_recogniser.HasPendingCommand);
+
+            int calls = 0;
+            VoxrCommand? cancelled = null;
+            _recogniser.OnCommandCancelled += cmd => cancelled = cmd;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    _recogniser.CancelPendingCommand();
+                    return new VoxrSlotResolution("alpha", "asking the crew myself");
+                }
+            );
+
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            Assert.DoesNotThrow(() => _recogniser.InjectText("three"));
+
+            Assert.AreEqual(1, calls, "the resolver ran, so the pending really was cancelled");
+            Assert.IsTrue(cancelled.HasValue, "and the cancellation reached the integrator");
+            Assert.IsFalse(_recogniser.HasPendingCommand, "the pending is gone, not resurrected");
+            Assert.IsFalse(
+                recognised.HasValue,
+                "the fill was merged INTO the pending the resolver cancelled, so there is nothing "
+                    + "left to complete"
+            );
+            Assert.AreEqual(
+                "three",
+                unrecognised,
+                "and the utterance falls out of the follow-up branch and runs to its own end — "
+                    + "returning here would hand the speaker silence after their own game "
+                    + "cancelled the exchange"
+            );
+        }
+
+        [Test]
+        public void Resolver_ThatCancelsThePendingFromTheFollowUpSite_DoesNotThrowWhenItRefuses()
+        {
+            // F-1's other arm. A resolver that answers None short-circuits TryResolveMissingSlots
+            // before the completeness re-test, so the branch below takes AdvanceSlotFill rather
+            // than Complete — a different dereference of the same cleared pending, and it threw
+            // too. Guarding one read would have left the other.
+            ConfigureResolvableSync(allowPartial: true);
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.InjectText(PartialLaunch);
+            Assert.IsTrue(pending.HasValue, "precondition: a pending two slots short");
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    _recogniser.CancelPendingCommand();
+                    return VoxrSlotResolution.None;
+                }
+            );
+
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+            int pendingCount = 0;
+            _recogniser.OnCommandPending += _ => pendingCount++;
+
+            Assert.DoesNotThrow(() => _recogniser.InjectText("three"));
+
+            Assert.AreEqual(1, calls, "the resolver ran, so the pending really was cancelled");
+            Assert.IsFalse(_recogniser.HasPendingCommand, "and nothing re-armed it");
+            Assert.AreEqual(0, pendingCount, "the partial fill has no pending left to re-arm");
+            Assert.IsFalse(recognised.HasValue);
+            Assert.AreEqual("three", unrecognised, "the utterance is reported, not swallowed");
+        }
+
+        [Test]
+        public void Resolver_BelowMinConfidenceWithAllowPartialMatch_StillEntersPendingUnfilled()
+        {
+            // F-3, and the sibling of
+            // Resolver_BelowMinScoreWithAllowPartialMatch_StillEntersPendingUnfilled above: the
+            // second of Step 3b's three floors, guarding EXISTING behaviour rather than the
+            // resolver.
+            //
+            // An above-minScore incomplete command on an allowPartialMatch definition enters
+            // pending today and the speaker is asked for the missing slot; the confidence gate
+            // sits BELOW that branch in Step 7 and is never reached. Resolve it and the branch is
+            // skipped, the candidate meets a gate it was never measured against, and it is
+            // dropped with anyThresholdFiltered set — which suppresses OnUnrecognisedSpeech too.
+            // No command, no pending, no prompt, no report: the utterance disappears.
+            //
+            // Real word confidences are essential. Injected text with no word data yields
+            // Confidence == -1, which DISABLES the gate rather than failing it, so a test built
+            // on bare InjectText could never reach the floor under test.
+            ConfigureResolvableSync(allowPartial: true);
+            SetMinConfidence(_recogniser, 0.9f);
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return new VoxrSlotResolution("alpha", "main target");
+                }
+            );
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            var words = VoXR.VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunch, 0.5f);
+            _recogniser.InjectText(BareLaunch, words);
+
+            Assert.AreEqual(
+                0,
+                calls,
+                "a resolver may not reach a candidate the confidence gate is about to refuse"
+            );
+            Assert.IsTrue(pending.HasValue, "the incomplete command still pends, exactly as before");
+            Assert.AreEqual(
+                0.5f,
+                pending.Value.Confidence,
+                1e-5f,
+                "real word data reached it — at -1 the gate is disabled and this guards nothing"
+            );
+            Assert.GreaterOrEqual(
+                pending.Value.Score,
+                _recogniser.MinScore,
+                "and it is above the SCORE floor, or the wrong floor answered"
+            );
+            Assert.IsFalse(pending.Value.HasSlot("track"), "with its slot unfilled");
+            Assert.AreEqual(0, pending.Value.ResolvedSlots.Length);
+            Assert.IsFalse(recognised.HasValue);
+            Assert.IsNull(unrecognised, "and the utterance is not reported unrecognised");
+            Assert.IsTrue(_recogniser.HasPendingCommand);
+        }
+
+        [Test]
+        public void Resolver_OnCooldownWithAllowPartialMatch_StillEntersPendingUnfilled()
+        {
+            // F-3's third floor, and the one that costs most. Step 4 tests completeness and
+            // confidence but NOT the cooldown, so a resolved candidate on cooldown sets
+            // hasCompleteNewCommand — which cancels a live pending outright — and then Step 7
+            // debounces it. The exchange is destroyed by a command that never fired. Even with
+            // no pending live, the observable loss is the same as the confidence arm's: the
+            // prompt the speaker would have got disappears.
+            ConfigureResolvableSync(allowPartial: true);
+            _recogniser.CommandCooldown = 10f;
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ =>
+                {
+                    calls++;
+                    return new VoxrSlotResolution("alpha", "main target");
+                }
+            );
+
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            // Spoken in full, so it fires on its own merits and puts launch_weapon on cooldown.
+            // A complete candidate is offered to TryResolveMissingSlots and asks nothing, which
+            // is why the count below starts at zero.
+            _recogniser.InjectText("launch all missiles from tube three at alpha");
+            Assert.IsTrue(recognised.HasValue, "precondition: the intent has just fired");
+            Assert.AreEqual(0, calls, "precondition: a complete command asks no question");
+
+            recognised = null;
+            _recogniser.InjectText(BareLaunch);
+
+            Assert.AreEqual(
+                0,
+                calls,
+                "a resolver may not reach a candidate whose intent is on cooldown"
+            );
+            Assert.IsFalse(recognised.HasValue, "nothing fires while the cooldown stands");
+            Assert.IsTrue(
+                pending.HasValue,
+                "and the speaker is still asked for the missing slot, exactly as before"
+            );
+            Assert.IsFalse(pending.Value.HasSlot("track"));
+
+            var stored = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(stored.HasValue);
+            Assert.AreEqual(new[] { "track" }, stored.Value.UnfilledSlots);
+        }
+
+        [Test]
+        public void Resolver_OnAFollowUpFillThatReScoresNonPositive_IsNotOfferedAndThePendingReArms()
+        {
+            // F-12. D-6's `Score > 0f` on Step 5's resolution gate had no test at all: the three
+            // #113 tests above register no resolver, so they pass with the floor deleted.
+            //
+            // This path has no minScore gate by design (#77, #113); its fire-floor is the
+            // `Score <= 0` refusal, which sits BELOW the completeness split precisely so a
+            // partial fill re-arms instead of stalling. Resolving a non-positive fill moves it
+            // across that split and turns today's "keep the progress and ask again" into "refuse
+            // and report unrecognised" — the exact stall the placement exists to prevent, and
+            // one the speaker cannot talk their way out of, since the same fill re-scores
+            // non-positive every time.
+            //
+            // Reuses the #113 duplicate-intent divergence, which is what puts a non-positive
+            // re-score in hand at all: ScoreFollowUp takes the FIRST definition (nine elements)
+            // while IsIncomplete reads the LAST (five), so the fill re-scores -1/9 while still
+            // being called incomplete.
+            ConfigurePartialFillDuplicateIntent();
+
+            int calls = 0;
+            _recogniser.RegisterSlotResolver(
+                "fuse",
+                _ =>
+                {
+                    calls++;
+                    return new VoxrSlotResolution("impact", "standing weapons order");
+                }
+            );
+
+            var pendingEvents = new List<VoxrCommand>();
+            _recogniser.OnCommandPending += cmd => pendingEvents.Add(cmd);
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            // 0.20 against the short definition — below minScore, so Step 3b's own floor keeps
+            // the resolver away from it and this pending is the pre-feature one.
+            _recogniser.InjectText("launch missiles target");
+            Assert.IsTrue(_recogniser.HasPendingCommand, "precondition: a pending two slots short");
+            Assert.AreEqual(1, pendingEvents.Count);
+            Assert.AreEqual(0, calls, "precondition: nothing was resolved on the way in");
+
+            // Fills {target}, stops at {fuse}, and re-scores -1/9.
+            _recogniser.InjectText("hotel one");
+
+            Assert.AreEqual(
+                0,
+                calls,
+                "a fill the fire-floor would refuse is not offered resolution — completing it "
+                    + "here would carry it across the completeness split and into that refusal"
+            );
+            Assert.IsFalse(recognised.HasValue, "a partial fill still does not fire");
+            Assert.IsNull(unrecognised, "and it is not reported unrecognised either");
+            Assert.IsTrue(_recogniser.HasPendingCommand, "the pending is still live");
+            Assert.AreEqual(2, pendingEvents.Count, "and it RE-ARMS, reporting progress (#77)");
+
+            var stored = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(stored.HasValue);
+            Assert.IsTrue(
+                stored.Value.Command.HasSlot("target"),
+                "the spoken fill is kept, not discarded by a refusal"
+            );
+            Assert.AreEqual(
+                new[] { "fuse" },
+                stored.Value.UnfilledSlots,
+                "and only {fuse} is outstanding, so the exchange can still be finished by voice"
+            );
+        }
+
         // -------- Helpers --------
+
+        // minConfidence has no test setter, so it is reached through the serialized field the
+        // Inspector writes — the same reflection idiom VoxrCommandRecogniserInjectionTests uses
+        // for this field and VoxrCommandParserTests uses for minScore.
+        static void SetMinConfidence(VoxrCommandRecogniser recogniser, float value)
+        {
+            var field = typeof(VoxrCommandRecogniser).GetField(
+                "minConfidence",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            );
+            Assert.IsNotNull(field, "VoxrCommandRecogniser.minConfidence");
+            field.SetValue(recogniser, value);
+        }
 
         void ForceTimeoutNow()
         {
