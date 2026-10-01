@@ -6263,6 +6263,31 @@ namespace VoXR.Tests.Runtime
         }
 
         [Test]
+        public void UnfilledWalk_EveryElementShape_YieldsExactlyTheRequiredNamesInOrder()
+        {
+            // The walk and ExtractSlotName/IsOptionalSlot read one slot grammar, so this pins the
+            // walk against that grammar shape by shape. Expected by the grammar as it stood
+            // before issue #160: braced and at least three characters is a slot; a "?" after the
+            // brace makes it optional from four characters up; the name drops the "?".
+            //   "word", "{}", "{", "x}"  — not slots
+            //   "{a}"                    — required, "a"
+            //   "{?b}", "{??}"           — optional
+            //   "{?}"                    — required, "" (three characters, one short of optional)
+            //   "{{}"                    — required, "{"
+            var def = new VoxrCommandDefinition(
+                "shapes",
+                new[] { new[] { "word", "{}", "{", "x}", "{a}", "{?b}", "{?}", "{??}", "{{}" } }
+            );
+            var cmd = new VoxrCommand("shapes", null, 1f, 1f, "word", null, 0);
+
+            var yielded = new List<string>();
+            foreach (string name in new VoxrCommandParser.UnfilledRequiredSlots(cmd, def))
+                yielded.Add(name);
+
+            Assert.AreEqual(new[] { "a", "", "{" }, yielded.ToArray());
+        }
+
+        [Test]
         public void ComputeUnfilledSlots_DefaultDefinition_ReturnsEmpty()
         {
             // The pending copy used to carry two of the walk's three guards, not three: with no

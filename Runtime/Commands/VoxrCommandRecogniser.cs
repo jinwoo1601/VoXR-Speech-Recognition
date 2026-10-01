@@ -1742,8 +1742,8 @@ namespace VoXR.Commands
         // which is not always the one IsIncomplete reads.
         //
         // All-or-nothing. The first required slot that does not resolve ends the attempt with
-        // nothing materialised and nothing allocated, and the caller keeps exactly the command
-        // the parser produced.
+        // nothing materialised — the walk's one name string per unfilled slot read so far is all
+        // it allocated — and the caller keeps exactly the command the parser produced.
         bool TryResolveMissingSlots(
             in VoxrCommand cmd,
             VoxrCommandDefinition def,

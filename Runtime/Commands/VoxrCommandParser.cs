@@ -4347,22 +4347,48 @@ namespace VoXR.Commands
             return anyMatch ? minConf : NoConfidence;
         }
 
-        static string ExtractSlotName(string element)
+        enum SlotKind
+        {
+            None,
+            Required,
+            Optional,
+        }
+
+        // The slot-element grammar, and the only place it lives (issue #160): a slot is braced and
+        // at least three characters long, and a "?" after the opening brace marks it optional —
+        // but only from four characters up, so "{?}" is a REQUIRED slot named "". The name comes
+        // back as a span over the element, the "?" excluded, so asking allocates nothing.
+        // ExtractSlotName and IsOptionalSlot are views of this one answer, and the
+        // unfilled-required-slot walk reads it directly.
+        static SlotKind ParseSlotElement(string element, out ReadOnlySpan<char> name)
         {
             if (element.Length < 3 || element[0] != '{' || element[element.Length - 1] != '}')
+            {
+                name = default;
+                return SlotKind.None;
+            }
+
+            if (element[1] == '?')
+            {
+                name = element.AsSpan(2, element.Length - 3);
+                return element.Length >= 4 ? SlotKind.Optional : SlotKind.Required;
+            }
+
+            name = element.AsSpan(1, element.Length - 2);
+            return SlotKind.Required;
+        }
+
+        static string ExtractSlotName(string element)
+        {
+            if (ParseSlotElement(element, out var name) == SlotKind.None)
                 return null;
 
-            string inner = element.Substring(1, element.Length - 2);
-            if (inner.Length > 0 && inner[0] == '?')
-                return inner.Substring(1);
-
-            return inner;
+            return name.ToString();
         }
 
         static bool IsOptionalSlot(string element)
         {
-            return element.Length >= 4 && element[0] == '{' && element[1] == '?'
-                && element[element.Length - 1] == '}';
+            return ParseSlotElement(element, out _) == SlotKind.Optional;
         }
 
         static bool IsOptionalLiteral(string element)
@@ -4396,34 +4422,6 @@ namespace VoXR.Commands
             return walk.MoveNext();
         }
 
-        // The per-element half of the walk: whether a pattern element is a REQUIRED slot, and
-        // its name if so. Agrees exactly with ExtractSlotName != null && !IsOptionalSlot, but
-        // calls neither — ExtractSlotName cuts its substring before it can answer — and reads the
-        // name as a span over the element instead. The first test is ExtractSlotName's own null
-        // condition; the second is IsOptionalSlot with that condition already known true.
-        //
-        // The empty span is "{?}" alone. It is three characters, one short of IsOptionalSlot's
-        // four, so it is a REQUIRED slot, and ExtractSlotName names it "" — kept as found.
-        static bool TryGetRequiredSlotName(string element, out ReadOnlySpan<char> name)
-        {
-            if (
-                element.Length < 3
-                || element[0] != '{'
-                || element[element.Length - 1] != '}'
-                || (element.Length >= 4 && element[1] == '?')
-            )
-            {
-                name = default;
-                return false;
-            }
-
-            name =
-                element[1] == '?'
-                    ? ReadOnlySpan<char>.Empty
-                    : element.AsSpan(1, element.Length - 2);
-            return true;
-        }
-
         // The unfilled REQUIRED slots of a command's matched pattern, in pattern order — the one
         // walk behind HasUnfilledRequiredSlot, ComputeUnfilledSlots and TryResolveMissingSlots.
         // It used to be three hand-kept copies, and two of them had already drifted on the
@@ -4431,8 +4429,10 @@ namespace VoXR.Commands
         // array, the early exit on the first slot that will not resolve.
         //
         // A struct whose GetEnumerator returns itself, so foreach neither boxes nor allocates.
-        // MoveNext tests elements through spans and allocates nothing; Current cuts the name
-        // string only when it is read, so a caller pays for the names it asks for and no others.
+        // MoveNext and Current both read an element through ParseSlotElement, the parser's one
+        // copy of the slot grammar. MoveNext tests the name span and allocates nothing; Current
+        // cuts the name string only when it is read, so a caller pays for the names it asks for
+        // and no others.
         //
         // A slot named twice in the pattern is yielded twice. De-duplicating is a consumer's
         // decision, not the walk's: the pending question lists both occurrences, the resolver
@@ -4471,14 +4471,24 @@ namespace VoXR.Commands
 
                 while (++_i < _pattern.Length)
                 {
-                    if (TryGetRequiredSlotName(_pattern[_i], out var name) && !_cmd.HasSlot(name))
+                    if (
+                        ParseSlotElement(_pattern[_i], out var name) == SlotKind.Required
+                        && !_cmd.HasSlot(name)
+                    )
                         return true;
                 }
 
                 return false;
             }
 
-            public string Current => ExtractSlotName(_pattern[_i]);
+            public string Current
+            {
+                get
+                {
+                    ParseSlotElement(_pattern[_i], out var name);
+                    return name.ToString();
+                }
+            }
         }
 
         internal float ScoreFollowUp(string intent, int patternIdx,

@@ -3710,18 +3710,19 @@ namespace VoXR.Tests.Runtime
             Assert.IsTrue(
                 received.Value.HasSlot("track"),
                 "and one entry satisfies BOTH occurrences, which is why deduping is safe: "
-                    + "HasUnfilledRequiredSlot asks cmd.HasSlot(slotName) per pattern element, and "
-                    + "HasSlot is a lookup BY NAME (VoxrCommand.FindSlotIndex) — so the single "
-                    + "record answers every {track} in the pattern and the command is complete"
+                    + "HasUnfilledRequiredSlot's walk asks cmd.HasSlot(name) per pattern element, and "
+                    + "HasSlot is a lookup BY NAME (VoxrCommand.HasSlot(ReadOnlySpan<char>)) — so "
+                    + "the single record answers every {track} in the pattern and the command is "
+                    + "complete"
             );
         }
 
         [Test]
         public void Resolver_IsNotOfferedWhenTheMatchedPatternIndexIsOutOfRange()
         {
-            // The third of the three guards TryResolveMissingSlots shares with
-            // HasUnfilledRequiredSlot, and the only one whose absence is an exception rather
-            // than a wrong answer.
+            // The third of the shared walk's three guards (VoxrCommandParser.UnfilledRequiredSlots,
+            // read by TryResolveMissingSlots and HasUnfilledRequiredSlot alike), and the only one
+            // whose absence is an exception rather than a wrong answer.
             //
             // Reached through the duplicate-intent divergence (issue #113/#120): the parse wins
             // on the FIRST definition's second pattern, while the command-set lookup keeps the
