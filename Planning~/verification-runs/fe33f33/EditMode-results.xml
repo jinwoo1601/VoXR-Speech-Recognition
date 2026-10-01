@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="116" result="Passed" total="116" passed="116" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.353392">
+  <test-suite type="TestSuite" id="1000" name="VoXR TestGround" fullname="VoXR TestGround" runstate="Runnable" testcasecount="116" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.353392" total="116" passed="116" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1131" name="Jinwoo1601.VoXR.Tests.Editor.dll" fullname="D:/Game Development/VoXR TestGround/Library/ScriptAssemblies/Jinwoo1601.VoXR.Tests.Editor.dll" runstate="Runnable" testcasecount="116" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.346279" total="116" passed="116" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="8516" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1132" name="VoXR" fullname="VoXR" runstate="Runnable" testcasecount="116" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.344321" total="116" passed="116" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1133" name="Tests" fullname="VoXR.Tests" runstate="Runnable" testcasecount="116" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.342808" total="116" passed="116" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1134" name="Editor" fullname="VoXR.Tests.Editor" runstate="Runnable" testcasecount="116" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.340800" total="116" passed="116" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1002" name="AgcTests" fullname="VoXR.Tests.Editor.AgcTests" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.063354" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1003" name="Configure_ZeroSampleRate_DoesNotProduceNaN" fullname="VoXR.Tests.Editor.AgcTests.Configure_ZeroSampleRate_DoesNotProduceNaN" methodname="Configure_ZeroSampleRate_DoesNotProduceNaN" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" seed="1929488817" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.009424" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="Process_ExtremeInput_OutputBoundedBySoftLimiter" fullname="VoXR.Tests.Editor.AgcTests.Process_ExtremeInput_OutputBoundedBySoftLimiter" methodname="Process_ExtremeInput_OutputBoundedBySoftLimiter" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" seed="949872562" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.027166" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="Process_LoudSignal_ReducesGainBelowUnity" fullname="VoXR.Tests.Editor.AgcTests.Process_LoudSignal_ReducesGainBelowUnity" methodname="Process_LoudSignal_ReducesGainBelowUnity" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" seed="2073591067" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.002200" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="Process_QuietSignal_RaisesGainAboveUnity" fullname="VoXR.Tests.Editor.AgcTests.Process_QuietSignal_RaisesGainAboveUnity" methodname="Process_QuietSignal_RaisesGainAboveUnity" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" seed="1048189163" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.006288" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1004" name="Process_SilentInput_LeavesGainAtUnity" fullname="VoXR.Tests.Editor.AgcTests.Process_SilentInput_LeavesGainAtUnity" methodname="Process_SilentInput_LeavesGainAtUnity" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" seed="266973537" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.004345" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="Reset_AfterLoudSignal_RestoresGainToUnity" fullname="VoXR.Tests.Editor.AgcTests.Reset_AfterLoudSignal_RestoresGainToUnity" methodname="Reset_AfterLoudSignal_RestoresGainToUnity" classname="VoXR.Tests.Editor.AgcTests" runstate="Runnable" seed="1617823606" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001542" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1009" name="AudioMetricTests" fullname="VoXR.Tests.Editor.AudioMetricTests" classname="VoXR.Tests.Editor.AudioMetricTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.005567" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1010" name="ComputeRms_EmptyBuffer_ReturnsZero" fullname="VoXR.Tests.Editor.AudioMetricTests.ComputeRms_EmptyBuffer_ReturnsZero" methodname="ComputeRms_EmptyBuffer_ReturnsZero" classname="VoXR.Tests.Editor.AudioMetricTests" runstate="Runnable" seed="1006326633" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000849" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1011" name="ComputeRms_KnownSignal_ReturnsExpected" fullname="VoXR.Tests.Editor.AudioMetricTests.ComputeRms_KnownSignal_ReturnsExpected" methodname="ComputeRms_KnownSignal_ReturnsExpected" classname="VoXR.Tests.Editor.AudioMetricTests" runstate="Runnable" seed="291703975" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000150" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="ForwardedEditorAgcGain_NullBackend_ReturnsOne" fullname="VoXR.Tests.Editor.AudioMetricTests.ForwardedEditorAgcGain_NullBackend_ReturnsOne" methodname="ForwardedEditorAgcGain_NullBackend_ReturnsOne" classname="VoXR.Tests.Editor.AudioMetricTests" runstate="Runnable" seed="1980460805" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001377" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1013" name="ForwardedEditorPostAgcRms_NullBackend_ReturnsZero" fullname="VoXR.Tests.Editor.AudioMetricTests.ForwardedEditorPostAgcRms_NullBackend_ReturnsZero" methodname="ForwardedEditorPostAgcRms_NullBackend_ReturnsZero" classname="VoXR.Tests.Editor.AudioMetricTests" runstate="Runnable" seed="353933399" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000340" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="ForwardedEditorPreAgcRms_NullBackend_ReturnsZero" fullname="VoXR.Tests.Editor.AudioMetricTests.ForwardedEditorPreAgcRms_NullBackend_ReturnsZero" methodname="ForwardedEditorPreAgcRms_NullBackend_ReturnsZero" classname="VoXR.Tests.Editor.AudioMetricTests" runstate="Runnable" seed="799800533" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000376" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1015" name="DownsamplerTests" fullname="VoXR.Tests.Editor.DownsamplerTests" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.007829" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1017" name="Process_48Samples_Produces16Outputs" fullname="VoXR.Tests.Editor.DownsamplerTests.Process_48Samples_Produces16Outputs" methodname="Process_48Samples_Produces16Outputs" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" seed="1634336322" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000863" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1018" name="Process_AllZeros_ProducesAllZeros" fullname="VoXR.Tests.Editor.DownsamplerTests.Process_AllZeros_ProducesAllZeros" methodname="Process_AllZeros_ProducesAllZeros" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" seed="722689232" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000771" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="Process_DcInput_ProducesDcGainApproximatelyUnity" fullname="VoXR.Tests.Editor.DownsamplerTests.Process_DcInput_ProducesDcGainApproximatelyUnity" methodname="Process_DcInput_ProducesDcGainApproximatelyUnity" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" seed="182719336" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000295" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="Process_EmptyInput_ReturnsZero" fullname="VoXR.Tests.Editor.DownsamplerTests.Process_EmptyInput_ReturnsZero" methodname="Process_EmptyInput_ReturnsZero" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" seed="1709110988" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000158" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="Process_PhaseStatePersistsAcrossCalls" fullname="VoXR.Tests.Editor.DownsamplerTests.Process_PhaseStatePersistsAcrossCalls" methodname="Process_PhaseStatePersistsAcrossCalls" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" seed="1027770969" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000404" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="Reset_ClearsHistory_SubsequentZerosProduceZeros" fullname="VoXR.Tests.Editor.DownsamplerTests.Reset_ClearsHistory_SubsequentZerosProduceZeros" methodname="Reset_ClearsHistory_SubsequentZerosProduceZeros" classname="VoXR.Tests.Editor.DownsamplerTests" runstate="Runnable" seed="103561286" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000353" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1022" name="ModelExtractorValidationTests" fullname="VoXR.Tests.Editor.ModelExtractorValidationTests" classname="VoXR.Tests.Editor.ModelExtractorValidationTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.028852" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1024" name="ValidateModelDirectory_MissingAmFinalMdl_ReturnsFalse" fullname="VoXR.Tests.Editor.ModelExtractorValidationTests.ValidateModelDirectory_MissingAmFinalMdl_ReturnsFalse" methodname="ValidateModelDirectory_MissingAmFinalMdl_ReturnsFalse" classname="VoXR.Tests.Editor.ModelExtractorValidationTests" runstate="Runnable" seed="1292617447" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.014173" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1025" name="ValidateModelDirectory_MissingConfMfccConf_ReturnsFalse" fullname="VoXR.Tests.Editor.ModelExtractorValidationTests.ValidateModelDirectory_MissingConfMfccConf_ReturnsFalse" methodname="ValidateModelDirectory_MissingConfMfccConf_ReturnsFalse" classname="VoXR.Tests.Editor.ModelExtractorValidationTests" runstate="Runnable" seed="857046880" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.003706" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1026" name="ValidateModelDirectory_MissingGraphDir_ReturnsFalse" fullname="VoXR.Tests.Editor.ModelExtractorValidationTests.ValidateModelDirectory_MissingGraphDir_ReturnsFalse" methodname="ValidateModelDirectory_MissingGraphDir_ReturnsFalse" classname="VoXR.Tests.Editor.ModelExtractorValidationTests" runstate="Runnable" seed="2104731927" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.004196" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1027" name="ValidateModelDirectory_NonExistentPath_ReturnsFalse" fullname="VoXR.Tests.Editor.ModelExtractorValidationTests.ValidateModelDirectory_NonExistentPath_ReturnsFalse" methodname="ValidateModelDirectory_NonExistentPath_ReturnsFalse" classname="VoXR.Tests.Editor.ModelExtractorValidationTests" runstate="Runnable" seed="1163636349" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000842" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1023" name="ValidateModelDirectory_ValidStructure_ReturnsTrue" fullname="VoXR.Tests.Editor.ModelExtractorValidationTests.ValidateModelDirectory_ValidStructure_ReturnsTrue" methodname="ValidateModelDirectory_ValidStructure_ReturnsTrue" classname="VoXR.Tests.Editor.ModelExtractorValidationTests" runstate="Runnable" seed="677832066" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.003707" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1028" name="VoxrBatchTestRunnerTests" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" testcasecount="24" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.029790" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1044" name="CommandSetConstructor_ActiveSetOnly" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.CommandSetConstructor_ActiveSetOnly" methodname="CommandSetConstructor_ActiveSetOnly" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1140539517" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.010594" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1045" name="CommandSetConstructor_UnknownSet_Throws" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.CommandSetConstructor_UnknownSet_Throws" methodname="CommandSetConstructor_UnknownSet_Throws" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="150592656" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001291" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1052" name="FailureSummary_ContainsIndex_And_Description" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.FailureSummary_ContainsIndex_And_Description" methodname="FailureSummary_ContainsIndex_And_Description" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="2019221781" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001209" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1037" name="Run_AboveMinConfidence_AcceptedCorrectly" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_AboveMinConfidence_AcceptedCorrectly" methodname="Run_AboveMinConfidence_AcceptedCorrectly" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="125301599" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001487" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1036" name="Run_BelowMinConfidence_RejectedCorrectly" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_BelowMinConfidence_RejectedCorrectly" methodname="Run_BelowMinConfidence_RejectedCorrectly" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="739093431" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000376" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1038" name="Run_BelowMinScore_RejectedCorrectly" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_BelowMinScore_RejectedCorrectly" methodname="Run_BelowMinScore_RejectedCorrectly" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1448175776" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000266" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1049" name="Run_EmptyInput_NoMatch" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_EmptyInput_NoMatch" methodname="Run_EmptyInput_NoMatch" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="333890438" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000276" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1039" name="Run_ExpectedAcceptance_ButConfidenceRejects_Fails" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_ExpectedAcceptance_ButConfidenceRejects_Fails" methodname="Run_ExpectedAcceptance_ButConfidenceRejects_Fails" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="916745018" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000208" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1033" name="Run_ExpectedMatch_ButNoMatch_Fails" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_ExpectedMatch_ButNoMatch_Fails" methodname="Run_ExpectedMatch_ButNoMatch_Fails" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="847643083" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000265" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1040" name="Run_ExpectedRejection_ButCommandAccepted_Fails" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_ExpectedRejection_ButCommandAccepted_Fails" methodname="Run_ExpectedRejection_ButCommandAccepted_Fails" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1707864470" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000210" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1031" name="Run_ExpectedRejection_NoMatch_Passes" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_ExpectedRejection_NoMatch_Passes" methodname="Run_ExpectedRejection_NoMatch_Passes" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="233771982" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000362" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1029" name="Run_MatchingCommand_Passes" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_MatchingCommand_Passes" methodname="Run_MatchingCommand_Passes" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1162908868" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000262" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1030" name="Run_MatchingCommandWithSlots_Passes" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_MatchingCommandWithSlots_Passes" methodname="Run_MatchingCommandWithSlots_Passes" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="974778827" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000642" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1035" name="Run_MissingExpectedSlot_Fails" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_MissingExpectedSlot_Fails" methodname="Run_MissingExpectedSlot_Fails" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="237027237" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000356" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1050" name="Run_NoExpectedSlots_IgnoresActualSlots" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_NoExpectedSlots_IgnoresActualSlots" methodname="Run_NoExpectedSlots_IgnoresActualSlots" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="110848691" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000423" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1048" name="Run_NullInput_NoMatch" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_NullInput_NoMatch" methodname="Run_NullInput_NoMatch" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="297139301" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000324" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1047" name="Run_PopulatesDiagnostics" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_PopulatesDiagnostics" methodname="Run_PopulatesDiagnostics" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="797379675" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001492" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1032" name="Run_WrongIntent_Fails" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_WrongIntent_Fails" methodname="Run_WrongIntent_Fails" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="817313837" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000308" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1034" name="Run_WrongSlotValue_Fails" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.Run_WrongSlotValue_Fails" methodname="Run_WrongSlotValue_Fails" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="130421514" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000308" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1041" name="RunAll_AllPass_AllPassedIsTrue" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.RunAll_AllPass_AllPassedIsTrue" methodname="RunAll_AllPass_AllPassedIsTrue" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1258040792" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000283" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1043" name="RunAll_EmptyArray_AllPassedIsTrue" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.RunAll_EmptyArray_AllPassedIsTrue" methodname="RunAll_EmptyArray_AllPassedIsTrue" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1679712884" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000308" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1051" name="RunAll_NullCases_Throws" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.RunAll_NullCases_Throws" methodname="RunAll_NullCases_Throws" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1396600129" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000386" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1042" name="RunAll_OneFails_AllPassedIsFalse" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.RunAll_OneFails_AllPassedIsFalse" methodname="RunAll_OneFails_AllPassedIsFalse" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="170342607" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000398" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1046" name="ToCsv_ContainsHeaderAndRows" fullname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests.ToCsv_ContainsHeaderAndRows" methodname="ToCsv_ContainsHeaderAndRows" classname="VoXR.Tests.Editor.VoxrBatchTestRunnerTests" runstate="Runnable" seed="1421670534" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000670" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1053" name="VoxrBridgeErrorCodeTests" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" testcasecount="11" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.006553" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1063" name="ErrorCode_HasExpectedIntegerValue" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.003723" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1054" name="ErrorCode_HasExpectedIntegerValue(Ok,0)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(Ok,0)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="429374506" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000291" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1055" name="ErrorCode_HasExpectedIntegerValue(ModelLoadFailed,1)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(ModelLoadFailed,1)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="1794002094" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000159" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1056" name="ErrorCode_HasExpectedIntegerValue(AudioDeviceUnavailable,2)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(AudioDeviceUnavailable,2)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="487503176" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000080" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1057" name="ErrorCode_HasExpectedIntegerValue(PermissionDenied,3)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(PermissionDenied,3)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="439768445" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000164" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1058" name="ErrorCode_HasExpectedIntegerValue(RingBufferOverflow,4)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(RingBufferOverflow,4)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="1679603320" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000060" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1059" name="ErrorCode_HasExpectedIntegerValue(AlreadyRunning,5)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(AlreadyRunning,5)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="72881667" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000166" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1060" name="ErrorCode_HasExpectedIntegerValue(NotInitialised,6)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(NotInitialised,6)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="1935923748" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000093" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1061" name="ErrorCode_HasExpectedIntegerValue(AlreadyInitialised,7)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(AlreadyInitialised,7)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="1452045935" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000061" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1062" name="ErrorCode_HasExpectedIntegerValue(NotRunning,8)" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ErrorCode_HasExpectedIntegerValue(NotRunning,8)" methodname="ErrorCode_HasExpectedIntegerValue" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="588031490" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000146" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1064" name="ToDescription_ReturnsNonEmptyForAllCodes" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ToDescription_ReturnsNonEmptyForAllCodes" methodname="ToDescription_ReturnsNonEmptyForAllCodes" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="1881627757" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001104" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1065" name="ToDescription_UnknownCode_ReturnsNonEmpty" fullname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests.ToDescription_UnknownCode_ReturnsNonEmpty" methodname="ToDescription_UnknownCode_ReturnsNonEmpty" classname="VoXR.Tests.Editor.VoxrBridgeErrorCodeTests" runstate="Runnable" seed="1401285245" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000182" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1066" name="VoxrCommandParserDiagnosticTests" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.008218" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1075" name="ComputeConfidence_InternalAccess" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.ComputeConfidence_InternalAccess" methodname="ComputeConfidence_InternalAccess" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1740962935" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000826" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1076" name="ComputeConfidence_NoWordData_ReturnsNegativeOne" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.ComputeConfidence_NoWordData_ReturnsNegativeOne" methodname="ComputeConfidence_NoWordData_ReturnsNegativeOne" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1370266400" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000332" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1067" name="LastParseDiagnostics_EmptyOnNoInput" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.LastParseDiagnostics_EmptyOnNoInput" methodname="LastParseDiagnostics_EmptyOnNoInput" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1491718751" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000756" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1068" name="LastParseDiagnostics_EmptyOnNoMatch" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.LastParseDiagnostics_EmptyOnNoMatch" methodname="LastParseDiagnostics_EmptyOnNoMatch" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="765504672" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000329" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1069" name="LastParseDiagnostics_OneEntryPerCommand" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.LastParseDiagnostics_OneEntryPerCommand" methodname="LastParseDiagnostics_OneEntryPerCommand" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="848807840" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000276" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1074" name="MultipleCommandsExtracted_MultipleEntries" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.MultipleCommandsExtracted_MultipleEntries" methodname="MultipleCommandsExtracted_MultipleEntries" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1250574869" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000350" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="MultiSlot_Positions" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.MultiSlot_Positions" methodname="MultiSlot_Positions" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="437876994" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000367" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1070" name="PatternString_RecordedCorrectly" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.PatternString_RecordedCorrectly" methodname="PatternString_RecordedCorrectly" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1675535232" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000207" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="SlotEndWords_Recorded_Exclusive" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.SlotEndWords_Recorded_Exclusive" methodname="SlotEndWords_Recorded_Exclusive" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="967784528" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000206" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1071" name="SlotStartWords_Recorded" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.SlotStartWords_Recorded" methodname="SlotStartWords_Recorded" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1587215730" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000266" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1078" name="SplitSeparator_InternalAccess" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.SplitSeparator_InternalAccess" methodname="SplitSeparator_InternalAccess" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1171715553" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000207" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1077" name="UnkToken_InternalAccess" fullname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests.UnkToken_InternalAccess" methodname="UnkToken_InternalAccess" classname="VoXR.Tests.Editor.VoxrCommandParserDiagnosticTests" runstate="Runnable" seed="1702661807" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000120" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1079" name="VoxrCommandRecogniserDiagnosticTests" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" testcasecount="13" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.019378" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1085" name="AcceptedCommand_NoRejection" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.AcceptedCommand_NoRejection" methodname="AcceptedCommand_NoRejection" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="824425700" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.006302" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1083" name="ConfidenceRejection_ReasonFormat" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.ConfidenceRejection_ReasonFormat" methodname="ConfidenceRejection_ReasonFormat" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1807093167" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000710" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1084" name="DebounceRejection_Reason" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.DebounceRejection_Reason" methodname="DebounceRejection_Reason" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1827478029" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000619" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1091" name="DiagnosticsPublished_FiresPerUtterance_WithSenderAndDiagnostics" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.DiagnosticsPublished_FiresPerUtterance_WithSenderAndDiagnostics" methodname="DiagnosticsPublished_FiresPerUtterance_WithSenderAndDiagnostics" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="2103729598" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001779" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1092" name="DiagnosticsPublished_MatchesLastMatchDiagnostics" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.DiagnosticsPublished_MatchesLastMatchDiagnostics" methodname="DiagnosticsPublished_MatchesLastMatchDiagnostics" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="253388452" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000684" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1089" name="Frame_SetToTimeFrameCount" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.Frame_SetToTimeFrameCount" methodname="Frame_SetToTimeFrameCount" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="777508586" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000540" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="LastMatchDiagnostics_UpdatedAfterParse" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.LastMatchDiagnostics_UpdatedAfterParse" methodname="LastMatchDiagnostics_UpdatedAfterParse" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1237112471" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000510" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1090" name="LastPartialResult_EmptyStringHandling" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.LastPartialResult_EmptyStringHandling" methodname="LastPartialResult_EmptyStringHandling" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1830609866" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001148" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1088" name="MultipleCommands_MultipleAttempts" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.MultipleCommands_MultipleAttempts" methodname="MultipleCommands_MultipleAttempts" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="941365473" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000589" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1081" name="NoMatch_CreatesSingleAttempt_WithNoMatchReason" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.NoMatch_CreatesSingleAttempt_WithNoMatchReason" methodname="NoMatch_CreatesSingleAttempt_WithNoMatchReason" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1235722550" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000551" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1086" name="PerSlotConfidence_Computed" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.PerSlotConfidence_Computed" methodname="PerSlotConfidence_Computed" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1181718978" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000694" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1087" name="PerSlotConfidence_NegativeOneForInjectedText" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.PerSlotConfidence_NegativeOneForInjectedText" methodname="PerSlotConfidence_NegativeOneForInjectedText" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="449046843" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000497" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="ScoreRejection_ReasonFormat" fullname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests.ScoreRejection_ReasonFormat" methodname="ScoreRejection_ReasonFormat" classname="VoXR.Tests.Editor.VoxrCommandRecogniserDiagnosticTests" runstate="Runnable" seed="1026422132" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000632" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1093" name="VoxrDebugSessionLogTests" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.010030" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1094" name="BuildEntry_CopiesWordsAttemptsAndSlots" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.BuildEntry_CopiesWordsAttemptsAndSlots" methodname="BuildEntry_CopiesWordsAttemptsAndSlots" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="513061981" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001294" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1096" name="BuildEntry_NullSenderYieldsEmptyActiveSets" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.BuildEntry_NullSenderYieldsEmptyActiveSets" methodname="BuildEntry_NullSenderYieldsEmptyActiveSets" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="1132690890" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000264" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1095" name="BuildEntry_NullStringsBecomeEmpty" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.BuildEntry_NullStringsBecomeEmpty" methodname="BuildEntry_NullStringsBecomeEmpty" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="133655821" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000284" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1097" name="BuildEntry_RecordsSenderActiveSets" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.BuildEntry_RecordsSenderActiveSets" methodname="BuildEntry_RecordsSenderActiveSets" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="1293714070" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001967" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1098" name="BuildEntry_SerialisesToJson" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.BuildEntry_SerialisesToJson" methodname="BuildEntry_SerialisesToJson" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="629189110" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000324" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1099" name="TestRunActive_IsSetWhileTheTestRunnerDrivesThisRun" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.TestRunActive_IsSetWhileTheTestRunnerDrivesThisRun" methodname="TestRunActive_IsSetWhileTheTestRunnerDrivesThisRun" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="1185577047" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000146" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1100" name="TestRunActive_SurvivesAsSessionState" fullname="VoXR.Tests.Editor.VoxrDebugSessionLogTests.TestRunActive_SurvivesAsSessionState" methodname="TestRunActive_SurvivesAsSessionState" classname="VoXR.Tests.Editor.VoxrDebugSessionLogTests" runstate="Runnable" seed="1630064175" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000171" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1101" name="VoxrFixtureCorpusTests" fullname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" classname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.134837" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1105" name="EveryCommittedWav_IsListedInTheManifest" fullname="VoXR.Tests.Editor.VoxrFixtureCorpusTests.EveryCommittedWav_IsListedInTheManifest" methodname="EveryCommittedWav_IsListedInTheManifest" classname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" runstate="Runnable" seed="528349044" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.002787" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1104" name="EveryFixture_Exists_Parses_AndPeaksInItsRange" fullname="VoXR.Tests.Editor.VoxrFixtureCorpusTests.EveryFixture_Exists_Parses_AndPeaksInItsRange" methodname="EveryFixture_Exists_Parses_AndPeaksInItsRange" classname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" runstate="Runnable" seed="2056553289" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.122333" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1106" name="ExpectationShape_IsConsistent" fullname="VoXR.Tests.Editor.VoxrFixtureCorpusTests.ExpectationShape_IsConsistent" methodname="ExpectationShape_IsConsistent" classname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" runstate="Runnable" seed="1127233360" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001456" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1103" name="Manifest_CoversEveryRequiredCategory" fullname="VoXR.Tests.Editor.VoxrFixtureCorpusTests.Manifest_CoversEveryRequiredCategory" methodname="Manifest_CoversEveryRequiredCategory" classname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" runstate="Runnable" seed="158242165" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001783" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1102" name="Manifest_ParsesAndIsNonEmpty" fullname="VoXR.Tests.Editor.VoxrFixtureCorpusTests.Manifest_ParsesAndIsNonEmpty" methodname="Manifest_ParsesAndIsNonEmpty" classname="VoXR.Tests.Editor.VoxrFixtureCorpusTests" runstate="Runnable" seed="1078298132" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001267" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1107" name="VoxrMatchDiagnosticsTests" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.003966" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1113" name="Attempt_Accepted_NoRejectReason" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.Attempt_Accepted_NoRejectReason" methodname="Attempt_Accepted_NoRejectReason" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="280715805" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000154" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1114" name="Attempt_Rejected_HasRejectReason" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.Attempt_Rejected_HasRejectReason" methodname="Attempt_Rejected_HasRejectReason" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="1309838758" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000191" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1110" name="AttemptConstructor_NullSlots_DefaultsToEmpty" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.AttemptConstructor_NullSlots_DefaultsToEmpty" methodname="AttemptConstructor_NullSlots_DefaultsToEmpty" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="300470186" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000163" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1109" name="Constructor_NullAttempts_DefaultsToEmpty" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.Constructor_NullAttempts_DefaultsToEmpty" methodname="Constructor_NullAttempts_DefaultsToEmpty" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="450455264" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000139" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1108" name="Constructor_NullWords_DefaultsToEmpty" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.Constructor_NullWords_DefaultsToEmpty" methodname="Constructor_NullWords_DefaultsToEmpty" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="1375128029" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000155" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1112" name="Frame_StoresFrameCountSnapshot" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.Frame_StoresFrameCountSnapshot" methodname="Frame_StoresFrameCountSnapshot" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="2023785135" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000119" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1115" name="SlotMatch_Confidence_NegativeOneWhenUnavailable" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.SlotMatch_Confidence_NegativeOneWhenUnavailable" methodname="SlotMatch_Confidence_NegativeOneWhenUnavailable" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="2081594966" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000158" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1116" name="SlotMatch_WordSpan_StartEndCorrect" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.SlotMatch_WordSpan_StartEndCorrect" methodname="SlotMatch_WordSpan_StartEndCorrect" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="1340970769" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000122" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1111" name="Structs_AreReadonly_FieldsPreserved" fullname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests.Structs_AreReadonly_FieldsPreserved" methodname="Structs_AreReadonly_FieldsPreserved" classname="VoXR.Tests.Editor.VoxrMatchDiagnosticsTests" runstate="Runnable" seed="1806114650" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000220" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1117" name="VoxrWavReaderTests" fullname="VoXR.Tests.Editor.VoxrWavReaderTests" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" testcasecount="13" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.015245" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1123" name="Read_EightBit_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_EightBit_Rejected" methodname="Read_EightBit_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1226598024" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.001265" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1124" name="Read_FloatPcm_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_FloatPcm_Rejected" methodname="Read_FloatPcm_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1327261027" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000275" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1129" name="Read_MissingDataChunk_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_MissingDataChunk_Rejected" methodname="Read_MissingDataChunk_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1778576189" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000205" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1125" name="Read_NotRiff_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_NotRiff_Rejected" methodname="Read_NotRiff_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="773164178" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000283" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1128" name="Read_OddDataSize_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_OddDataSize_Rejected" methodname="Read_OddDataSize_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="449159924" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000199" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1130" name="Read_SourceName_AppearsInMessage" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_SourceName_AppearsInMessage" methodname="Read_SourceName_AppearsInMessage" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="678580577" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000276" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1122" name="Read_Stereo_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_Stereo_Rejected" methodname="Read_Stereo_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1782949756" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000264" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1126" name="Read_TooShort_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_TooShort_Rejected" methodname="Read_TooShort_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1014602909" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000332" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1127" name="Read_TruncatedData_Rejected" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_TruncatedData_Rejected" methodname="Read_TruncatedData_Rejected" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="202752665" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000238" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1119" name="Read_UnknownChunkBeforeFmt_IsSkipped" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_UnknownChunkBeforeFmt_IsSkipped" methodname="Read_UnknownChunkBeforeFmt_IsSkipped" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="313924497" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000167" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1118" name="Read_ValidWav_RoundTripsSamples" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_ValidWav_RoundTripsSamples" methodname="Read_ValidWav_RoundTripsSamples" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1729047065" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000210" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1121" name="Read_WrongSampleRate_RejectedNamingBothRates" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.Read_WrongSampleRate_RejectedNamingBothRates" methodname="Read_WrongSampleRate_RejectedNamingBothRates" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1170659556" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.000300" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1120" name="ReadFile_ValidWav_Parses" fullname="VoXR.Tests.Editor.VoxrWavReaderTests.ReadFile_ValidWav_Parses" methodname="ReadFile_ValidWav_Parses" classname="VoXR.Tests.Editor.VoxrWavReaderTests" runstate="Runnable" seed="1759660611" result="Passed" start-time="2026-08-13 23:17:01Z" end-time="2026-08-13 23:17:01Z" duration="0.007969" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/excal/AppData/LocalLow/DefaultCompany/VoXR TestGround\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

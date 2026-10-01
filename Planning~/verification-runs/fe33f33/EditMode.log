@@ -1,0 +1,844 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.4/staging' branch; Version is '6000.4.7f1 (f3c3c4248748) revision 15975364'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-excal" at "2026-08-13T23:16:43.5645872Z"
+OS: 'Windows 11  (10.0.26200) Core' Language: 'en' Physical Memory: 32612 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-08-13T23:16:43Z
+
+COMMAND LINE ARGUMENTS:
+Unity.exe
+-runTests
+-batchmode
+-projectPath
+D:\Game Development\VoXR TestGround
+-testPlatform
+EditMode
+-testResults
+D:\Game Development\VoXR TestGround\TestResults\issue73-editmode.xml
+-logFile
+D:\Game Development\VoXR TestGround\TestResults\issue73-editmode.log
+Successfully changed project path to: D:\Game Development\VoXR TestGround
+D:/Game Development/VoXR TestGround
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Player connection [28476]  Target information:
+
+Player connection [28476]  * "[IP] 192.168.0.205 [Port] 55504 [Flags] 2 [Guid] 3702194307 [EditorId] 3702194307 [Version] 1048832 [Id] WindowsEditor(7,Rocinante) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [28476]  * "[IP] 192.168.208.1 [Port] 55504 [Flags] 2 [Guid] 3702194307 [EditorId] 3702194307 [Version] 1048832 [Id] WindowsEditor(7,Rocinante) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [28476] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [28476] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-8516" after 0.3 seconds.
+[Licensing::Module] Licensing is not yet initialized.
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.1'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-excal"
+[Licensing::IpcConnector] LicenseClient-excal channel disconnected successfully.
+[Licensing::IpcConnector] Channel LicenseClient-excal-6000.4.7 doesn't exist
+[Licensing::Module] Successfully launched the LicensingClient (PId: 12712)
+Starting IPC server.
+Waiting for clients to connect on \\.\pipe\Unity-LicenseClient-excal-6000.4.7, press Ctrl-C to exit.
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-excal-6000.4.7" at "2026-08-13T23:16:44.9040033Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 12712, path: "C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.1+9fbee8e
+  Session Id:              6aca94a9edcc4b65bd7f9dbdf0fc39c6
+  Correlation Id:          880922e42cc728297676c0b6325df952
+  External correlation Id: 176475311786225459
+  Machine Id:              W40uXFgnl/R9RALDBGN5/iK3650=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-excal-6000.4.7" (connect: 0.37s, validation: 0.18s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-excal-6000.4.7-notifications" at "2026-08-13T23:16:45.0880239Z"
+[Licensing::Module] Connected to LicensingClient (PId: 12712, launch time: 0.00, total connection time: 0.56s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-NVCZ-7KEN-RAGY-PJSN-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-09-21T15:53:54Z
+[Licensing::Module] License group:
+  Id: 2474082430098-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.01
+[Licensing::Module] Licensing Background thread has ended after 1.57s
+[Licensing::Module] Licensing is initialized (took 1.18s).
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-NVCZ-7KEN-RAGY-PJSN-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-09-21T15:53:54Z
+[Licensing::Module] License group:
+  Id: 2474082430098-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.4.7f1 (f3c3c4248748)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/Game Development/VoXR TestGround/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 4070 SUPER (ID=0x2783)
+    Vendor:   NVIDIA
+    VRAM:     11997 MB
+    Driver:   32.0.15.9186
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56516
+CodeReloadManager initialized
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-NVCZ-7KEN-RAGY-PJSN-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-09-21T15:53:54Z
+[Licensing::Module] License group:
+  Id: 2474082430098-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll
+Registered in 0.006042 seconds.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.389 seconds
+Domain Reload Profiling: 822ms
+	BeginReloadAssembly (121ms)
+		CreateAndSetChildDomain (3ms)
+	RebuildCommonClasses (36ms)
+	RebuildNativeTypeToScriptingClass (11ms)
+	initialDomainReloadingComplete (71ms)
+	LoadAllAssembliesAndSetupDomain (194ms)
+		LoadAssemblies (116ms)
+		AnalyzeDomain (185ms)
+			TypeCache.Refresh (184ms)
+				TypeCache.ScanAssembly (170ms)
+	FinalizeReload (390ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (55ms)
+			BeforeProcessingInitializeOnLoad (85ms)
+			ProcessInitializeOnLoadAttributes (102ms)
+			ProcessInitializeOnLoadMethodAttributes (87ms)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-NVCZ-7KEN-RAGY-PJSN-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-09-21T15:53:54Z
+[Licensing::Module] License group:
+  Id: 2474082430098-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 62 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.ai.navigation@2.0.12 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.ai.navigation@734c2c4c5591)
+    com.unity.collab-proxy@2.12.4 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.collab-proxy@0b1559bcd34e)
+    com.unity.ide.rider@3.0.40 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.ide.rider@e4950c6d131b)
+    com.unity.ide.visualstudio@2.0.27 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.ide.visualstudio@dc1ddd4f09b6)
+    com.unity.inputsystem@1.19.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.timeline@1.8.12 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.xr.openxr@1.17.1 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.xr.openxr@58837b2992e0)
+    com.unity.xr.core-utils@2.6.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.xr.core-utils@a8b900321199)
+    com.unity.xr.management@4.5.2 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.xr.management@f589c7ba49ff)
+    com.unity.xr.legacyinputhelpers@3.0.1 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.xr.legacyinputhelpers@3f62d634f63b)
+    com.unity.searcher@4.9.4 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.searcher@d45a78918735)
+    com.unity.burst@1.8.29 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.burst@6bb9aca3ef38)
+    com.unity.mathematics@1.3.3 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.mathematics@19a9377c4ffa)
+    com.unity.nuget.mono-cecil@1.11.6 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.4.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.test-framework.performance@aa81a99c4a75)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.1 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.multiplayer.center@f01f4ba8d00a)
+    com.unity.render-pipelines.universal@17.4.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.render-pipelines.universal@7228970dbdbf)
+    com.unity.test-framework@1.6.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.test-framework@76560ee600cb)
+    com.unity.ugui@2.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.ugui@4dc88464a83d)
+    com.unity.modules.accessibility@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.adaptiveperformance@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.adaptiveperformance)
+    com.unity.modules.ai@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vectorgraphics@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.vectorgraphics)
+    com.unity.modules.vehicles@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.ext.nunit@d8c07649098d)
+    com.unity.render-pipelines.core@17.4.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.render-pipelines.core@6f62546dd936)
+    com.unity.shadergraph@17.4.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.shadergraph@6db99422c248)
+    com.unity.render-pipelines.universal-config@17.4.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.render-pipelines.universal-config@0db4263b9e6b)
+    com.unity.collections@6.4.0 (location: D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.collections@5b6ebd78ccc0)
+  Local packages:
+    com.jinwoo1601.voxr@file:D:\Game Development\VoXR-Speech-Recognition (location: D:\Game Development\VoXR-Speech-Recognition)
+[Subsystems] Looking for new subsystems at path D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.xr.openxr@58837b2992e0
+[Subsystems] Novel subsystem found at Library/PackageCache/com.unity.xr.openxr@58837b2992e0/Runtime/UnitySubsystemsManifest.json
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/Game Development/VoXR TestGround/Assets
+[Subsystems] Discovering subsystems at path D:\Game Development\VoXR TestGround\Library\PackageCache\com.unity.xr.openxr@58837b2992e0
+[Subsystems] No descriptors matched for  examples in Library/PackageCache/com.unity.xr.openxr@58837b2992e0/Runtime/UnitySubsystemsManifest.json.
+[Subsystems] 1 'inputs' descriptors matched in Library/PackageCache/com.unity.xr.openxr@58837b2992e0/Runtime/UnitySubsystemsManifest.json
+[Subsystems] 1 'displays' descriptors matched in Library/PackageCache/com.unity.xr.openxr@58837b2992e0/Runtime/UnitySubsystemsManifest.json
+[Subsystems] No descriptors matched for  meshings in Library/PackageCache/com.unity.xr.openxr@58837b2992e0/Runtime/UnitySubsystemsManifest.json.
+[Package Manager] Done registering packages in 0.02 seconds
+[ScriptCompilation] Requested script compilation because: Assembly Definition File(s) changed
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:80
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: D:\Game Development\VoXR TestGround
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping - 200 - application/grpc 28.3616ms
+Starting: C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/Game Development/VoXR TestGround
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+warn: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.runtime.interopservices.windowsruntime has duplicate hint path. Ignoring "C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\Facades\System.Runtime.InteropServices.WindowsRuntime.dll" in favor of "C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\NetStandard\Extensions\2.0.0\System.Runtime.InteropServices.WindowsRuntime.dll"
+warn: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.componentmodel.composition has duplicate hint path. Ignoring "C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\System.ComponentModel.Composition.dll" in favor of "C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.ComponentModel.Composition.dll"
+DisplayProgressbar: Compiling Scripts
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst.Cecil, Version=0.11.6.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.burst@6bb9aca3ef38\Unity.Burst.CodeGen\Unity.Burst.Cecil.dll
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Mono.Cecil, Version=0.11.5.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff\Mono.Cecil.dll
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors - 200 - application/grpc 390.3763ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Runtime.dll, with 139 defines and 281 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 14.3484ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.TestRunnerHook.dll, with 138 defines and 290 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.dll, with 137 defines and 291 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 4.6064ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 8.5131ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 139 defines and 340 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with Library\Bee\artifacts\1900b0aE.dag\Unity.Collections.dll
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Runtime.dll, with 139 defines and 266 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 2.2161ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Editor.dll, with 137 defines and 276 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 2.1017ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 137 defines and 363 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved UnityEditor.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\Managed\UnityEngine\UnityEditor.CoreModule.dll
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Data\Managed\UnityEngine\UnityEngine.CoreModule.dll
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst.Cecil.Rocks, Version=0.11.6.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.burst@6bb9aca3ef38\Unity.Burst.CodeGen\Unity.Burst.Cecil.Rocks.dll
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 1562.7500ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly - 200 - application/grpc 1249.5272ms
+ExitCode: 0 Duration: 4s405ms
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Runtime.dll (+2 others) [CacheMiss 87a0e6b2fe9fa12d51d8a24a4341f10f00000000000000000000000000000006]
+[ 894/1166  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1138/1166  1s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Runtime.dll (+2 others)
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Runtime.dll (+2 others) [CacheWrite 87a0e6b2fe9fa12d51d8a24a4341f10f00000000000000000000000000000006]
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Runtime.dll (+2 others) [CacheMiss 0e799e8dd6829f808d6c7f194450300d00000000000000000000000000000006]
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.dll (+2 others) [CacheMiss 86e9f6bc8e66a769f780fa0a447e8baf00000000000000000000000000000006]
+[1139/1166  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Jinwoo1601.VoXR.Runtime.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Runtime.dll, with 139 defines and 281 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1140/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Runtime.pdb
+[1141/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Runtime.dll
+[1142/1166  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.dll (+2 others)
+D:\Game Development\VoXR-Speech-Recognition\Editor\VoxrDebugWindow.cs(79,33): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+
+D:\Game Development\VoXR-Speech-Recognition\Editor\VoxrDebugWindow.cs(80,34): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.dll (+2 others) [CacheWrite 86e9f6bc8e66a769f780fa0a447e8baf00000000000000000000000000000006]
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Editor.dll (+2 others) [CacheMiss 7f0916343ef1dd52962c8a85a08ae5f700000000000000000000000000000006]
+[1144/1166  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Runtime.dll (+2 others)
+[1145/1166  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Jinwoo1601.VoXR.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.dll, with 137 defines and 291 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1146/1166  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Jinwoo1601.VoXR.Editor.TestRunnerHook.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Editor.TestRunnerHook.dll, with 138 defines and 290 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Runtime.dll (+2 others) [CacheWrite 0e799e8dd6829f808d6c7f194450300d00000000000000000000000000000006]
+[1149/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Editor.pdb
+[1150/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Editor.dll
+[1151/1166  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+[1152/1166  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Editor.dll (+2 others)
+[           0s] Csc Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Editor.dll (+2 others) [CacheWrite 7f0916343ef1dd52962c8a85a08ae5f700000000000000000000000000000006]
+[1153/1166  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Jinwoo1601.VoXR.Tests.Runtime.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Runtime.dll, with 139 defines and 266 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1154/1166  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Jinwoo1601.VoXR.Tests.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Jinwoo1601.VoXR.Tests.Editor.dll, with 137 defines and 276 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1155/1166  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+[1156/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Tests.Runtime.pdb
+[1157/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Tests.Editor.pdb
+[1158/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Tests.Editor.dll
+[1159/1166  0s] CopyFiles Library/ScriptAssemblies/Jinwoo1601.VoXR.Tests.Runtime.dll
+[1160/1166  1s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 137 defines and 363 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1161/1166  1s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 139 defines and 340 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1162/1166  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[1163/1166  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+[1164/1166  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1165/1166  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (4.37 seconds), 26 items updated, 1166 evaluated
+D:\Game Development\VoXR-Speech-Recognition\Editor\VoxrDebugWindow.cs(79,33): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+D:\Game Development\VoXR-Speech-Recognition\Editor\VoxrDebugWindow.cs(80,34): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+AssetDatabase: script compilation time: 4.826028s
+Begin MonoManager ReloadAssembly
+Assembly Assembly-CSharp-Editor-firstpass.dll at Library/ScriptAssemblies/Assembly-CSharp-Editor-firstpass.dll not valid. Loading of assembly skipped.
+Assembly Assembly-CSharp-firstpass.dll at Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll not valid. Loading of assembly skipped.
+Assembly DocCodeExamples.dll at Library/ScriptAssemblies/DocCodeExamples.dll not valid. Loading of assembly skipped.
+Assembly TestNewCustomAssembly.dll at Library/ScriptAssemblies/TestNewCustomAssembly.dll not valid. Loading of assembly skipped.
+Assembly Unity.Collections.BurstCompatibilityGen.dll at Library/ScriptAssemblies/Unity.Collections.BurstCompatibilityGen.dll not valid. Loading of assembly skipped.
+Assembly Unity.Collections.DocCodeSamples.dll at Library/ScriptAssemblies/Unity.Collections.DocCodeSamples.dll not valid. Loading of assembly skipped.
+Assembly Unity.Collections.PerformanceTests.dll at Library/ScriptAssemblies/Unity.Collections.PerformanceTests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Collections.Tests.dll at Library/ScriptAssemblies/Unity.Collections.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Collections.Tests.Playmode.dll at Library/ScriptAssemblies/Unity.Collections.Tests.Playmode.dll not valid. Loading of assembly skipped.
+Assembly Unity.InputSystem.IntegrationTests.dll at Library/ScriptAssemblies/Unity.InputSystem.IntegrationTests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Mathematics.Tests.dll at Library/ScriptAssemblies/Unity.Mathematics.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Multiplayer.Center.Editor.Tests.dll at Library/ScriptAssemblies/Unity.Multiplayer.Center.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Multiplayer.Center.Tests.dll at Library/ScriptAssemblies/Unity.Multiplayer.Center.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Nuget.Mono-Cecil.dll at Library/ScriptAssemblies/Unity.Nuget.Mono-Cecil.dll not valid. Loading of assembly skipped.
+Assembly Unity.PathTracing.Editor.Tests.dll at Library/ScriptAssemblies/Unity.PathTracing.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.PathTracing.Runtime.Tests.dll at Library/ScriptAssemblies/Unity.PathTracing.Runtime.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.RenderPipelines.Core.Editor.Tests.dll at Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.RenderPipelines.Core.Runtime.Tests.dll at Library/ScriptAssemblies/Unity.RenderPipelines.Core.Runtime.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.RenderPipelines.Universal.Config.Editor.Tests.dll at Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Config.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.RenderPipelines.Universal.Editor.Tests.dll at Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.RenderPipelines.Universal.Runtime.Tests.dll at Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Runtime.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.Searcher.EditorTests.dll at Library/ScriptAssemblies/Unity.Searcher.EditorTests.dll not valid. Loading of assembly skipped.
+Assembly Unity.ShaderGraph.Editor.Tests.dll at Library/ScriptAssemblies/Unity.ShaderGraph.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.TextMeshPro.Editor.Tests.dll at Library/ScriptAssemblies/Unity.TextMeshPro.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.TextMeshPro.Tests.dll at Library/ScriptAssemblies/Unity.TextMeshPro.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.UnifiedRayTracing.Editor.Tests.dll at Library/ScriptAssemblies/Unity.UnifiedRayTracing.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.CoreUtils.CodeSamples.Tests.dll at Library/ScriptAssemblies/Unity.XR.CoreUtils.CodeSamples.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.CoreUtils.Editor.Tests.dll at Library/ScriptAssemblies/Unity.XR.CoreUtils.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.CoreUtils.Tests.dll at Library/ScriptAssemblies/Unity.XR.CoreUtils.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.Management.EditorTests.dll at Library/ScriptAssemblies/Unity.XR.Management.EditorTests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.Management.TestPackage.dll at Library/ScriptAssemblies/Unity.XR.Management.TestPackage.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.Management.TestPackage.Editor.dll at Library/ScriptAssemblies/Unity.XR.Management.TestPackage.Editor.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.Management.Tests.dll at Library/ScriptAssemblies/Unity.XR.Management.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.Management.Tests.Standalone.dll at Library/ScriptAssemblies/Unity.XR.Management.Tests.Standalone.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.OpenXR.Editor.Tests.dll at Library/ScriptAssemblies/Unity.XR.OpenXR.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.OpenXR.Tests.dll at Library/ScriptAssemblies/Unity.XR.OpenXR.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.OpenXR.Ubuntu.Tests.dll at Library/ScriptAssemblies/Unity.XR.OpenXR.Ubuntu.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.XR.TestSupport.dll at Library/ScriptAssemblies/Unity.XR.TestSupport.dll not valid. Loading of assembly skipped.
+Assembly UnityEditor.UI.Common.Tests.dll at Library/ScriptAssemblies/UnityEditor.UI.Common.Tests.dll not valid. Loading of assembly skipped.
+Assembly UnityEditor.UI.EditorTests.dll at Library/ScriptAssemblies/UnityEditor.UI.EditorTests.dll not valid. Loading of assembly skipped.
+Assembly UnityEditor.XR.LegacyInputHelpers.Tests.dll at Library/ScriptAssemblies/UnityEditor.XR.LegacyInputHelpers.Tests.dll not valid. Loading of assembly skipped.
+Assembly UnityEngine.SpatialTracking.Tests.dll at Library/ScriptAssemblies/UnityEngine.SpatialTracking.Tests.dll not valid. Loading of assembly skipped.
+Assembly UnityEngine.UI.Tests.dll at Library/ScriptAssemblies/UnityEngine.UI.Tests.dll not valid. Loading of assembly skipped.
+Assembly UnityEngine.XR.OpenXR.CodeSamples.Editor.Tests.dll at Library/ScriptAssemblies/UnityEngine.XR.OpenXR.CodeSamples.Editor.Tests.dll not valid. Loading of assembly skipped.
+Start importing Packages/com.jinwoo1601.voxr/Tests using Guid(c2f82919fc6193f4dbd5f4f480713b3a) (DefaultImporter) -> (Import Result ID: 'd30879a37eb872f840a16ca261650040') in 0.022575 seconds [static dependencies only]. Details - ImportResultOutputID=6730e542c602336b78092cb298171caf DependenciesID=11604ca24017db25d6f934b91bd6fb26 StaticDependenciesID=26b02764768c29caee6645543bb81482 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Editor using Guid(b5a81910a7d272e45b7cd0929ae771ca) (DefaultImporter) -> (Import Result ID: '438ee5dc757f26f8c90edc66b60b89a7') in 0.0021993 seconds [static dependencies only]. Details - ImportResultOutputID=62817fd38935c8c9e71f536d8303f78d DependenciesID=c7fd05809e1c232515a295d34a7278d3 StaticDependenciesID=2359b3d4e2d09a87b16a7e7cc9451285 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures using Guid(169897fb5430916499457907fbe6a69c) (DefaultImporter) -> (Import Result ID: 'a8d2800e0411496d601d6119dff77e43') in 0.0069265 seconds [static dependencies only]. Details - ImportResultOutputID=f08fbbf82a4413baf7844c65a4bad249 DependenciesID=f17f12f992b7b71a18912e4be828b23e StaticDependenciesID=f946a5ae00bf2c6581debdf3bcca5f6c 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Runtime using Guid(c9f73902a35a1b646becee265daeed38) (DefaultImporter) -> (Import Result ID: '8399021694c38252f9826dc36b57cc8f') in 0.0021116 seconds [static dependencies only]. Details - ImportResultOutputID=b9488466c9af3619ad38999c854e4e4b DependenciesID=d9d545b0b7dc2c1862c509ff70ae125f StaticDependenciesID=4db71e11613553b30d34f50b68d7befa 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio using Guid(97e79950ef5f95a49bdcf2ee9fa632ff) (DefaultImporter) -> (Import Result ID: '7a6337295569fe3c178f3c25557a736f') in 0.0096673 seconds [static dependencies only]. Details - ImportResultOutputID=90b729d7c302cc2eb2be2eb2a90d0fa2 DependenciesID=367c24db7aeb1049dc4f60ec990c661b StaticDependenciesID=d433827740103ee0b7476afc4fbf6bfd 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts using Guid(f695131801f57f249acf383951130e37) (DefaultImporter) -> (Import Result ID: '66079d16ee356a90fae69b239e84f08a') in 0.0026629 seconds [static dependencies only]. Details - ImportResultOutputID=a638b0698f825b28d1c6065125d24471 DependenciesID=afec8ac553b6b504a6c2cc6e3dc47605 StaticDependenciesID=f8a85dfd7cbace09340e87dd657019de 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/human using Guid(59894ecbbea15c247aae7c9aa972ceb3) (DefaultImporter) -> (Import Result ID: '31c5d518ce6fa5da03fea7fb7cb8c285') in 0.0096258 seconds [static dependencies only]. Details - ImportResultOutputID=f050816148657077054b8811802529f1 DependenciesID=e7d37e489606b9d8ba3a98c6ef01a0fc StaticDependenciesID=00bfd445fe47001f8c3e6131874da899 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Runtime/Jinwoo1601.VoXR.Tests.Runtime.asmdef using Guid(746dd2a5ad6318f479121d7236591939) (AssemblyDefinitionImporter) -> (Import Result ID: 'a41e8cae2bd75cae00e3eb4ab45f69ca') in 0.0086274 seconds [static dependencies only]. Details - ImportResultOutputID=406b7189556332666228ce8686583b36 DependenciesID=e6ff17096e76155195d33d80dbf91b39 StaticDependenciesID=2df84dcc64065ee221f974d71711395c 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Editor/Jinwoo1601.VoXR.Tests.Editor.asmdef using Guid(ac8e9bb836ba9e34eb0972ef413db082) (AssemblyDefinitionImporter) -> (Import Result ID: '252b7395b07e6939e3f7ef2f1fa9221b') in 0.0035205 seconds [static dependencies only]. Details - ImportResultOutputID=cf6298b791510843363300a3a0ba61db DependenciesID=a3733751059731d532c3895e8c81f17b StaticDependenciesID=e3991e21f5a0671615e92f4c469c20ed 
+Refreshing native plugins compatible for Editor in 7.93 ms, found 14 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 6.47 ms, found 14 plugins.
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.996 seconds
+Domain Reload Profiling: 4618ms
+	BeginReloadAssembly (320ms)
+		DisableScriptedObjects (22ms)
+		CreateAndSetChildDomain (152ms)
+	RebuildCommonClasses (33ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (685ms)
+	LoadAllAssembliesAndSetupDomain (572ms)
+		LoadAssemblies (390ms)
+		AnalyzeDomain (278ms)
+			TypeCache.Refresh (197ms)
+				TypeCache.ScanAssembly (182ms)
+			BuildScriptInfoCaches (67ms)
+			ResolveRequiredComponents (12ms)
+	FinalizeReload (2997ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (31ms)
+			BeforeProcessingInitializeOnLoad (168ms)
+			ProcessInitializeOnLoadAttributes (2301ms)
+			ProcessInitializeOnLoadMethodAttributes (195ms)
+			AfterProcessingInitializeOnLoad (5ms)
+		AwakeInstancesAfterBackupRestoration (17ms)
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/generate.py using Guid(14fdbd87b1111f34ca31d550b1ada06b) (DefaultImporter) -> (Import Result ID: 'ff279be498095ba727d8dab08dcf6c9c') in 0.0385086 seconds [static dependencies only]. Details - ImportResultOutputID=06a1d0b788dbb42a6162602beb0736c7 DependenciesID=eeec8bbb0ed2bd5d0dc6dbd140446f65 StaticDependenciesID=8382a76b49dd2bea19806dde2b2d9799 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/generate.sh using Guid(6d9afe95bbb2199419872873822662e5) (DefaultImporter) -> (Import Result ID: 'e7c3ee1c3cd596a93b95561cafbcbb16') in 0.0158695 seconds [static dependencies only]. Details - ImportResultOutputID=4388fd2b4a071a79e25c90f271ab2e70 DependenciesID=1beaa10ed9e13cc4324fd65d20fd091d StaticDependenciesID=1bfdd77eb3a88900a0ae98a57c876496 
+Start importing Assets/XR/Settings/OpenXR Package Settings.asset using Guid(b4cc4fa74d6f5ab4580f5cccd25e9884) (NativeFormatImporter) -> (Import Result ID: 'c3bad427390543ea9e44ccec1a31ba27') in 0.0028676 seconds [static dependencies only]. Details - ImportResultOutputID=3faa72195da780ec9f2b6856e0e2d98a DependenciesID=0e7828441b83e6a54cda038e52bb3d6d StaticDependenciesID=0eb59f25e35da9372c125af96a47f942 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/manifest.json using Guid(50ccaf955745a0d4cb00f531e191b688) (TextScriptImporter) -> (Import Result ID: 'd0d860ccb757205383e297c16dcd0e3c') in 0.0122797 seconds [static dependencies only]. Details - ImportResultOutputID=ebfe1964b999c10ca19869cca0fefcf0 DependenciesID=f593e3410c0c93b748cb87ac4275e1af StaticDependenciesID=d368f76d60bffdb08cba20242b5eaffa 
+Start importing Packages/com.jinwoo1601.voxr/CHANGELOG.md using Guid(f66a401103c09e64a8fe16ab4b043fc9) (TextScriptImporter) -> (Import Result ID: 'e7517cc91c94ae5399d588134b0b3000') in 0.0019957 seconds [static dependencies only]. Details - ImportResultOutputID=69763cdb738769d7551946ee6c94b899 DependenciesID=bf89cd3e5499069bba425e9405e5130e StaticDependenciesID=745d6efddfe3166644954eb40d43bd9b 
+Start importing Packages/com.jinwoo1601.voxr/KNOWN_LIMITATIONS.md using Guid(9fdacc0fbf7711f49bde337c438da2c9) (TextScriptImporter) -> (Import Result ID: '7cde8c8f7de9d18b287b110682b6c530') in 0.0227784 seconds [static dependencies only]. Details - ImportResultOutputID=c3e66247731953e835a24e9186127f33 DependenciesID=124e9a48fadda7449e3db21a2bd1e8ca StaticDependenciesID=f9935f5ff8715614347864c99dba5216 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/launch_jackals_target_hotel_two.wav using Guid(90e98877ed199fd40bd32f7c660e1a3d) (AudioImporter) -> (Import Result ID: '8795d0762c07fecb3e6fb98235b30750') in 0.0752553 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=8beecfc3ecf1f3bc9f0ef8a2b0135494 DependenciesID=80022ba039049c36e58f7f853ec19733 StaticDependenciesID=3b125fe6a17914d2a44b6f2e22747cc8 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/switch_to_navigation.wav using Guid(41a5e53e30b99fd45bc069f155d9171b) (AudioImporter) -> (Import Result ID: '797d5d19bc469896ce0c6a0f0c56af85') in 0.069728 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=28e9d5580a066a912af8b51fae19231e DependenciesID=87bb957dedb1ddc84b8f558f1d9f9426 StaticDependenciesID=c3b1a4db63878381bad2e1b2c6b14814 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/enable_all.wav using Guid(d12e6e5981b20ca42ba20342b6610d0c) (AudioImporter) -> (Import Result ID: '1ef71b664f130b8839f4788631f2b1db') in 0.0618704 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=dcf3a5323a80dcd462f8e4b65f6a8efd DependenciesID=6eaaaa7dab42bad8631902b4f27b7eba StaticDependenciesID=8b6723655e0948e24f30ec474da682d4 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/resume_fire.wav using Guid(327922c945be5bb4dba808069dd6deb2) (AudioImporter) -> (Import Result ID: '0614287f3182739396c67e65559ac6f7') in 0.0723246 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d1e510b90ac2c2f29ec5cd429eb64da3 DependenciesID=c40a098cd2ff3e63bb8146ed93586c4c StaticDependenciesID=e7a6c740732dc0b13bc2f9db7f03a41f 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/filler_launch_three_torpedoes_target_alpha_three.wav using Guid(25fd13500660c9448a929ed18f25d03e) (AudioImporter) -> (Import Result ID: '4cfd50f184dad0d1214fb2c99b6b4535') in 0.0899403 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=7abe677a70170d19b4fc9be2b6d558ae DependenciesID=3cd74c0ecdd26718844d53dc16ae9396 StaticDependenciesID=3204cf443d234aeda2783d070669b54d 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/disable_all.wav using Guid(5540def0928a0f44b8e184da4eb9fb12) (AudioImporter) -> (Import Result ID: 'af6cd7a7b3d0937eadb93af02f552e06') in 0.0596055 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d8f32cc065378cb862d86fb17b080307 DependenciesID=d51e07f4fd3baddb8eb18da7c15e87aa StaticDependenciesID=2bc793f496f4973f83ec5fb57b0d1081 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/fire_two_torpedoes_at_bravo_two.wav using Guid(083c0a76d00a3ea47860abe2df8cf1e5) (AudioImporter) -> (Import Result ID: 'e3f7de22e4580c0963cf5c867979ad64') in 0.0720253 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=54229968514a04c4e85bcd0551752cc9 DependenciesID=d90379c959878f16385888c9f62e56c8 StaticDependenciesID=29ac6d5144a63402e5861804ba37eb51 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/navigation_mode.wav using Guid(79f3b608135fe5140b4c581fb067db58) (AudioImporter) -> (Import Result ID: '67d031d74132f1fbebcb11d53ac55d3c') in 0.0690876 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=80191a5f5fb392826226bab685403340 DependenciesID=a1d515785f20ecf3687fdb2222cb037f StaticDependenciesID=c8db263259176fb6112577c27f226f0c 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/fall_back_from_target_bravo_two.wav using Guid(e927f07adc09e204e8fffc52b5cdab92) (AudioImporter) -> (Import Result ID: 'fb4f443c36e8b7b7bbb7e2a0ece15156') in 0.0631204 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=08b191c833b0fa6b212080f7c870c202 DependenciesID=d593134d28df517856dc50e40ebd9e12 StaticDependenciesID=c476eb8902bc8be90d131c789120411b 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/set_heading_two_seven_zero.wav using Guid(7bd99f70d940d2243812c761056f4900) (AudioImporter) -> (Import Result ID: '87094f2cf01da82628906651b0374cbb') in 0.0694325 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=a03c59863776786a16a8a0a154c82b5b DependenciesID=5941f8704d6dad12022b0da04635f17b StaticDependenciesID=d9a949e117be762e3bab92279114bda8 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/launch_one_missiles_target_hotel_one.wav using Guid(7b4da41b10afb7e44a9f6a0c202db1ee) (AudioImporter) -> (Import Result ID: '91c28dcd49a0342dc057382c8a46fbe7') in 0.0626372 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=93f61d7468a744fcf23ae2903e380f39 DependenciesID=c27b0a9575e0cbedfc9a5b9fc6eaa1ed StaticDependenciesID=74fea81c006cacf3642055f630599778 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/switch_to_weapons.wav using Guid(3d1817cbb0906a040b903b09359fe26b) (AudioImporter) -> (Import Result ID: '39c0589638887f0a5b0f5ad4cd1fe8d9') in 0.0666296 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=87593449fdcfa8702ebf650a47456373 DependenciesID=8c18084147d2c9fd235ee56844bbd742 StaticDependenciesID=ec3f633285f61ef3d7b88bcc221120ea 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/approach_target_alpha_one.wav using Guid(1e89d10e6332d424daed615baa818715) (AudioImporter) -> (Import Result ID: '66b30bc4b5ffd6adf9f3a81418c43a76') in 0.0691829 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=24c70cd547084cb35b724ce5fa833aab DependenciesID=95f5f63004e0d865da5c91d4b32cde21 StaticDependenciesID=4125933264c4a966dfa4fe343ab7a47c 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/cease_fire.wav using Guid(1f9e3baac75df32449ca7fdbf266a0c5) (AudioImporter) -> (Import Result ID: 'b2ea4d012ea4efcf49264c0ac4df6d00') in 0.0526218 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=576cf6ebc1f669c5169630fbb3ac5468 DependenciesID=29ab4c2e60261a8063e4f789e0ae8807 StaticDependenciesID=79ddce151cd2bff38104662d3b6542a6 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/silence_negative.wav using Guid(3ff8152f092e561408b302cd5bbd8a07) (AudioImporter) -> (Import Result ID: 'ac06481652b519faed7ae09ec41a6c4d') in 0.060381 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=de19054b12f9a11d1657b82307b233be DependenciesID=1d9688852fc30b19846cb0620725b93a StaticDependenciesID=bae7974b3261545027c52a0665e81b11 
+Start importing Packages/com.jinwoo1601.voxr/Tests/Fixtures/audio/tts/split_close_distance_safe_range_target_hotel_one.wav using Guid(9f70c7475eceaae4ca3c18edab87878b) (AudioImporter) -> (Import Result ID: 'a5aad2a81946ea825c51000880a1ed4b') in 0.07054 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e54ca9f90cc7a079071b8279645858bb DependenciesID=9272d023995b720b9472bdbc9651d1d1 StaticDependenciesID=64f269f54c547421ca11a9d5e9b55325 
+Refreshing native plugins compatible for Editor in 4.58 ms, found 14 plugins.
+(Values over 0.050ms)
+Asset Pipeline Refresh (id=ebc58650154bb3c44a2336b2262fdda9): Total: 12.000 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=31 (actual=31, local cache=0, cache server=0)
+		Asset DB Process Time: managed=11 ms, native=4975 ms
+		Asset DB Callback time: managed=460 ms, native=42 ms
+		Scripting: domain reloads=1, domain reload time=1624 ms, compile time=4827 ms, other=56 ms
+		Project Asset Count: scripts=1514, non-scripts=2455
+		Asset File Changes: new=0, changed=64, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 30.674ms
+	ApplyChangesToAssetFolders: 0.693ms
+	Scan: 245.212ms
+	OnSourceAssetsModified: 0.901ms
+	CategorizeScriptCompilationAssets: 192.956ms
+	ProcessAssetsWithTransientArtifactChanges: 69.696ms
+	CategorizeAssets: 52.818ms
+	CompileScripts: 4827.471ms
+	ImportOutOfDateAssets: 4282.873ms (3017.462ms without children)
+		ImportManagerImport: 1263.249ms (5.187ms without children)
+			UpdateCategorizedAssets: 0.351ms
+		UnloadImportedAssets: 0.793ms
+		ReloadImportedAssets: 0.164ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.785ms
+		OnDemandSchedulerStart: 0.500ms
+	PostProcessAllAssets: 467.803ms
+		AssemblyValidation.PostprocessAllAssets 5.000ms
+		XRBuildSystem.XRAssetImported 0.882ms
+		PostProcessCallbackCreateDeferredMaterials 0.318ms
+		ShaderAssetModifiedCallback 0.183ms
+		RaytracingShaderImportPostprocess 0.110ms
+		SpeedTreeImporter.PostprocessAllAssets 0.099ms
+		ComputeShaderImportPostprocess 0.069ms
+		LocalizationDatabase.AssetDatabasePostprocessCallback 0.067ms
+		BlockShaderImporter.PostprocessAllAssets 0.057ms
+		MonoPostProcessAllAssets: 459.853ms
+			SyncVS.PostprocessSyncProject 201.680ms
+			AssetPostprocessor.OnPostprocessAllAssets 147.932ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 32.096ms
+			AssetCallbacks.OnPostprocessAllAssets 25.465ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 10.535ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 8.647ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 3.706ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.202ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.004ms
+			AssetChangedListener.OnPostprocessAllAssets 1.454ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.230ms
+			MaterialPostprocessor.OnPostprocessAllAssets 1.174ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 1.004ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.994ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.786ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.781ms
+			PostProcessor.OnPostprocessAllAssets 0.736ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.672ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.453ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.410ms
+			AssetEvents.OnPostprocessAllAssets 0.398ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.391ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.359ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.194ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.184ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.170ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.162ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.154ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.145ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.115ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.102ms
+	PostAssetChangesProfiler: 6.156ms
+	UnloadStreamsBegin: 2.660ms
+	PersistCurrentRevisions: 0.245ms
+	GenerateScriptTypeHashes: 2.601ms
+	GenerateScriptTypeSerializationHashes: 4.694ms
+	Untracked: 1814.926ms
+
+Application.AssetDatabase Initial Refresh End
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Scanning for USB devices : 4.899ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-VoXR TestGround
+Unloading 29 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 7190 unused Assets / (7.1 MB). Loaded Objects now: 8086.
+Memory consumption went from 217.4 MB to 210.4 MB.
+Total: 13.012600 ms (FindLiveObjects: 0.727200 ms CreateObjectMapping: 0.665400 ms MarkObjects: 6.053500 ms  DeleteObjects: 5.559400 ms)
+
+[Project] Loading completed in 16.504 seconds
+	Project init time: 				15.219 seconds
+		Template init time: 		0.000 seconds
+		Package Manager init time: 		1.432 seconds
+		Asset Database init time: 		0.185 seconds
+		Global illumination init time: 	0.003 seconds
+		Assemblies load time: 			0.864 seconds
+		Unity extensions init time: 	0.007 seconds
+		Asset Database refresh time: 	12.001 seconds
+	Scene opening time: 			1.161 seconds
+##utp:{"type":"ProjectInfo","version":2,"phase":"Immediate","time":1786663020062,"processId":8516,"projectLoad":16.5035925,"projectInit":15.2189671,"templateInit":0.0,"packageManagerInit":1.4321,"assetDatabaseInit":0.185418,"globalIlluminationInit":0.002903,"assembliesLoad":0.8636576,"unityExtensionsInit":0.0072453,"assetDatabaseRefresh":12.0009593,"sceneOpening":1.1611549}
+##utp:{"type":"EditorInfo","version":2,"phase":"Immediate","time":1786663020062,"processId":8516,"editorVersion":"6000.4.7f1 (f3c3c4248748)","branch":"6000.4/staging","buildType":"Release","platform":"Windows"}
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Running tests for ExecutionSettings with details:
+targetPlatform = 
+playerHeartbeatTimeout = 600
+filters[0] = 
+   Filter with settings:
+   testMode = EditMode
+   targetPlatform = 
+   testNames = null
+   groupNames = null
+   categoryNames = null
+   assemblyNames = null
+ignoreTests = {}
+featureFlags = null
+
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.CommandLineTest.Executer:InitializeAndExecuteRun (string[]) (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/CommandLineTest/Executer.cs:53)
+UnityEditor.TestTools.TestRunner.CommandLineTest.TestStarter:InitializeAndExecuteRun () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/CommandLineTest/TestStarter.cs:64)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/CommandLineTest/Executer.cs Line: 53)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Start Indexing on Editor startup
+[Indexing] Starting Initial Indexing for Assets
+[UnityConnectServicesConfig] config is NOT valid, switching to default
+Created GICache directory at C:/Users/excal/AppData/LocalLow/Unity/Caches/GiCache. Took: 0.018s, timestamps: [16.507 - 16.525]
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 5 unused Assets / (57.7 KB). Loaded Objects now: 8114.
+Memory consumption went from 229.8 MB to 229.7 MB.
+Total: 10.370200 ms (FindLiveObjects: 0.401000 ms CreateObjectMapping: 0.190600 ms MarkObjects: 9.681300 ms  DeleteObjects: 0.096300 ms)
+
+Executing IPrebuildSetup for: Unity.PerformanceTesting.Editor.TestRunBuilder.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<ExecuteMethods>d__8<UnityEngine.TestTools.IPrebuildSetup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:48)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<Execute>d__7<UnityEngine.TestTools.IPrebuildSetup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:34)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:108)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs Line: 48)
+
+Saving results to: C:/Users/excal/AppData/LocalLow/DefaultCompany/VoXR TestGround\TestResults.xml
+Saving results to: D:\Game Development\VoXR TestGround\TestResults\issue73-editmode.xml
+Executing IPostBuildCleanup for: Unity.PerformanceTesting.Editor.TestRunBuilder.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<ExecuteMethods>d__8<UnityEngine.TestTools.IPostBuildCleanup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:48)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<Execute>d__7<UnityEngine.TestTools.IPostBuildCleanup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:34)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:108)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs Line: 48)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 8115.
+Memory consumption went from 227.0 MB to 227.0 MB.
+Total: 8.364600 ms (FindLiveObjects: 0.438200 ms CreateObjectMapping: 0.222700 ms MarkObjects: 7.688100 ms  DeleteObjects: 0.014700 ms)
+
+DisplayProgressbar: Undo
+Test run completed. Exiting with code 0 (Ok). Run completed.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.CommandLineTest.Executer:ExitApplication (UnityEditor.TestTools.TestRunner.CommandLineTest.Executer/ReturnCodes,string) (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/CommandLineTest/Executer.cs:81)
+UnityEditor.TestTools.TestRunner.CommandLineTest.Executer:ExitIfRunIsCompleted () (at ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/CommandLineTest/Executer.cs:74)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@76560ee600cb/UnityEditor.TestRunner/CommandLineTest/Executer.cs Line: 81)
+
+Killing ADB server in 0.082822 seconds.
+Start importing Assets/XR/Settings/OpenXR Package Settings.asset using Guid(b4cc4fa74d6f5ab4580f5cccd25e9884) (NativeFormatImporter) -> (Import Result ID: 'c3bad427390543ea9e44ccec1a31ba27') in 0.0018617 seconds [static dependencies only]. Details - ImportResultOutputID=3faa72195da780ec9f2b6856e0e2d98a DependenciesID=0e7828441b83e6a54cda038e52bb3d6d StaticDependenciesID=0eb59f25e35da9372c125af96a47f942 
+Refreshing native plugins compatible for Editor in 4.17 ms, found 14 plugins.
+Asset Pipeline Refresh (id=2a3c693da4628614580acefffcfb47f7): Total: 0.060 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-excal-6000.4.7-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-excal-6000.4.7 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Shut down.
+Cleanup mono
+CodeReloadManager destroyed
+abort_threads: Failed aborting id: 000000000000658C, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000318C, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000658C, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000318C, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 3940
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1786663022718,"processId":8516,"allocatedMemory":15292104,"memoryLabels":[{"Default":174664},{"Permanent":15276},{"NewDelete":65411},{"Thread":4230344},{"Manager":32717},{"VertexData":8},{"Geometry":816},{"Texture":24},{"Shader":850574},{"Material":24},{"GfxDevice":55321},{"Animation":392},{"Audio":3008},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":888},{"Input":9880},{"JobScheduler":33024},{"TextLib":216},{"Mono":32},{"MonoCode":64},{"ScriptingNativeRuntime":155052},{"BaseObject":1620432},{"Resource":1184},{"Renderer":3008},{"Transform":4685},{"File":1088},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":13235},{"StaticString":6718},{"Utility":2672774},{"Curl":2559},{"PoolAlloc":2168},{"AI":80},{"TypeTree":13965},{"ScriptManager":448},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":120},{"GI":7792},{"Director":8320},{"CloudService":576},{"WebRequest":808},{"VR":48194},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"Camera":17},{"Secure":2113},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":192},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":336},{"Hierarchy":608},{"CoreStats":13032},{"Identifiers":12960},{"Gui":128},{"EditorUtility":122732},{"VersionControl":4},{"Undo":931},{"AssetDatabase":4685300},{"EditorGi":328},{"UnityConnect":37777},{"Upm":1912},{"UpmDiagnostics":8},{"AssetCompliance":64},{"DrivenProperties":72},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2588},{"Windowing":456},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}

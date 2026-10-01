@@ -15,6 +15,9 @@ name: Release
 #   - creates branch `release/X.Y.Z`
 #   - strips dev-only `NativeBridge~/` and `Tests~/` (consumers pull the
 #     prebuilt libvosk-bridge.so; they don't need C++ sources or NUnit suites)
+#     and the workflow layer — `Planning~/`, `.claude/`, `CLAUDE.md`,
+#     `CLAUDE.md.meta`, `memory/`, `memory.meta` (process docs and Claude
+#     Code workflow state, never part of the package)
 #   - tags `vX.Y.Z` on that stripped commit
 #   - publishes a GitHub Release with notes pulled from CHANGELOG.md
 #
@@ -110,8 +113,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git switch -c "release/$VERSION"
-          git rm -r NativeBridge~ Tests~
-          git commit -m "Strip NativeBridge~ and Tests~ from v$VERSION distribution"
+          git rm -r NativeBridge~ Tests~ Planning~ .claude CLAUDE.md CLAUDE.md.meta memory memory.meta
+          git commit -m "Strip NativeBridge~, Tests~ and the workflow layer from v$VERSION distribution"
           git tag -a "v$VERSION" -m "v$VERSION"
 
           git push origin "release/$VERSION"

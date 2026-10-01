@@ -1,0 +1,62 @@
+---
+name: tackle-issue
+description: "Work one open issue, or a batch of deferrals, end to end in the light lane, fixing only once its cause is proven; never merges. Use on 'tackle an issue', 'work the issue backlog', or when an issue is picked up under the light lane."
+kind: orchestration
+agents: [debugger, code-writer, compile-check]
+stops: [an issue too ambiguous to work without the human, the changeset left open for the human, escalation after the second failed fix iteration, the ruling to run concurrently or wait, the stop after the cut on the tree path]
+status: active
+bindings: [vc, verification, issues, trees, session-launch, board, classes]
+removal-date: null
+---
+
+# tackle-issue
+
+## What this is
+
+**One issue, or one batch, each diagnosed before it is fixed, and a changeset left open for the human.** The light lane is exempt from G0 and G1, so there is no design doc to derive the fix from and no plan to implement against — what replaces them is an agent that proves the cause with evidence before a line of the fix is written.
+
+This skill runs the lane's own brief–dispatch–gate loop and does not invoke core's `implement`: that skill's stated prerequisite is a plan file, beside the architecture doc, that `plan-validator` validated, and a lane exempt from G0 and G1 has neither an architecture doc nor a plan file, so the lane cannot honestly invoke it.
+
+> One issue, or one batch of deferrals, per run. The cause is proved before the fix is written, the writer's own claim is never the gate, and the merge is the human's.
+
+## Bindings
+
+Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says: `.claude/bindings/<pack>.md` first, the project `CLAUDE.md` *Bindings* section as the pre-scaffold fallback.
+
+- `vc` (required) — the *Branch procedure* BRANCH follows, and the *Merge procedure* the review step branches on. Absent → stop and say so before any brief is filed: no branch idiom, and no route for the review.
+- `verification` (required) — the commands `compile-check` runs at GATE, once per gate. The writer's brief quotes the `Targeted` command with the fix's targets, or `not run — the gate runs the suite` where the slot is missing, `TODO` or `none`. A LOOP re-dispatch takes it on the gate's failing checks. `none` is a filled value: the brief says `none bound`, GATE is recorded as `nothing to run`, and nothing loops. Absent → stop and say so before the first dispatch.
+- `issues` (optional) — the *Tracker*, where this project's issues live; the *Read* slot, by which SELECT lists the open issues with their labels and UNDERSTAND reads one issue and its thread; the *Comment* slot, by which UNDERSTAND and REVIEW post where the issue lives; and the *Link* slot, by which OPEN names the issue the changeset closes. Absent, empty, `TODO`, or its *Tracker* reading `none` → the no-tracker path: the human names the task in conversation, and SELECT, UNDERSTAND, OPEN and REVIEW run as each says for that path; never a stop for that reason alone.
+- `trees` (optional) — the slots `references/tree-path.md` `## Bindings` names. Absent → today's path. Filled → the steps run as `references/tree-path.md` orders them.
+- `session-launch` (optional) — read by `handoff`, which `references/tree-path.md`'s LAUNCH invokes. Absent, or a slot the launch needs missing or `none` → `handoff` gives the paste line, naming the slot.
+- `board` (optional) — the *STATUS line cap*, which the STATUS line DECLARE records stays within. Absent, `none` or missing the slot → no cap stated, never a stop.
+- `classes` (optional) — the prose and trivial bounds and the batch cap, read by the `bounds` verb, not by this skill. Absent or unfilled → prose and trivial fail closed to slim and a batch fails the cap; never a stop.
+- Agents — `debugger` missing → stop before any dispatch and say so. `code-writer` missing → stop before any dispatch. `compile-check` missing → stop before any dispatch.
+
+## When it applies — and prerequisites
+
+**Trigger:** one open issue, or a named set of open deferrals as one batch, is taken up under the light lane, declared into the lane at the start of the work rather than claimed into it afterwards.
+
+Confirm before proceeding — if any item fails, stop and say which step or lane is actually needed:
+- The `issues` binding's *Tracker* leads to where this project's issues are tracked — or, on the no-tracker path, the human has named the task in conversation.
+- The issue, or the batch, is one changeset's worth of work. Work that is really a feature belongs on the implementation track, with its own requirement and architecture docs and its own gates.
+- No changeset for this issue, or any batch item, is already in flight. Where `trees` is filled, `references/tree-path.md` settles first, before this list is confirmed, whether this run is resumed, and a resumed run's own branch does not fail this item.
+- For a batch, the named set is within the light-lane binding's batch cap: the PM runs REVIEW's `bounds` command with only the set's `--item`s and reads it as REVIEW does. Not PASS → stop and say so: the human names a smaller set.
+
+## Workflow
+
+Where `trees` is filled, as the contract reads it, these steps run as `references/tree-path.md` orders them; otherwise they run as written. For a batch: UNDERSTAND per item; DECLARE and BRANCH once; DIAGNOSE to LOOP per item, on the one branch; OPEN, REVIEW and REPORT AND STOP once, over the union.
+
+1. **SELECT** — one issue, listed by the `issues` binding's *Read* slot: the issue the human named, otherwise the oldest that is actually actionable. Skip — and move to the next — an issue already in flight, one assigned to someone else, and one the project's own label vocabulary marks blocked, duplicated, or waiting on an answer; read those labels at run time and ask the human where the vocabulary is ambiguous. State which issue was picked and which were skipped. On the no-tracker path, the task the human names in conversation, with no list and no labels read. Or a batch: the open deferrals the human names, each by its id, from `memory/STATUS.md` `## Deferred` unless the `board` binding names another home; state the set.
+2. **UNDERSTAND** — read the issue and its whole thread, by the *Read* slot, and locate the code it concerns. An issue too ambiguous to work without the human — out of scope, needing a product decision, or with no reproducible claim — **stops** the run: post the findings and the questions where the issue lives, by the *Comment* slot, say so, and force no change. On the no-tracker path, the task is read as the human named it, and the findings and the questions go to the human in session.
+3. **DECLARE** — the class, `slim`, `prose` or `trivial`: the human's, named with the task, else the PM's, stated from UNDERSTAND and gone on with, unasked; for a batch, its items' highest, slim above prose above trivial. It is recorded as `class <c>` and, for a batch, `batch <id>, <id>...` on the branch's line in `memory/STATUS.md` `## Current`, or the `board` binding's home, within its *STATUS line cap*: on the tree path at STATUS; otherwise at BRANCH, the PM's own `memory/` write, left uncommitted, out of the range the check reads, and checked in with `g2-lite` CLOSE OUT's `memory/` record.
+4. **BRANCH** — cut the branch the `vc` binding's *Branch procedure* names for this work, from the base that procedure names.
+5. **DIAGNOSE** — file `.scratch/tackle-issue-<issue>-debug-brief.md` from `.claude/references/core/debug-brief.md` — the issue and its thread, the reproduction if one exists, and the code sites UNDERSTAND located — and dispatch `debugger` through the Agent tool without a `name`, read-only. It proves the cause with evidence and proposes the minimal fix; it applies nothing. No fix is written before this step returns.
+6. **FIX** — file `.scratch/tackle-issue-<issue>-brief.md` on `.claude/references/core/code-writer-brief.md`'s field list — the issue as the task, `debugger`'s proved cause and proposed fix, the files in scope, the acceptance criteria, and the Verification command as `## Bindings` says — and dispatch one `code-writer` through the Agent tool without a `name`, serially, one writer per tree. The record this lane keeps of the change is a CHANGELOG line, and that line is the PM's to write, not the writer's.
+7. **RECEIPT** — read the first line of every report this skill takes back, at the moment it returns: `debugger`'s at DIAGNOSE, `code-writer`'s at FIX, and each re-dispatch's under LOOP. It must be a status word. `BLOCKED` or `PARTIAL` → stop there and escalate to the human with the report — no fix written on an unfinished diagnosis, no gate, no loop. A report without a status line is a contract violation: report it, do not act on it. Nothing reaches GATE that has not passed here: a writer that returns `BLOCKED` having touched nothing leaves the tree exactly as green as it found it, and the gate alone would wave that through.
+8. **GATE** — dispatch `compile-check` on the `verification` binding's commands. The writer's own success claim is never the gate; `none` bound → record `nothing to run` and go to OPEN.
+9. **LOOP** — on FAIL, re-dispatch `code-writer` with the gate's parsed error list, its Verification command the targeted command on the gate's failing checks, then gate again. Where that list does not explain the failure, re-dispatch `debugger` first — a re-run costs a dispatch and does not count as a fix iteration. **At most two fix iterations; after the second failure, STOP** and escalate to the human with both reports.
+10. **OPEN** — open the changeset per the `vc` binding, naming the issue it closes by the `issues` binding's *Link* slot — on the no-tracker path, naming the task instead — what changed and why, and what the gate actually ran and returned. **Never merge it, never close the issue, never approve anything** — the merge is the human's, at the lane's G2-lite ruling.
+11. **REVIEW** — first the check, at the changeset's head: the PM saves the `vc` binding's per-file line-count read (its *Base-revision reads*) from the changeset's merge base with the main branch to its head, redirected to `.scratch/tackle-issue-<issue>-numstat.txt`, and runs the base's `scripts/harness.py bounds --root <project> --class <declared> --numstat .scratch/tackle-issue-<issue>-numstat.txt`, with one `--item <id>` per batch item, the base being the `base` path in `.claude/harness.json`, relative to the project root. Its verdict is read by exit code and words, never the dash: exit 0 and a line beginning `bounds: PASS` keep the declared class as the effective one; anything else — exit 1, `bounds: FAIL`, `bounds: refused` on stderr — is slim. With no manifest the check could not run: say so and read slim. For a batch, `<issue>` is the branch's topic. Where the declared class is not slim and the verdict is not PASS, state the escalation: declared `<c>`, run at slim. Then review per the `vc` binding, at the effective class, handed to the skill below as the class it reviews at. Where its *Merge procedure* names a pull-request route, run the pull-request review skill the project's version-control pack provides — it is in `.claude/skills/`. Where it names none, run core's `review-cycle` over the changeset. No `vc` binding: stop and say so. On the pull-request route, a confirmed blocker is this run's own unfinished work and is fixed on the same changeset; everything below blocker stays posted, unfixed and unruled. On the `review-cycle` route its RULE applies: CONFIRMED findings are fixed by default on the same changeset and listed at the next gate. A blocker that cannot be fixed with confidence falls back to step 2's stop: say so where the issue lives, by the *Comment* slot — on the no-tracker path, in session — and leave the changeset for the human.
+12. **REPORT AND STOP** — the issue picked, the branch, what changed, what the gate ran and returned, the changeset, the review verdict and anything fixed under it, and what the human must check before merging. Then stop, even inside a loop: one issue, or one batch, per run.
+
+The cause, the fix and the gate are the agents' work; the selection and the dispositions of a review finding are this skill's; the ruling and the merge are the human's, and the CHANGELOG line is the PM's own.

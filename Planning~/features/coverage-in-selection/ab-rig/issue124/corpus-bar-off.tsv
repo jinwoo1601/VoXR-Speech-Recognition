@@ -1,0 +1,699 @@
+launch one missiles target hotel one	1	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+one missiles target hotel one	1	launch_weapon:0.800000:quantity=one,weapon=missiles,target=hotel one
+launch missiles target hotel one	1	launch_weapon:1.000000:weapon=missiles,target=hotel one
+launch one target hotel one	1	launch_weapon:0.600000:quantity=one,target=hotel one
+launch one missiles hotel one	1	launch_weapon:0.800000:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target one	1	launch_weapon:0.500000:quantity=one,weapon=missiles
+launch one missiles target hotel	1	launch_weapon:0.500000:quantity=one,weapon=missiles
+launch one missiles target hotel one target	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+target launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one hotel	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+hotel launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+one launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one missiles	2	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one | launch_weapon:0.500000:weapon=missiles
+missiles launch one missiles target hotel one	2	launch_weapon:0.500000:weapon=missiles | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one distance	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+distance launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one heading	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+heading launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one cease	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | cease_fire:0.500000:
+cease launch one missiles target hotel one	2	cease_fire:0.333333: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one launch	1	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+launch launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one disengage	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | cease_fire:1.000000:
+disengage launch one missiles target hotel one	2	cease_fire:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one switch	1	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+switch launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one please	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+please launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+launch one missiles target hotel one now	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+now launch one missiles target hotel one	1	launch_weapon:0.833333:quantity=one,weapon=missiles,target=hotel one
+cease fire	1	cease_fire:1.000000:
+fire	1	cease_fire:0.500000:
+cease	1	cease_fire:0.500000:
+cease fire target	1	cease_fire:0.666667:
+target cease fire	1	cease_fire:0.666667:
+cease fire hotel	1	cease_fire:0.666667:
+hotel cease fire	1	cease_fire:0.666667:
+cease fire one	1	cease_fire:0.666667:
+one cease fire	1	cease_fire:0.666667:
+cease fire missiles	2	cease_fire:0.666667: | launch_weapon:0.500000:weapon=missiles
+missiles cease fire	2	launch_weapon:0.500000:weapon=missiles | cease_fire:1.000000:
+cease fire distance	1	cease_fire:0.666667:
+distance cease fire	1	cease_fire:0.666667:
+cease fire heading	1	cease_fire:0.666667:
+heading cease fire	1	cease_fire:0.666667:
+cease fire cease	2	cease_fire:1.000000: | cease_fire:0.500000:
+cease cease fire	2	cease_fire:0.333333: | cease_fire:1.000000:
+cease fire launch	1	cease_fire:1.000000:
+launch cease fire	1	cease_fire:0.666667:
+cease fire disengage	2	cease_fire:1.000000: | cease_fire:1.000000:
+disengage cease fire	2	cease_fire:1.000000: | cease_fire:1.000000:
+cease fire switch	1	cease_fire:1.000000:
+switch cease fire	1	cease_fire:0.666667:
+cease fire please	1	cease_fire:0.666667:
+please cease fire	1	cease_fire:0.666667:
+cease fire now	1	cease_fire:0.666667:
+now cease fire	1	cease_fire:0.666667:
+resume fire	1	resume_fire:1.000000:
+resume	1	resume_fire:0.500000:
+resume fire target	1	resume_fire:0.666667:
+target resume fire	1	resume_fire:0.666667:
+resume fire hotel	1	resume_fire:0.666667:
+hotel resume fire	1	resume_fire:0.666667:
+resume fire one	1	resume_fire:0.666667:
+one resume fire	1	resume_fire:0.666667:
+resume fire missiles	2	resume_fire:0.666667: | launch_weapon:0.500000:weapon=missiles
+missiles resume fire	2	launch_weapon:0.500000:weapon=missiles | resume_fire:1.000000:
+resume fire distance	1	resume_fire:0.666667:
+distance resume fire	1	resume_fire:0.666667:
+resume fire heading	1	resume_fire:0.666667:
+heading resume fire	1	resume_fire:0.666667:
+resume fire cease	2	resume_fire:1.000000: | cease_fire:0.500000:
+cease resume fire	2	cease_fire:0.333333: | resume_fire:1.000000:
+resume fire launch	1	resume_fire:1.000000:
+launch resume fire	1	resume_fire:0.666667:
+resume fire disengage	2	resume_fire:1.000000: | cease_fire:1.000000:
+disengage resume fire	2	cease_fire:1.000000: | resume_fire:1.000000:
+resume fire switch	1	resume_fire:1.000000:
+switch resume fire	1	resume_fire:0.666667:
+resume fire please	1	resume_fire:0.666667:
+please resume fire	1	resume_fire:0.666667:
+resume fire now	1	resume_fire:0.666667:
+now resume fire	1	resume_fire:0.666667:
+approach target alpha one	1	approach_target:1.000000:target=alpha one
+target alpha one	1	approach_target:0.666667:target=alpha one
+approach alpha one	1	approach_target:0.666667:target=alpha one
+approach target one	1	approach_target:0.250000:
+approach target alpha	1	approach_target:0.250000:
+approach target alpha one target	1	approach_target:0.750000:target=alpha one
+target approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one hotel	1	approach_target:0.750000:target=alpha one
+hotel approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one one	1	approach_target:0.750000:target=alpha one
+one approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one missiles	2	approach_target:0.750000:target=alpha one | launch_weapon:0.500000:weapon=missiles
+missiles approach target alpha one	2	launch_weapon:0.500000:weapon=missiles | approach_target:1.000000:target=alpha one
+approach target alpha one distance	1	approach_target:0.750000:target=alpha one
+distance approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one heading	1	approach_target:0.750000:target=alpha one
+heading approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one cease	2	approach_target:1.000000:target=alpha one | cease_fire:0.500000:
+cease approach target alpha one	2	cease_fire:0.333333: | approach_target:1.000000:target=alpha one
+approach target alpha one launch	1	approach_target:1.000000:target=alpha one
+launch approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one disengage	2	approach_target:1.000000:target=alpha one | cease_fire:1.000000:
+disengage approach target alpha one	2	cease_fire:1.000000: | approach_target:1.000000:target=alpha one
+approach target alpha one switch	1	approach_target:1.000000:target=alpha one
+switch approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one please	1	approach_target:0.750000:target=alpha one
+please approach target alpha one	1	approach_target:0.750000:target=alpha one
+approach target alpha one now	1	approach_target:0.750000:target=alpha one
+now approach target alpha one	1	approach_target:0.750000:target=alpha one
+fall back from target bravo two	1	retreat_from_target:1.000000:target=bravo two
+back from target bravo two	1	retreat_from_target:0.800000:target=bravo two
+fall from target bravo two	1	retreat_from_target:0.800000:target=bravo two
+fall back target bravo two	1	retreat_from_target:0.800000:target=bravo two
+fall back from bravo two	1	retreat_from_target:0.800000:target=bravo two
+fall back from target two	1	retreat_from_target:0.500000:
+fall back from target bravo	1	retreat_from_target:0.500000:
+fall back from target bravo two target	1	retreat_from_target:0.833333:target=bravo two
+target fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two hotel	1	retreat_from_target:0.833333:target=bravo two
+hotel fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two one	1	retreat_from_target:0.833333:target=bravo two
+one fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two missiles	2	retreat_from_target:0.833333:target=bravo two | launch_weapon:0.500000:weapon=missiles
+missiles fall back from target bravo two	2	launch_weapon:0.500000:weapon=missiles | retreat_from_target:1.000000:target=bravo two
+fall back from target bravo two distance	1	retreat_from_target:0.833333:target=bravo two
+distance fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two heading	1	retreat_from_target:0.833333:target=bravo two
+heading fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two cease	2	retreat_from_target:1.000000:target=bravo two | cease_fire:0.500000:
+cease fall back from target bravo two	2	cease_fire:0.333333: | retreat_from_target:1.000000:target=bravo two
+fall back from target bravo two launch	1	retreat_from_target:1.000000:target=bravo two
+launch fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two disengage	2	retreat_from_target:1.000000:target=bravo two | cease_fire:1.000000:
+disengage fall back from target bravo two	2	cease_fire:1.000000: | retreat_from_target:1.000000:target=bravo two
+fall back from target bravo two switch	1	retreat_from_target:1.000000:target=bravo two
+switch fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two please	1	retreat_from_target:0.833333:target=bravo two
+please fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+fall back from target bravo two now	1	retreat_from_target:0.833333:target=bravo two
+now fall back from target bravo two	1	retreat_from_target:0.833333:target=bravo two
+switch to navigation	1	mode_navigation:1.000000:
+to navigation	1	mode_navigation:0.666667:
+switch navigation	1	mode_navigation:0.666667:
+switch to	1	mode_weapons:0.666667:
+switch to navigation target	1	mode_navigation:0.750000:
+target switch to navigation	1	mode_navigation:0.750000:
+switch to navigation hotel	1	mode_navigation:0.750000:
+hotel switch to navigation	1	mode_navigation:0.750000:
+switch to navigation one	1	mode_navigation:0.750000:
+one switch to navigation	1	mode_navigation:0.750000:
+switch to navigation missiles	2	mode_navigation:0.750000: | launch_weapon:0.500000:weapon=missiles
+missiles switch to navigation	2	launch_weapon:0.500000:weapon=missiles | mode_navigation:1.000000:
+switch to navigation distance	1	mode_navigation:0.750000:
+distance switch to navigation	1	mode_navigation:0.750000:
+switch to navigation heading	1	mode_navigation:0.750000:
+heading switch to navigation	1	mode_navigation:0.750000:
+switch to navigation cease	2	mode_navigation:1.000000: | cease_fire:0.500000:
+cease switch to navigation	2	cease_fire:0.333333: | mode_navigation:1.000000:
+switch to navigation launch	1	mode_navigation:1.000000:
+launch switch to navigation	1	mode_navigation:0.750000:
+switch to navigation disengage	2	mode_navigation:1.000000: | cease_fire:1.000000:
+disengage switch to navigation	2	cease_fire:1.000000: | mode_navigation:1.000000:
+switch to navigation switch	1	mode_navigation:1.000000:
+switch switch to navigation	1	mode_navigation:0.750000:
+switch to navigation please	1	mode_navigation:0.750000:
+please switch to navigation	1	mode_navigation:0.750000:
+switch to navigation now	1	mode_navigation:0.750000:
+now switch to navigation	1	mode_navigation:0.750000:
+navigation mode	1	mode_navigation:1.000000:
+mode	1	mode_weapons:0.500000:
+navigation	1	mode_navigation:0.500000:
+navigation mode target	1	mode_navigation:0.666667:
+target navigation mode	1	mode_navigation:0.666667:
+navigation mode hotel	1	mode_navigation:0.666667:
+hotel navigation mode	1	mode_navigation:0.666667:
+navigation mode one	1	mode_navigation:0.666667:
+one navigation mode	1	mode_navigation:0.666667:
+navigation mode missiles	2	mode_navigation:0.666667: | launch_weapon:0.500000:weapon=missiles
+missiles navigation mode	2	launch_weapon:0.500000:weapon=missiles | mode_navigation:1.000000:
+navigation mode distance	1	mode_navigation:0.666667:
+distance navigation mode	1	mode_navigation:0.666667:
+navigation mode heading	1	mode_navigation:0.666667:
+heading navigation mode	1	mode_navigation:0.666667:
+navigation mode cease	2	mode_navigation:1.000000: | cease_fire:0.500000:
+cease navigation mode	2	cease_fire:0.250000: | mode_navigation:1.000000:
+navigation mode launch	1	mode_navigation:1.000000:
+launch navigation mode	1	mode_navigation:0.666667:
+navigation mode disengage	2	mode_navigation:1.000000: | cease_fire:1.000000:
+disengage navigation mode	2	cease_fire:1.000000: | mode_navigation:1.000000:
+navigation mode switch	1	mode_navigation:1.000000:
+switch navigation mode	2	mode_navigation:0.500000: | mode_weapons:0.500000:
+navigation mode please	1	mode_navigation:0.666667:
+please navigation mode	1	mode_navigation:0.666667:
+navigation mode now	1	mode_navigation:0.666667:
+now navigation mode	1	mode_navigation:0.666667:
+enable all	1	mode_all:1.000000:
+all	1	mode_all:0.500000:
+enable	1	mode_all:0.500000:
+enable all target	1	mode_all:0.666667:
+target enable all	1	mode_all:0.666667:
+enable all hotel	1	mode_all:0.666667:
+hotel enable all	1	mode_all:0.666667:
+enable all one	1	mode_all:0.666667:
+one enable all	1	mode_all:0.666667:
+enable all missiles	2	mode_all:0.666667: | launch_weapon:0.500000:weapon=missiles
+missiles enable all	2	launch_weapon:0.500000:weapon=missiles | mode_all:1.000000:
+enable all distance	1	mode_all:0.666667:
+distance enable all	1	mode_all:0.666667:
+enable all heading	1	mode_all:0.666667:
+heading enable all	1	mode_all:0.666667:
+enable all cease	2	mode_all:1.000000: | cease_fire:0.500000:
+cease enable all	2	cease_fire:0.333333: | mode_all:1.000000:
+enable all launch	1	mode_all:1.000000:
+launch enable all	1	mode_all:0.666667:
+enable all disengage	2	mode_all:1.000000: | cease_fire:1.000000:
+disengage enable all	2	cease_fire:1.000000: | mode_all:1.000000:
+enable all switch	1	mode_all:1.000000:
+switch enable all	1	mode_all:0.666667:
+enable all please	1	mode_all:0.666667:
+please enable all	1	mode_all:0.666667:
+enable all now	1	mode_all:0.666667:
+now enable all	1	mode_all:0.666667:
+disable all	1	mode_disable:1.000000:
+disable	1	mode_disable:0.500000:
+disable all target	1	mode_disable:0.666667:
+target disable all	1	mode_disable:0.666667:
+disable all hotel	1	mode_disable:0.666667:
+hotel disable all	1	mode_disable:0.666667:
+disable all one	1	mode_disable:0.666667:
+one disable all	1	mode_disable:0.666667:
+disable all missiles	2	mode_disable:0.666667: | launch_weapon:0.500000:weapon=missiles
+missiles disable all	2	launch_weapon:0.500000:weapon=missiles | mode_disable:1.000000:
+disable all distance	1	mode_disable:0.666667:
+distance disable all	1	mode_disable:0.666667:
+disable all heading	1	mode_disable:0.666667:
+heading disable all	1	mode_disable:0.666667:
+disable all cease	2	mode_disable:1.000000: | cease_fire:0.500000:
+cease disable all	2	cease_fire:0.333333: | mode_disable:1.000000:
+disable all launch	1	mode_disable:1.000000:
+launch disable all	1	mode_disable:0.666667:
+disable all disengage	2	mode_disable:1.000000: | cease_fire:1.000000:
+disengage disable all	2	cease_fire:1.000000: | mode_disable:1.000000:
+disable all switch	1	mode_disable:1.000000:
+switch disable all	1	mode_disable:0.666667:
+disable all please	1	mode_disable:0.666667:
+please disable all	1	mode_disable:0.666667:
+disable all now	1	mode_disable:0.666667:
+now disable all	1	mode_disable:0.666667:
+fire two torpedoes at bravo two	1	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+two torpedoes at bravo two	1	launch_weapon:0.800000:quantity=two,weapon=torpedoes,target=bravo two
+fire torpedoes at bravo two	1	launch_weapon:1.000000:weapon=torpedoes,target=bravo two
+fire two at bravo two	1	launch_weapon:0.600000:quantity=two,target=bravo two
+fire two torpedoes bravo two	1	launch_weapon:0.800000:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at two	1	launch_weapon:0.500000:quantity=two,weapon=torpedoes
+fire two torpedoes at bravo	1	launch_weapon:0.500000:quantity=two,weapon=torpedoes
+fire two torpedoes at bravo two target	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+target fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two hotel	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+hotel fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two one	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+one fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two missiles	2	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two | launch_weapon:0.500000:weapon=missiles
+missiles fire two torpedoes at bravo two	2	launch_weapon:0.500000:weapon=missiles | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two distance	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+distance fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two heading	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+heading fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two cease	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | cease_fire:0.500000:
+cease fire two torpedoes at bravo two	2	cease_fire:1.000000: | launch_weapon:0.800000:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two launch	1	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+launch fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two disengage	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | cease_fire:1.000000:
+disengage fire two torpedoes at bravo two	2	cease_fire:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two switch	1	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+switch fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two please	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+please fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+fire two torpedoes at bravo two now	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+now fire two torpedoes at bravo two	1	launch_weapon:0.833333:quantity=two,weapon=torpedoes,target=bravo two
+launch jackals target hotel two	1	launch_weapon:1.000000:weapon=jackal,target=hotel two
+jackals target hotel two	1	launch_weapon:0.750000:weapon=jackal,target=hotel two
+launch target hotel two	1	launch_weapon:0.500000:target=hotel two
+launch jackals hotel two	1	launch_weapon:0.750000:weapon=jackal,target=hotel two
+launch jackals target two	1	launch_weapon:0.400000:weapon=jackal
+launch jackals target hotel	1	launch_weapon:0.400000:weapon=jackal
+launch jackals target hotel two target	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+target launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two hotel	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+hotel launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two one	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+one launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two missiles	2	launch_weapon:0.800000:weapon=jackal,target=hotel two | launch_weapon:0.500000:weapon=missiles
+missiles launch jackals target hotel two	2	launch_weapon:0.500000:weapon=missiles | launch_weapon:1.000000:weapon=jackal,target=hotel two
+launch jackals target hotel two distance	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+distance launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two heading	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+heading launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two cease	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | cease_fire:0.500000:
+cease launch jackals target hotel two	2	cease_fire:0.333333: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+launch jackals target hotel two launch	1	launch_weapon:1.000000:weapon=jackal,target=hotel two
+launch launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two disengage	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | cease_fire:1.000000:
+disengage launch jackals target hotel two	2	cease_fire:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+launch jackals target hotel two switch	1	launch_weapon:1.000000:weapon=jackal,target=hotel two
+switch launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two please	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+please launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+launch jackals target hotel two now	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+now launch jackals target hotel two	1	launch_weapon:0.800000:weapon=jackal,target=hotel two
+set heading two seven zero	1	set_heading:1.000000:heading=two seven zero
+heading two seven zero	1	set_heading:0.666667:heading=two seven zero
+set two seven zero	1	set_heading:0.666667:heading=two seven zero
+set heading seven zero	1	set_heading:1.000000:heading=seven zero
+set heading two zero	1	set_heading:1.000000:heading=two zero
+set heading two seven	1	set_heading:1.000000:heading=two seven
+set heading two seven zero target	1	set_heading:0.750000:heading=two seven zero
+target set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero hotel	1	set_heading:0.750000:heading=two seven zero
+hotel set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero one	1	set_heading:0.750000:heading=two seven zero
+one set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero missiles	2	set_heading:0.750000:heading=two seven zero | launch_weapon:0.500000:weapon=missiles
+missiles set heading two seven zero	2	launch_weapon:0.500000:weapon=missiles | set_heading:1.000000:heading=two seven zero
+set heading two seven zero distance	1	set_heading:0.750000:heading=two seven zero
+distance set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero heading	1	set_heading:0.750000:heading=two seven zero
+heading set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero cease	2	set_heading:1.000000:heading=two seven zero | cease_fire:0.500000:
+cease set heading two seven zero	2	cease_fire:0.333333: | set_heading:1.000000:heading=two seven zero
+set heading two seven zero launch	1	set_heading:1.000000:heading=two seven zero
+launch set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero disengage	2	set_heading:1.000000:heading=two seven zero | cease_fire:1.000000:
+disengage set heading two seven zero	2	cease_fire:1.000000: | set_heading:1.000000:heading=two seven zero
+set heading two seven zero switch	1	set_heading:1.000000:heading=two seven zero
+switch set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero please	1	set_heading:0.750000:heading=two seven zero
+please set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+set heading two seven zero now	1	set_heading:0.750000:heading=two seven zero
+now set heading two seven zero	1	set_heading:0.750000:heading=two seven zero
+switch to weapons	1	mode_weapons:1.000000:
+to weapons	1	mode_weapons:0.666667:
+switch weapons	1	mode_weapons:0.666667:
+switch to weapons target	1	mode_weapons:0.750000:
+target switch to weapons	1	mode_weapons:0.750000:
+switch to weapons hotel	1	mode_weapons:0.750000:
+hotel switch to weapons	1	mode_weapons:0.750000:
+switch to weapons one	1	mode_weapons:0.750000:
+one switch to weapons	1	mode_weapons:0.750000:
+switch to weapons missiles	2	mode_weapons:0.750000: | launch_weapon:0.500000:weapon=missiles
+missiles switch to weapons	2	launch_weapon:0.500000:weapon=missiles | mode_weapons:1.000000:
+switch to weapons distance	1	mode_weapons:0.750000:
+distance switch to weapons	1	mode_weapons:0.750000:
+switch to weapons heading	1	mode_weapons:0.750000:
+heading switch to weapons	1	mode_weapons:0.750000:
+switch to weapons cease	2	mode_weapons:1.000000: | cease_fire:0.500000:
+cease switch to weapons	2	cease_fire:0.333333: | mode_weapons:1.000000:
+switch to weapons launch	1	mode_weapons:1.000000:
+launch switch to weapons	1	mode_weapons:0.750000:
+switch to weapons disengage	2	mode_weapons:1.000000: | cease_fire:1.000000:
+disengage switch to weapons	2	cease_fire:1.000000: | mode_weapons:1.000000:
+switch to weapons switch	1	mode_weapons:1.000000:
+switch switch to weapons	1	mode_weapons:0.750000:
+switch to weapons please	1	mode_weapons:0.750000:
+please switch to weapons	1	mode_weapons:0.750000:
+switch to weapons now	1	mode_weapons:0.750000:
+now switch to weapons	1	mode_weapons:0.750000:
+[unk] launch three torpedoes target alpha three	1	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+launch three torpedoes target alpha three	1	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+[unk] three torpedoes target alpha three	1	launch_weapon:0.800000:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch torpedoes target alpha three	1	launch_weapon:1.000000:weapon=torpedoes,target=alpha three
+[unk] launch three target alpha three	1	launch_weapon:0.600000:quantity=three,target=alpha three
+[unk] launch three torpedoes alpha three	1	launch_weapon:0.800000:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target three	1	launch_weapon:0.500000:quantity=three,weapon=torpedoes
+[unk] launch three torpedoes target alpha	1	launch_weapon:0.500000:quantity=three,weapon=torpedoes
+[unk] launch three torpedoes target alpha three target	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+target [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three hotel	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+hotel [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three one	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+one [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three missiles	2	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three | launch_weapon:0.500000:weapon=missiles
+missiles [unk] launch three torpedoes target alpha three	2	launch_weapon:0.500000:weapon=missiles | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three distance	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+distance [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three heading	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+heading [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three cease	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | cease_fire:0.500000:
+cease [unk] launch three torpedoes target alpha three	2	cease_fire:0.333333: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three launch	1	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+launch [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three disengage	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | cease_fire:1.000000:
+disengage [unk] launch three torpedoes target alpha three	2	cease_fire:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three switch	1	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+switch [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three please	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+please [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+[unk] launch three torpedoes target alpha three now	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+now [unk] launch three torpedoes target alpha three	1	launch_weapon:0.833333:quantity=three,weapon=torpedoes,target=alpha three
+close distance safe range	1	set_distance_named:0.400000:range=safe range
+distance safe range	0	
+close safe range	0	
+close distance range	0	
+close distance safe	0	
+close distance safe range target	1	set_distance_named:0.600000:range=safe range
+target close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range hotel	1	set_distance_named:0.333333:range=safe range
+hotel close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range one	1	set_distance_named:0.333333:range=safe range
+one close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range missiles	2	set_distance_named:0.333333:range=safe range | launch_weapon:0.500000:weapon=missiles
+missiles close distance safe range	2	launch_weapon:0.500000:weapon=missiles | set_distance_named:0.400000:range=safe range
+close distance safe range distance	1	set_distance_named:0.333333:range=safe range
+distance close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range heading	1	set_distance_named:0.333333:range=safe range
+heading close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range cease	2	set_distance_named:0.333333:range=safe range | cease_fire:0.500000:
+cease close distance safe range	2	cease_fire:0.166667: | set_distance_named:0.400000:range=safe range
+close distance safe range launch	1	set_distance_named:0.333333:range=safe range
+launch close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range disengage	2	set_distance_named:0.333333:range=safe range | cease_fire:1.000000:
+disengage close distance safe range	2	cease_fire:1.000000: | set_distance_named:0.400000:range=safe range
+close distance safe range switch	1	set_distance_named:0.333333:range=safe range
+switch close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range please	1	set_distance_named:0.333333:range=safe range
+please close distance safe range	1	set_distance_named:0.333333:range=safe range
+close distance safe range now	1	set_distance_named:0.333333:range=safe range
+now close distance safe range	1	set_distance_named:0.333333:range=safe range
+target hotel one	1	approach_target:0.666667:target=hotel one
+hotel one	0	
+target one	0	
+target hotel	0	
+target hotel one target	1	approach_target:0.500000:target=hotel one
+target target hotel one	1	approach_target:0.500000:target=hotel one
+target hotel one hotel	1	approach_target:0.500000:target=hotel one
+hotel target hotel one	1	approach_target:0.500000:target=hotel one
+target hotel one one	1	approach_target:0.500000:target=hotel one
+one target hotel one	1	launch_weapon:0.400000:quantity=one,target=hotel one
+target hotel one missiles	2	approach_target:0.500000:target=hotel one | launch_weapon:0.500000:weapon=missiles
+missiles target hotel one	1	launch_weapon:0.750000:weapon=missiles,target=hotel one
+target hotel one distance	1	approach_target:0.500000:target=hotel one
+distance target hotel one	1	retreat_from_target:0.600000:target=hotel one
+target hotel one heading	1	approach_target:0.500000:target=hotel one
+heading target hotel one	1	approach_target:0.500000:target=hotel one
+target hotel one cease	2	approach_target:0.666667:target=hotel one | cease_fire:0.500000:
+cease target hotel one	2	cease_fire:0.200000: | approach_target:0.666667:target=hotel one
+target hotel one launch	1	approach_target:0.666667:target=hotel one
+launch target hotel one	1	launch_weapon:0.500000:target=hotel one
+target hotel one disengage	2	approach_target:0.666667:target=hotel one | cease_fire:1.000000:
+disengage target hotel one	2	cease_fire:1.000000: | approach_target:0.666667:target=hotel one
+target hotel one switch	1	approach_target:0.666667:target=hotel one
+switch target hotel one	1	approach_target:0.500000:target=hotel one
+target hotel one please	1	approach_target:0.500000:target=hotel one
+please target hotel one	1	approach_target:0.500000:target=hotel one
+target hotel one now	1	approach_target:0.500000:target=hotel one
+now target hotel one	1	approach_target:0.500000:target=hotel one
+launch one missiles target hotel one cease fire	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | cease_fire:1.000000:
+launch one missiles target hotel one resume fire	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | resume_fire:1.000000:
+launch one missiles target hotel one approach target alpha one	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | approach_target:1.000000:target=alpha one
+launch one missiles target hotel one fall back from target bravo two	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | retreat_from_target:1.000000:target=bravo two
+launch one missiles target hotel one switch to navigation	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | mode_navigation:1.000000:
+launch one missiles target hotel one navigation mode	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | mode_navigation:1.000000:
+launch one missiles target hotel one enable all	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | mode_all:1.000000:
+launch one missiles target hotel one disable all	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | mode_disable:1.000000:
+launch one missiles target hotel one fire two torpedoes at bravo two	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+launch one missiles target hotel one launch jackals target hotel two	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | launch_weapon:1.000000:weapon=jackal,target=hotel two
+launch one missiles target hotel one set heading two seven zero	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | set_heading:1.000000:heading=two seven zero
+launch one missiles target hotel one switch to weapons	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | mode_weapons:1.000000:
+launch one missiles target hotel one [unk] launch three torpedoes target alpha three	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+launch one missiles target hotel one close distance safe range	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | set_distance_named:0.400000:range=safe range
+launch one missiles target hotel one target hotel one	2	launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one | approach_target:0.666667:target=hotel one
+cease fire launch one missiles target hotel one	2	cease_fire:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+cease fire resume fire	2	cease_fire:1.000000: | resume_fire:1.000000:
+cease fire approach target alpha one	2	cease_fire:1.000000: | approach_target:1.000000:target=alpha one
+cease fire fall back from target bravo two	2	cease_fire:1.000000: | retreat_from_target:1.000000:target=bravo two
+cease fire switch to navigation	2	cease_fire:1.000000: | mode_navigation:1.000000:
+cease fire navigation mode	2	cease_fire:1.000000: | mode_navigation:1.000000:
+cease fire enable all	2	cease_fire:1.000000: | mode_all:1.000000:
+cease fire disable all	2	cease_fire:1.000000: | mode_disable:1.000000:
+cease fire fire two torpedoes at bravo two	2	cease_fire:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+cease fire launch jackals target hotel two	2	cease_fire:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+cease fire set heading two seven zero	2	cease_fire:1.000000: | set_heading:1.000000:heading=two seven zero
+cease fire switch to weapons	2	cease_fire:1.000000: | mode_weapons:1.000000:
+cease fire [unk] launch three torpedoes target alpha three	2	cease_fire:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+cease fire close distance safe range	2	cease_fire:1.000000: | set_distance_named:0.400000:range=safe range
+cease fire target hotel one	2	cease_fire:1.000000: | approach_target:0.666667:target=hotel one
+resume fire launch one missiles target hotel one	2	resume_fire:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+resume fire cease fire	2	resume_fire:1.000000: | cease_fire:1.000000:
+resume fire approach target alpha one	2	resume_fire:1.000000: | approach_target:1.000000:target=alpha one
+resume fire fall back from target bravo two	2	resume_fire:1.000000: | retreat_from_target:1.000000:target=bravo two
+resume fire switch to navigation	2	resume_fire:1.000000: | mode_navigation:1.000000:
+resume fire navigation mode	2	resume_fire:1.000000: | mode_navigation:1.000000:
+resume fire enable all	2	resume_fire:1.000000: | mode_all:1.000000:
+resume fire disable all	2	resume_fire:1.000000: | mode_disable:1.000000:
+resume fire fire two torpedoes at bravo two	2	resume_fire:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+resume fire launch jackals target hotel two	2	resume_fire:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+resume fire set heading two seven zero	2	resume_fire:1.000000: | set_heading:1.000000:heading=two seven zero
+resume fire switch to weapons	2	resume_fire:1.000000: | mode_weapons:1.000000:
+resume fire [unk] launch three torpedoes target alpha three	2	resume_fire:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+resume fire close distance safe range	2	resume_fire:1.000000: | set_distance_named:0.400000:range=safe range
+resume fire target hotel one	2	resume_fire:1.000000: | approach_target:0.666667:target=hotel one
+approach target alpha one launch one missiles target hotel one	2	approach_target:1.000000:target=alpha one | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+approach target alpha one cease fire	2	approach_target:1.000000:target=alpha one | cease_fire:1.000000:
+approach target alpha one resume fire	2	approach_target:1.000000:target=alpha one | resume_fire:1.000000:
+approach target alpha one fall back from target bravo two	2	approach_target:1.000000:target=alpha one | retreat_from_target:1.000000:target=bravo two
+approach target alpha one switch to navigation	2	approach_target:1.000000:target=alpha one | mode_navigation:1.000000:
+approach target alpha one navigation mode	2	approach_target:1.000000:target=alpha one | mode_navigation:1.000000:
+approach target alpha one enable all	2	approach_target:1.000000:target=alpha one | mode_all:1.000000:
+approach target alpha one disable all	2	approach_target:1.000000:target=alpha one | mode_disable:1.000000:
+approach target alpha one fire two torpedoes at bravo two	2	approach_target:1.000000:target=alpha one | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+approach target alpha one launch jackals target hotel two	2	approach_target:1.000000:target=alpha one | launch_weapon:1.000000:weapon=jackal,target=hotel two
+approach target alpha one set heading two seven zero	2	approach_target:1.000000:target=alpha one | set_heading:1.000000:heading=two seven zero
+approach target alpha one switch to weapons	2	approach_target:1.000000:target=alpha one | mode_weapons:1.000000:
+approach target alpha one [unk] launch three torpedoes target alpha three	2	approach_target:1.000000:target=alpha one | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+approach target alpha one close distance safe range	2	approach_target:1.000000:target=alpha one | set_distance_named:0.400000:range=safe range
+approach target alpha one target hotel one	2	approach_target:1.000000:target=alpha one | approach_target:0.666667:target=hotel one
+fall back from target bravo two launch one missiles target hotel one	2	retreat_from_target:1.000000:target=bravo two | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+fall back from target bravo two cease fire	2	retreat_from_target:1.000000:target=bravo two | cease_fire:1.000000:
+fall back from target bravo two resume fire	2	retreat_from_target:1.000000:target=bravo two | resume_fire:1.000000:
+fall back from target bravo two approach target alpha one	2	retreat_from_target:1.000000:target=bravo two | approach_target:1.000000:target=alpha one
+fall back from target bravo two switch to navigation	2	retreat_from_target:1.000000:target=bravo two | mode_navigation:1.000000:
+fall back from target bravo two navigation mode	2	retreat_from_target:1.000000:target=bravo two | mode_navigation:1.000000:
+fall back from target bravo two enable all	2	retreat_from_target:1.000000:target=bravo two | mode_all:1.000000:
+fall back from target bravo two disable all	2	retreat_from_target:1.000000:target=bravo two | mode_disable:1.000000:
+fall back from target bravo two fire two torpedoes at bravo two	2	retreat_from_target:1.000000:target=bravo two | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+fall back from target bravo two launch jackals target hotel two	2	retreat_from_target:1.000000:target=bravo two | launch_weapon:1.000000:weapon=jackal,target=hotel two
+fall back from target bravo two set heading two seven zero	2	retreat_from_target:1.000000:target=bravo two | set_heading:1.000000:heading=two seven zero
+fall back from target bravo two switch to weapons	2	retreat_from_target:1.000000:target=bravo two | mode_weapons:1.000000:
+fall back from target bravo two [unk] launch three torpedoes target alpha three	2	retreat_from_target:1.000000:target=bravo two | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+fall back from target bravo two close distance safe range	2	retreat_from_target:1.000000:target=bravo two | set_distance_named:0.400000:range=safe range
+fall back from target bravo two target hotel one	2	retreat_from_target:1.000000:target=bravo two | approach_target:0.666667:target=hotel one
+switch to navigation launch one missiles target hotel one	2	mode_navigation:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+switch to navigation cease fire	2	mode_navigation:1.000000: | cease_fire:1.000000:
+switch to navigation resume fire	2	mode_navigation:1.000000: | resume_fire:1.000000:
+switch to navigation approach target alpha one	2	mode_navigation:1.000000: | approach_target:1.000000:target=alpha one
+switch to navigation fall back from target bravo two	2	mode_navigation:1.000000: | retreat_from_target:1.000000:target=bravo two
+switch to navigation navigation mode	2	mode_navigation:1.000000: | mode_navigation:1.000000:
+switch to navigation enable all	2	mode_navigation:1.000000: | mode_all:1.000000:
+switch to navigation disable all	2	mode_navigation:1.000000: | mode_disable:1.000000:
+switch to navigation fire two torpedoes at bravo two	2	mode_navigation:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+switch to navigation launch jackals target hotel two	2	mode_navigation:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+switch to navigation set heading two seven zero	2	mode_navigation:1.000000: | set_heading:1.000000:heading=two seven zero
+switch to navigation switch to weapons	2	mode_navigation:1.000000: | mode_weapons:1.000000:
+switch to navigation [unk] launch three torpedoes target alpha three	2	mode_navigation:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+switch to navigation close distance safe range	2	mode_navigation:1.000000: | set_distance_named:0.400000:range=safe range
+switch to navigation target hotel one	2	mode_navigation:1.000000: | approach_target:0.666667:target=hotel one
+navigation mode launch one missiles target hotel one	2	mode_navigation:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+navigation mode cease fire	2	mode_navigation:1.000000: | cease_fire:1.000000:
+navigation mode resume fire	2	mode_navigation:1.000000: | resume_fire:1.000000:
+navigation mode approach target alpha one	2	mode_navigation:1.000000: | approach_target:1.000000:target=alpha one
+navigation mode fall back from target bravo two	2	mode_navigation:1.000000: | retreat_from_target:1.000000:target=bravo two
+navigation mode switch to navigation	2	mode_navigation:1.000000: | mode_navigation:1.000000:
+navigation mode enable all	2	mode_navigation:1.000000: | mode_all:1.000000:
+navigation mode disable all	2	mode_navigation:1.000000: | mode_disable:1.000000:
+navigation mode fire two torpedoes at bravo two	2	mode_navigation:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+navigation mode launch jackals target hotel two	2	mode_navigation:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+navigation mode set heading two seven zero	2	mode_navigation:1.000000: | set_heading:1.000000:heading=two seven zero
+navigation mode switch to weapons	2	mode_navigation:1.000000: | mode_weapons:1.000000:
+navigation mode [unk] launch three torpedoes target alpha three	2	mode_navigation:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+navigation mode close distance safe range	2	mode_navigation:1.000000: | set_distance_named:0.400000:range=safe range
+navigation mode target hotel one	2	mode_navigation:1.000000: | approach_target:0.666667:target=hotel one
+enable all launch one missiles target hotel one	2	mode_all:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+enable all cease fire	2	mode_all:1.000000: | cease_fire:1.000000:
+enable all resume fire	2	mode_all:1.000000: | resume_fire:1.000000:
+enable all approach target alpha one	2	mode_all:1.000000: | approach_target:1.000000:target=alpha one
+enable all fall back from target bravo two	2	mode_all:1.000000: | retreat_from_target:1.000000:target=bravo two
+enable all switch to navigation	2	mode_all:1.000000: | mode_navigation:1.000000:
+enable all navigation mode	2	mode_all:1.000000: | mode_navigation:1.000000:
+enable all disable all	2	mode_all:1.000000: | mode_disable:1.000000:
+enable all fire two torpedoes at bravo two	2	mode_all:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+enable all launch jackals target hotel two	2	mode_all:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+enable all set heading two seven zero	2	mode_all:1.000000: | set_heading:1.000000:heading=two seven zero
+enable all switch to weapons	2	mode_all:1.000000: | mode_weapons:1.000000:
+enable all [unk] launch three torpedoes target alpha three	2	mode_all:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+enable all close distance safe range	2	mode_all:1.000000: | set_distance_named:0.400000:range=safe range
+enable all target hotel one	2	mode_all:1.000000: | approach_target:0.666667:target=hotel one
+disable all launch one missiles target hotel one	2	mode_disable:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+disable all cease fire	2	mode_disable:1.000000: | cease_fire:1.000000:
+disable all resume fire	2	mode_disable:1.000000: | resume_fire:1.000000:
+disable all approach target alpha one	2	mode_disable:1.000000: | approach_target:1.000000:target=alpha one
+disable all fall back from target bravo two	2	mode_disable:1.000000: | retreat_from_target:1.000000:target=bravo two
+disable all switch to navigation	2	mode_disable:1.000000: | mode_navigation:1.000000:
+disable all navigation mode	2	mode_disable:1.000000: | mode_navigation:1.000000:
+disable all enable all	2	mode_disable:1.000000: | mode_all:1.000000:
+disable all fire two torpedoes at bravo two	2	mode_disable:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+disable all launch jackals target hotel two	2	mode_disable:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+disable all set heading two seven zero	2	mode_disable:1.000000: | set_heading:1.000000:heading=two seven zero
+disable all switch to weapons	2	mode_disable:1.000000: | mode_weapons:1.000000:
+disable all [unk] launch three torpedoes target alpha three	2	mode_disable:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+disable all close distance safe range	2	mode_disable:1.000000: | set_distance_named:0.400000:range=safe range
+disable all target hotel one	2	mode_disable:1.000000: | approach_target:0.666667:target=hotel one
+fire two torpedoes at bravo two launch one missiles target hotel one	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+fire two torpedoes at bravo two cease fire	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | cease_fire:1.000000:
+fire two torpedoes at bravo two resume fire	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | resume_fire:1.000000:
+fire two torpedoes at bravo two approach target alpha one	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | approach_target:1.000000:target=alpha one
+fire two torpedoes at bravo two fall back from target bravo two	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | retreat_from_target:1.000000:target=bravo two
+fire two torpedoes at bravo two switch to navigation	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | mode_navigation:1.000000:
+fire two torpedoes at bravo two navigation mode	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | mode_navigation:1.000000:
+fire two torpedoes at bravo two enable all	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | mode_all:1.000000:
+fire two torpedoes at bravo two disable all	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | mode_disable:1.000000:
+fire two torpedoes at bravo two launch jackals target hotel two	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | launch_weapon:1.000000:weapon=jackal,target=hotel two
+fire two torpedoes at bravo two set heading two seven zero	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | set_heading:1.000000:heading=two seven zero
+fire two torpedoes at bravo two switch to weapons	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | mode_weapons:1.000000:
+fire two torpedoes at bravo two [unk] launch three torpedoes target alpha three	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+fire two torpedoes at bravo two close distance safe range	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | set_distance_named:0.400000:range=safe range
+fire two torpedoes at bravo two target hotel one	2	launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two | approach_target:0.666667:target=hotel one
+launch jackals target hotel two launch one missiles target hotel one	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+launch jackals target hotel two cease fire	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | cease_fire:1.000000:
+launch jackals target hotel two resume fire	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | resume_fire:1.000000:
+launch jackals target hotel two approach target alpha one	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | approach_target:1.000000:target=alpha one
+launch jackals target hotel two fall back from target bravo two	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | retreat_from_target:1.000000:target=bravo two
+launch jackals target hotel two switch to navigation	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | mode_navigation:1.000000:
+launch jackals target hotel two navigation mode	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | mode_navigation:1.000000:
+launch jackals target hotel two enable all	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | mode_all:1.000000:
+launch jackals target hotel two disable all	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | mode_disable:1.000000:
+launch jackals target hotel two fire two torpedoes at bravo two	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+launch jackals target hotel two set heading two seven zero	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | set_heading:1.000000:heading=two seven zero
+launch jackals target hotel two switch to weapons	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | mode_weapons:1.000000:
+launch jackals target hotel two [unk] launch three torpedoes target alpha three	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+launch jackals target hotel two close distance safe range	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | set_distance_named:0.400000:range=safe range
+launch jackals target hotel two target hotel one	2	launch_weapon:1.000000:weapon=jackal,target=hotel two | approach_target:0.666667:target=hotel one
+set heading two seven zero launch one missiles target hotel one	2	set_heading:1.000000:heading=two seven zero | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+set heading two seven zero cease fire	2	set_heading:1.000000:heading=two seven zero | cease_fire:1.000000:
+set heading two seven zero resume fire	2	set_heading:1.000000:heading=two seven zero | resume_fire:1.000000:
+set heading two seven zero approach target alpha one	2	set_heading:1.000000:heading=two seven zero | approach_target:1.000000:target=alpha one
+set heading two seven zero fall back from target bravo two	2	set_heading:1.000000:heading=two seven zero | retreat_from_target:1.000000:target=bravo two
+set heading two seven zero switch to navigation	2	set_heading:1.000000:heading=two seven zero | mode_navigation:1.000000:
+set heading two seven zero navigation mode	2	set_heading:1.000000:heading=two seven zero | mode_navigation:1.000000:
+set heading two seven zero enable all	2	set_heading:1.000000:heading=two seven zero | mode_all:1.000000:
+set heading two seven zero disable all	2	set_heading:1.000000:heading=two seven zero | mode_disable:1.000000:
+set heading two seven zero fire two torpedoes at bravo two	2	set_heading:1.000000:heading=two seven zero | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+set heading two seven zero launch jackals target hotel two	2	set_heading:1.000000:heading=two seven zero | launch_weapon:1.000000:weapon=jackal,target=hotel two
+set heading two seven zero switch to weapons	2	set_heading:1.000000:heading=two seven zero | mode_weapons:1.000000:
+set heading two seven zero [unk] launch three torpedoes target alpha three	2	set_heading:1.000000:heading=two seven zero | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+set heading two seven zero close distance safe range	2	set_heading:1.000000:heading=two seven zero | set_distance_named:0.400000:range=safe range
+set heading two seven zero target hotel one	2	set_heading:1.000000:heading=two seven zero | approach_target:0.666667:target=hotel one
+switch to weapons launch one missiles target hotel one	2	mode_weapons:1.000000: | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+switch to weapons cease fire	2	mode_weapons:1.000000: | cease_fire:1.000000:
+switch to weapons resume fire	2	mode_weapons:1.000000: | resume_fire:1.000000:
+switch to weapons approach target alpha one	2	mode_weapons:1.000000: | approach_target:1.000000:target=alpha one
+switch to weapons fall back from target bravo two	2	mode_weapons:1.000000: | retreat_from_target:1.000000:target=bravo two
+switch to weapons switch to navigation	2	mode_weapons:1.000000: | mode_navigation:1.000000:
+switch to weapons navigation mode	2	mode_weapons:1.000000: | mode_navigation:1.000000:
+switch to weapons enable all	2	mode_weapons:1.000000: | mode_all:1.000000:
+switch to weapons disable all	2	mode_weapons:1.000000: | mode_disable:1.000000:
+switch to weapons fire two torpedoes at bravo two	2	mode_weapons:1.000000: | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+switch to weapons launch jackals target hotel two	2	mode_weapons:1.000000: | launch_weapon:1.000000:weapon=jackal,target=hotel two
+switch to weapons set heading two seven zero	2	mode_weapons:1.000000: | set_heading:1.000000:heading=two seven zero
+switch to weapons [unk] launch three torpedoes target alpha three	2	mode_weapons:1.000000: | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+switch to weapons close distance safe range	2	mode_weapons:1.000000: | set_distance_named:0.400000:range=safe range
+switch to weapons target hotel one	2	mode_weapons:1.000000: | approach_target:0.666667:target=hotel one
+[unk] launch three torpedoes target alpha three launch one missiles target hotel one	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+[unk] launch three torpedoes target alpha three cease fire	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | cease_fire:1.000000:
+[unk] launch three torpedoes target alpha three resume fire	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | resume_fire:1.000000:
+[unk] launch three torpedoes target alpha three approach target alpha one	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | approach_target:1.000000:target=alpha one
+[unk] launch three torpedoes target alpha three fall back from target bravo two	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | retreat_from_target:1.000000:target=bravo two
+[unk] launch three torpedoes target alpha three switch to navigation	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | mode_navigation:1.000000:
+[unk] launch three torpedoes target alpha three navigation mode	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | mode_navigation:1.000000:
+[unk] launch three torpedoes target alpha three enable all	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | mode_all:1.000000:
+[unk] launch three torpedoes target alpha three disable all	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | mode_disable:1.000000:
+[unk] launch three torpedoes target alpha three fire two torpedoes at bravo two	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+[unk] launch three torpedoes target alpha three launch jackals target hotel two	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | launch_weapon:1.000000:weapon=jackal,target=hotel two
+[unk] launch three torpedoes target alpha three set heading two seven zero	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | set_heading:1.000000:heading=two seven zero
+[unk] launch three torpedoes target alpha three switch to weapons	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | mode_weapons:1.000000:
+[unk] launch three torpedoes target alpha three close distance safe range	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | set_distance_named:0.400000:range=safe range
+[unk] launch three torpedoes target alpha three target hotel one	2	launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three | approach_target:0.666667:target=hotel one
+close distance safe range launch one missiles target hotel one	2	set_distance_named:0.333333:range=safe range | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+close distance safe range cease fire	2	set_distance_named:0.333333:range=safe range | cease_fire:1.000000:
+close distance safe range resume fire	2	set_distance_named:0.333333:range=safe range | resume_fire:1.000000:
+close distance safe range approach target alpha one	2	set_distance_named:0.333333:range=safe range | approach_target:1.000000:target=alpha one
+close distance safe range fall back from target bravo two	2	set_distance_named:0.333333:range=safe range | retreat_from_target:1.000000:target=bravo two
+close distance safe range switch to navigation	2	set_distance_named:0.333333:range=safe range | mode_navigation:1.000000:
+close distance safe range navigation mode	2	set_distance_named:0.285714:range=safe range | mode_navigation:1.000000:
+close distance safe range enable all	2	set_distance_named:0.333333:range=safe range | mode_all:1.000000:
+close distance safe range disable all	2	set_distance_named:0.333333:range=safe range | mode_disable:1.000000:
+close distance safe range fire two torpedoes at bravo two	2	set_distance_named:0.333333:range=safe range | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+close distance safe range launch jackals target hotel two	2	set_distance_named:0.333333:range=safe range | launch_weapon:1.000000:weapon=jackal,target=hotel two
+close distance safe range set heading two seven zero	2	set_distance_named:0.333333:range=safe range | set_heading:1.000000:heading=two seven zero
+close distance safe range switch to weapons	2	set_distance_named:0.333333:range=safe range | mode_weapons:1.000000:
+close distance safe range [unk] launch three torpedoes target alpha three	2	set_distance_named:0.333333:range=safe range | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+close distance safe range target hotel one	1	set_distance_named:1.000000:range=safe range,target=hotel one
+target hotel one launch one missiles target hotel one	2	approach_target:0.666667:target=hotel one | launch_weapon:1.000000:quantity=one,weapon=missiles,target=hotel one
+target hotel one cease fire	2	approach_target:0.666667:target=hotel one | cease_fire:1.000000:
+target hotel one resume fire	2	approach_target:0.666667:target=hotel one | resume_fire:1.000000:
+target hotel one approach target alpha one	2	approach_target:0.666667:target=hotel one | approach_target:1.000000:target=alpha one
+target hotel one fall back from target bravo two	2	approach_target:0.666667:target=hotel one | retreat_from_target:1.000000:target=bravo two
+target hotel one switch to navigation	2	approach_target:0.666667:target=hotel one | mode_navigation:1.000000:
+target hotel one navigation mode	2	approach_target:0.666667:target=hotel one | mode_navigation:1.000000:
+target hotel one enable all	2	approach_target:0.666667:target=hotel one | mode_all:1.000000:
+target hotel one disable all	2	approach_target:0.666667:target=hotel one | mode_disable:1.000000:
+target hotel one fire two torpedoes at bravo two	2	approach_target:0.666667:target=hotel one | launch_weapon:1.000000:quantity=two,weapon=torpedoes,target=bravo two
+target hotel one launch jackals target hotel two	2	approach_target:0.666667:target=hotel one | launch_weapon:1.000000:weapon=jackal,target=hotel two
+target hotel one set heading two seven zero	2	approach_target:0.666667:target=hotel one | set_heading:1.000000:heading=two seven zero
+target hotel one switch to weapons	2	approach_target:0.666667:target=hotel one | mode_weapons:1.000000:
+target hotel one [unk] launch three torpedoes target alpha three	2	approach_target:0.666667:target=hotel one | launch_weapon:1.000000:quantity=three,weapon=torpedoes,target=alpha three
+target hotel one close distance safe range	2	approach_target:0.666667:target=hotel one | set_distance_named:0.400000:range=safe range
