@@ -29,17 +29,18 @@
 Thumbs.db
 desktop.ini
 
-# Claude Code
-.claude/
-CLAUDE.md
-CLAUDE.md.meta
+# Claude Code — workflow-layer local state (the rest of .claude/, CLAUDE.md, Planning~/ and memory/ are tracked)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/scratch/
+.claude/worktrees/
+.scratch/
+# Raw Unity run logs stay local (they carry assembly tokens, the licence ID and the username); the results XMLs are tracked
+Planning~/verification-runs/**/*.log
 
 # Native bridge build output
 NativeBridge~/build*/
 
 # Native bridge desktop provisioning (libvosk prebuilt + model — see harness/README.md)
 NativeBridge~/vendor/
-
-# Internal planning docs (not shipped in public release)
-Planning~/
 

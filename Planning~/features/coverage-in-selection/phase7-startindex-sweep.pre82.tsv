@@ -1,0 +1,29 @@
+missiles launch one missiles target hotel one	winner=launch_weapon@0:0.500	blocked=launch_weapon@1:0.833
+cease launch one missiles target hotel one	winner=cease_fire@0:0.125	blocked=launch_weapon@1:0.833
+missiles cease fire	winner=launch_weapon@0:0.500	blocked=cease_fire@1:0.667
+cease cease fire	winner=cease_fire@0:0.333	blocked=cease_fire@1:0.667
+missiles resume fire	winner=launch_weapon@0:0.500	blocked=resume_fire@1:0.667
+cease resume fire	winner=cease_fire@0:0.333	blocked=resume_fire@1:0.667
+missiles approach target alpha one	winner=launch_weapon@0:0.500	blocked=approach_target@1:0.750
+cease approach target alpha one	winner=cease_fire@0:0.167	blocked=approach_target@1:0.750
+missiles fall back from target bravo two	winner=launch_weapon@0:0.500	blocked=retreat_from_target@1:0.833
+cease fall back from target bravo two	winner=cease_fire@0:0.125	blocked=retreat_from_target@1:0.833
+missiles switch to navigation	winner=launch_weapon@0:0.500	blocked=mode_navigation@1:0.750
+cease switch to navigation	winner=cease_fire@0:0.250	blocked=mode_navigation@1:0.750
+missiles navigation mode	winner=launch_weapon@0:0.500	blocked=mode_navigation@1:0.667
+cease navigation mode	winner=cease_fire@0:0.250	blocked=mode_navigation@1:0.667
+switch navigation mode	winner=mode_navigation@0:0.500	blocked=mode_navigation@1:0.667
+missiles enable all	winner=launch_weapon@0:0.500	blocked=mode_all@1:0.667
+cease enable all	winner=cease_fire@0:0.333	blocked=mode_all@1:0.667
+missiles disable all	winner=launch_weapon@0:0.500	blocked=mode_disable@1:0.667
+cease disable all	winner=cease_fire@0:0.333	blocked=mode_disable@1:0.667
+missiles fire two torpedoes at bravo two	winner=launch_weapon@0:0.500	blocked=launch_weapon@1:0.833
+cease fire two torpedoes at bravo two	winner=cease_fire@0:0.286	blocked=launch_weapon@1:0.833
+missiles launch jackals target hotel two	winner=launch_weapon@0:0.500	blocked=launch_weapon@1:0.800
+cease launch jackals target hotel two	winner=cease_fire@0:0.143	blocked=launch_weapon@1:0.800
+missiles set heading two seven zero	winner=launch_weapon@0:0.500	blocked=set_heading@1:0.750
+cease set heading two seven zero	winner=cease_fire@0:0.143	blocked=set_heading@1:0.750
+missiles switch to weapons	winner=launch_weapon@0:0.500	blocked=mode_weapons@1:0.750
+cease switch to weapons	winner=cease_fire@0:0.250	blocked=mode_weapons@1:0.750
+missiles [unk] launch three torpedoes target alpha three	winner=launch_weapon@0:0.500	blocked=launch_weapon@2:0.833
+cease [unk] launch three torpedoes target alpha three	winner=cease_fire@0:0.125	blocked=launch_weapon@2:0.833

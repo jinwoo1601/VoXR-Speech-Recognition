@@ -15,6 +15,9 @@ name: Release
 #   - creates branch `release/X.Y.Z`
 #   - strips dev-only `NativeBridge~/` and `Tests~/` (consumers pull the
 #     prebuilt libvosk-bridge.so; they don't need C++ sources or NUnit suites)
+#     and the workflow layer — `Planning~/`, `.claude/`, `CLAUDE.md`,
+#     `CLAUDE.md.meta`, `memory/`, `memory.meta` (process docs and Claude
+#     Code workflow state, never part of the package)
 #   - tags `vX.Y.Z` on that stripped commit
 #   - publishes a GitHub Release with notes pulled from CHANGELOG.md
 #
@@ -69,8 +72,9 @@ jobs:
           # released — a stale pin sends new consumers to an older package.
           # CHANGELOG.md is excluded: its entries are a historical record and may
           # legitimately name older versions.
+          # The workflow layer (Planning~/, .claude/, memory/, CLAUDE.md) is excluded too: it is stripped from the release and never reaches a consumer.
           STALE_PINS="$(git grep -nE 'VoXR-Speech-Recognition\.git#v[0-9]+\.[0-9]+\.[0-9]+' \
-                          -- '*.md' ':!CHANGELOG.md' \
+                          -- '*.md' ':!CHANGELOG.md' ':!Planning~' ':!.claude' ':!memory' ':!CLAUDE.md' \
                         | grep -vF "VoXR-Speech-Recognition.git#v$VERSION" || true)"
           if [[ -n "$STALE_PINS" ]]; then
             echo "::error::Install pins still point at an older release. Roll them to #v$VERSION on main, then re-run."
@@ -110,8 +114,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git switch -c "release/$VERSION"
-          git rm -r NativeBridge~ Tests~
-          git commit -m "Strip NativeBridge~ and Tests~ from v$VERSION distribution"
+          git rm -r NativeBridge~ Tests~ Planning~ .claude CLAUDE.md CLAUDE.md.meta memory memory.meta
+          git commit -m "Strip NativeBridge~, Tests~ and the workflow layer from v$VERSION distribution"
           git tag -a "v$VERSION" -m "v$VERSION"
 
           git push origin "release/$VERSION"

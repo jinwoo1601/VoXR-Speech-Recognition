@@ -1,0 +1,699 @@
+baseline	launch one missiles target hotel one
+delete	one missiles target hotel one
+delete	launch missiles target hotel one
+delete	launch one target hotel one
+delete	launch one missiles hotel one
+delete	launch one missiles target one
+delete	launch one missiles target hotel
+append	launch one missiles target hotel one target
+prepend	target launch one missiles target hotel one
+append	launch one missiles target hotel one hotel
+prepend	hotel launch one missiles target hotel one
+append	launch one missiles target hotel one one
+prepend	one launch one missiles target hotel one
+append	launch one missiles target hotel one missiles
+prepend	missiles launch one missiles target hotel one
+append	launch one missiles target hotel one distance
+prepend	distance launch one missiles target hotel one
+append	launch one missiles target hotel one heading
+prepend	heading launch one missiles target hotel one
+append	launch one missiles target hotel one cease
+prepend	cease launch one missiles target hotel one
+append	launch one missiles target hotel one launch
+prepend	launch launch one missiles target hotel one
+append	launch one missiles target hotel one disengage
+prepend	disengage launch one missiles target hotel one
+append	launch one missiles target hotel one switch
+prepend	switch launch one missiles target hotel one
+append	launch one missiles target hotel one please
+prepend	please launch one missiles target hotel one
+append	launch one missiles target hotel one now
+prepend	now launch one missiles target hotel one
+baseline	cease fire
+delete	fire
+delete	cease
+append	cease fire target
+prepend	target cease fire
+append	cease fire hotel
+prepend	hotel cease fire
+append	cease fire one
+prepend	one cease fire
+append	cease fire missiles
+prepend	missiles cease fire
+append	cease fire distance
+prepend	distance cease fire
+append	cease fire heading
+prepend	heading cease fire
+append	cease fire cease
+prepend	cease cease fire
+append	cease fire launch
+prepend	launch cease fire
+append	cease fire disengage
+prepend	disengage cease fire
+append	cease fire switch
+prepend	switch cease fire
+append	cease fire please
+prepend	please cease fire
+append	cease fire now
+prepend	now cease fire
+baseline	resume fire
+delete	resume
+append	resume fire target
+prepend	target resume fire
+append	resume fire hotel
+prepend	hotel resume fire
+append	resume fire one
+prepend	one resume fire
+append	resume fire missiles
+prepend	missiles resume fire
+append	resume fire distance
+prepend	distance resume fire
+append	resume fire heading
+prepend	heading resume fire
+append	resume fire cease
+prepend	cease resume fire
+append	resume fire launch
+prepend	launch resume fire
+append	resume fire disengage
+prepend	disengage resume fire
+append	resume fire switch
+prepend	switch resume fire
+append	resume fire please
+prepend	please resume fire
+append	resume fire now
+prepend	now resume fire
+baseline	approach target alpha one
+delete	target alpha one
+delete	approach alpha one
+delete	approach target one
+delete	approach target alpha
+append	approach target alpha one target
+prepend	target approach target alpha one
+append	approach target alpha one hotel
+prepend	hotel approach target alpha one
+append	approach target alpha one one
+prepend	one approach target alpha one
+append	approach target alpha one missiles
+prepend	missiles approach target alpha one
+append	approach target alpha one distance
+prepend	distance approach target alpha one
+append	approach target alpha one heading
+prepend	heading approach target alpha one
+append	approach target alpha one cease
+prepend	cease approach target alpha one
+append	approach target alpha one launch
+prepend	launch approach target alpha one
+append	approach target alpha one disengage
+prepend	disengage approach target alpha one
+append	approach target alpha one switch
+prepend	switch approach target alpha one
+append	approach target alpha one please
+prepend	please approach target alpha one
+append	approach target alpha one now
+prepend	now approach target alpha one
+baseline	fall back from target bravo two
+delete	back from target bravo two
+delete	fall from target bravo two
+delete	fall back target bravo two
+delete	fall back from bravo two
+delete	fall back from target two
+delete	fall back from target bravo
+append	fall back from target bravo two target
+prepend	target fall back from target bravo two
+append	fall back from target bravo two hotel
+prepend	hotel fall back from target bravo two
+append	fall back from target bravo two one
+prepend	one fall back from target bravo two
+append	fall back from target bravo two missiles
+prepend	missiles fall back from target bravo two
+append	fall back from target bravo two distance
+prepend	distance fall back from target bravo two
+append	fall back from target bravo two heading
+prepend	heading fall back from target bravo two
+append	fall back from target bravo two cease
+prepend	cease fall back from target bravo two
+append	fall back from target bravo two launch
+prepend	launch fall back from target bravo two
+append	fall back from target bravo two disengage
+prepend	disengage fall back from target bravo two
+append	fall back from target bravo two switch
+prepend	switch fall back from target bravo two
+append	fall back from target bravo two please
+prepend	please fall back from target bravo two
+append	fall back from target bravo two now
+prepend	now fall back from target bravo two
+baseline	switch to navigation
+delete	to navigation
+delete	switch navigation
+delete	switch to
+append	switch to navigation target
+prepend	target switch to navigation
+append	switch to navigation hotel
+prepend	hotel switch to navigation
+append	switch to navigation one
+prepend	one switch to navigation
+append	switch to navigation missiles
+prepend	missiles switch to navigation
+append	switch to navigation distance
+prepend	distance switch to navigation
+append	switch to navigation heading
+prepend	heading switch to navigation
+append	switch to navigation cease
+prepend	cease switch to navigation
+append	switch to navigation launch
+prepend	launch switch to navigation
+append	switch to navigation disengage
+prepend	disengage switch to navigation
+append	switch to navigation switch
+prepend	switch switch to navigation
+append	switch to navigation please
+prepend	please switch to navigation
+append	switch to navigation now
+prepend	now switch to navigation
+baseline	navigation mode
+delete	mode
+delete	navigation
+append	navigation mode target
+prepend	target navigation mode
+append	navigation mode hotel
+prepend	hotel navigation mode
+append	navigation mode one
+prepend	one navigation mode
+append	navigation mode missiles
+prepend	missiles navigation mode
+append	navigation mode distance
+prepend	distance navigation mode
+append	navigation mode heading
+prepend	heading navigation mode
+append	navigation mode cease
+prepend	cease navigation mode
+append	navigation mode launch
+prepend	launch navigation mode
+append	navigation mode disengage
+prepend	disengage navigation mode
+append	navigation mode switch
+prepend	switch navigation mode
+append	navigation mode please
+prepend	please navigation mode
+append	navigation mode now
+prepend	now navigation mode
+baseline	enable all
+delete	all
+delete	enable
+append	enable all target
+prepend	target enable all
+append	enable all hotel
+prepend	hotel enable all
+append	enable all one
+prepend	one enable all
+append	enable all missiles
+prepend	missiles enable all
+append	enable all distance
+prepend	distance enable all
+append	enable all heading
+prepend	heading enable all
+append	enable all cease
+prepend	cease enable all
+append	enable all launch
+prepend	launch enable all
+append	enable all disengage
+prepend	disengage enable all
+append	enable all switch
+prepend	switch enable all
+append	enable all please
+prepend	please enable all
+append	enable all now
+prepend	now enable all
+baseline	disable all
+delete	disable
+append	disable all target
+prepend	target disable all
+append	disable all hotel
+prepend	hotel disable all
+append	disable all one
+prepend	one disable all
+append	disable all missiles
+prepend	missiles disable all
+append	disable all distance
+prepend	distance disable all
+append	disable all heading
+prepend	heading disable all
+append	disable all cease
+prepend	cease disable all
+append	disable all launch
+prepend	launch disable all
+append	disable all disengage
+prepend	disengage disable all
+append	disable all switch
+prepend	switch disable all
+append	disable all please
+prepend	please disable all
+append	disable all now
+prepend	now disable all
+baseline	fire two torpedoes at bravo two
+delete	two torpedoes at bravo two
+delete	fire torpedoes at bravo two
+delete	fire two at bravo two
+delete	fire two torpedoes bravo two
+delete	fire two torpedoes at two
+delete	fire two torpedoes at bravo
+append	fire two torpedoes at bravo two target
+prepend	target fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two hotel
+prepend	hotel fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two one
+prepend	one fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two missiles
+prepend	missiles fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two distance
+prepend	distance fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two heading
+prepend	heading fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two cease
+prepend	cease fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two launch
+prepend	launch fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two disengage
+prepend	disengage fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two switch
+prepend	switch fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two please
+prepend	please fire two torpedoes at bravo two
+append	fire two torpedoes at bravo two now
+prepend	now fire two torpedoes at bravo two
+baseline	launch jackals target hotel two
+delete	jackals target hotel two
+delete	launch target hotel two
+delete	launch jackals hotel two
+delete	launch jackals target two
+delete	launch jackals target hotel
+append	launch jackals target hotel two target
+prepend	target launch jackals target hotel two
+append	launch jackals target hotel two hotel
+prepend	hotel launch jackals target hotel two
+append	launch jackals target hotel two one
+prepend	one launch jackals target hotel two
+append	launch jackals target hotel two missiles
+prepend	missiles launch jackals target hotel two
+append	launch jackals target hotel two distance
+prepend	distance launch jackals target hotel two
+append	launch jackals target hotel two heading
+prepend	heading launch jackals target hotel two
+append	launch jackals target hotel two cease
+prepend	cease launch jackals target hotel two
+append	launch jackals target hotel two launch
+prepend	launch launch jackals target hotel two
+append	launch jackals target hotel two disengage
+prepend	disengage launch jackals target hotel two
+append	launch jackals target hotel two switch
+prepend	switch launch jackals target hotel two
+append	launch jackals target hotel two please
+prepend	please launch jackals target hotel two
+append	launch jackals target hotel two now
+prepend	now launch jackals target hotel two
+baseline	set heading two seven zero
+delete	heading two seven zero
+delete	set two seven zero
+delete	set heading seven zero
+delete	set heading two zero
+delete	set heading two seven
+append	set heading two seven zero target
+prepend	target set heading two seven zero
+append	set heading two seven zero hotel
+prepend	hotel set heading two seven zero
+append	set heading two seven zero one
+prepend	one set heading two seven zero
+append	set heading two seven zero missiles
+prepend	missiles set heading two seven zero
+append	set heading two seven zero distance
+prepend	distance set heading two seven zero
+append	set heading two seven zero heading
+prepend	heading set heading two seven zero
+append	set heading two seven zero cease
+prepend	cease set heading two seven zero
+append	set heading two seven zero launch
+prepend	launch set heading two seven zero
+append	set heading two seven zero disengage
+prepend	disengage set heading two seven zero
+append	set heading two seven zero switch
+prepend	switch set heading two seven zero
+append	set heading two seven zero please
+prepend	please set heading two seven zero
+append	set heading two seven zero now
+prepend	now set heading two seven zero
+baseline	switch to weapons
+delete	to weapons
+delete	switch weapons
+append	switch to weapons target
+prepend	target switch to weapons
+append	switch to weapons hotel
+prepend	hotel switch to weapons
+append	switch to weapons one
+prepend	one switch to weapons
+append	switch to weapons missiles
+prepend	missiles switch to weapons
+append	switch to weapons distance
+prepend	distance switch to weapons
+append	switch to weapons heading
+prepend	heading switch to weapons
+append	switch to weapons cease
+prepend	cease switch to weapons
+append	switch to weapons launch
+prepend	launch switch to weapons
+append	switch to weapons disengage
+prepend	disengage switch to weapons
+append	switch to weapons switch
+prepend	switch switch to weapons
+append	switch to weapons please
+prepend	please switch to weapons
+append	switch to weapons now
+prepend	now switch to weapons
+baseline	[unk] launch three torpedoes target alpha three
+delete	launch three torpedoes target alpha three
+delete	[unk] three torpedoes target alpha three
+delete	[unk] launch torpedoes target alpha three
+delete	[unk] launch three target alpha three
+delete	[unk] launch three torpedoes alpha three
+delete	[unk] launch three torpedoes target three
+delete	[unk] launch three torpedoes target alpha
+append	[unk] launch three torpedoes target alpha three target
+prepend	target [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three hotel
+prepend	hotel [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three one
+prepend	one [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three missiles
+prepend	missiles [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three distance
+prepend	distance [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three heading
+prepend	heading [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three cease
+prepend	cease [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three launch
+prepend	launch [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three disengage
+prepend	disengage [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three switch
+prepend	switch [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three please
+prepend	please [unk] launch three torpedoes target alpha three
+append	[unk] launch three torpedoes target alpha three now
+prepend	now [unk] launch three torpedoes target alpha three
+baseline	close distance safe range
+delete	distance safe range
+delete	close safe range
+delete	close distance range
+delete	close distance safe
+append	close distance safe range target
+prepend	target close distance safe range
+append	close distance safe range hotel
+prepend	hotel close distance safe range
+append	close distance safe range one
+prepend	one close distance safe range
+append	close distance safe range missiles
+prepend	missiles close distance safe range
+append	close distance safe range distance
+prepend	distance close distance safe range
+append	close distance safe range heading
+prepend	heading close distance safe range
+append	close distance safe range cease
+prepend	cease close distance safe range
+append	close distance safe range launch
+prepend	launch close distance safe range
+append	close distance safe range disengage
+prepend	disengage close distance safe range
+append	close distance safe range switch
+prepend	switch close distance safe range
+append	close distance safe range please
+prepend	please close distance safe range
+append	close distance safe range now
+prepend	now close distance safe range
+baseline	target hotel one
+delete	hotel one
+delete	target one
+delete	target hotel
+append	target hotel one target
+prepend	target target hotel one
+append	target hotel one hotel
+prepend	hotel target hotel one
+append	target hotel one one
+prepend	one target hotel one
+append	target hotel one missiles
+prepend	missiles target hotel one
+append	target hotel one distance
+prepend	distance target hotel one
+append	target hotel one heading
+prepend	heading target hotel one
+append	target hotel one cease
+prepend	cease target hotel one
+append	target hotel one launch
+prepend	launch target hotel one
+append	target hotel one disengage
+prepend	disengage target hotel one
+append	target hotel one switch
+prepend	switch target hotel one
+append	target hotel one please
+prepend	please target hotel one
+append	target hotel one now
+prepend	now target hotel one
+concat	launch one missiles target hotel one cease fire
+concat	launch one missiles target hotel one resume fire
+concat	launch one missiles target hotel one approach target alpha one
+concat	launch one missiles target hotel one fall back from target bravo two
+concat	launch one missiles target hotel one switch to navigation
+concat	launch one missiles target hotel one navigation mode
+concat	launch one missiles target hotel one enable all
+concat	launch one missiles target hotel one disable all
+concat	launch one missiles target hotel one fire two torpedoes at bravo two
+concat	launch one missiles target hotel one launch jackals target hotel two
+concat	launch one missiles target hotel one set heading two seven zero
+concat	launch one missiles target hotel one switch to weapons
+concat	launch one missiles target hotel one [unk] launch three torpedoes target alpha three
+concat	launch one missiles target hotel one close distance safe range
+concat	launch one missiles target hotel one target hotel one
+concat	cease fire launch one missiles target hotel one
+concat	cease fire resume fire
+concat	cease fire approach target alpha one
+concat	cease fire fall back from target bravo two
+concat	cease fire switch to navigation
+concat	cease fire navigation mode
+concat	cease fire enable all
+concat	cease fire disable all
+concat	cease fire fire two torpedoes at bravo two
+concat	cease fire launch jackals target hotel two
+concat	cease fire set heading two seven zero
+concat	cease fire switch to weapons
+concat	cease fire [unk] launch three torpedoes target alpha three
+concat	cease fire close distance safe range
+concat	cease fire target hotel one
+concat	resume fire launch one missiles target hotel one
+concat	resume fire cease fire
+concat	resume fire approach target alpha one
+concat	resume fire fall back from target bravo two
+concat	resume fire switch to navigation
+concat	resume fire navigation mode
+concat	resume fire enable all
+concat	resume fire disable all
+concat	resume fire fire two torpedoes at bravo two
+concat	resume fire launch jackals target hotel two
+concat	resume fire set heading two seven zero
+concat	resume fire switch to weapons
+concat	resume fire [unk] launch three torpedoes target alpha three
+concat	resume fire close distance safe range
+concat	resume fire target hotel one
+concat	approach target alpha one launch one missiles target hotel one
+concat	approach target alpha one cease fire
+concat	approach target alpha one resume fire
+concat	approach target alpha one fall back from target bravo two
+concat	approach target alpha one switch to navigation
+concat	approach target alpha one navigation mode
+concat	approach target alpha one enable all
+concat	approach target alpha one disable all
+concat	approach target alpha one fire two torpedoes at bravo two
+concat	approach target alpha one launch jackals target hotel two
+concat	approach target alpha one set heading two seven zero
+concat	approach target alpha one switch to weapons
+concat	approach target alpha one [unk] launch three torpedoes target alpha three
+concat	approach target alpha one close distance safe range
+concat	approach target alpha one target hotel one
+concat	fall back from target bravo two launch one missiles target hotel one
+concat	fall back from target bravo two cease fire
+concat	fall back from target bravo two resume fire
+concat	fall back from target bravo two approach target alpha one
+concat	fall back from target bravo two switch to navigation
+concat	fall back from target bravo two navigation mode
+concat	fall back from target bravo two enable all
+concat	fall back from target bravo two disable all
+concat	fall back from target bravo two fire two torpedoes at bravo two
+concat	fall back from target bravo two launch jackals target hotel two
+concat	fall back from target bravo two set heading two seven zero
+concat	fall back from target bravo two switch to weapons
+concat	fall back from target bravo two [unk] launch three torpedoes target alpha three
+concat	fall back from target bravo two close distance safe range
+concat	fall back from target bravo two target hotel one
+concat	switch to navigation launch one missiles target hotel one
+concat	switch to navigation cease fire
+concat	switch to navigation resume fire
+concat	switch to navigation approach target alpha one
+concat	switch to navigation fall back from target bravo two
+concat	switch to navigation navigation mode
+concat	switch to navigation enable all
+concat	switch to navigation disable all
+concat	switch to navigation fire two torpedoes at bravo two
+concat	switch to navigation launch jackals target hotel two
+concat	switch to navigation set heading two seven zero
+concat	switch to navigation switch to weapons
+concat	switch to navigation [unk] launch three torpedoes target alpha three
+concat	switch to navigation close distance safe range
+concat	switch to navigation target hotel one
+concat	navigation mode launch one missiles target hotel one
+concat	navigation mode cease fire
+concat	navigation mode resume fire
+concat	navigation mode approach target alpha one
+concat	navigation mode fall back from target bravo two
+concat	navigation mode switch to navigation
+concat	navigation mode enable all
+concat	navigation mode disable all
+concat	navigation mode fire two torpedoes at bravo two
+concat	navigation mode launch jackals target hotel two
+concat	navigation mode set heading two seven zero
+concat	navigation mode switch to weapons
+concat	navigation mode [unk] launch three torpedoes target alpha three
+concat	navigation mode close distance safe range
+concat	navigation mode target hotel one
+concat	enable all launch one missiles target hotel one
+concat	enable all cease fire
+concat	enable all resume fire
+concat	enable all approach target alpha one
+concat	enable all fall back from target bravo two
+concat	enable all switch to navigation
+concat	enable all navigation mode
+concat	enable all disable all
+concat	enable all fire two torpedoes at bravo two
+concat	enable all launch jackals target hotel two
+concat	enable all set heading two seven zero
+concat	enable all switch to weapons
+concat	enable all [unk] launch three torpedoes target alpha three
+concat	enable all close distance safe range
+concat	enable all target hotel one
+concat	disable all launch one missiles target hotel one
+concat	disable all cease fire
+concat	disable all resume fire
+concat	disable all approach target alpha one
+concat	disable all fall back from target bravo two
+concat	disable all switch to navigation
+concat	disable all navigation mode
+concat	disable all enable all
+concat	disable all fire two torpedoes at bravo two
+concat	disable all launch jackals target hotel two
+concat	disable all set heading two seven zero
+concat	disable all switch to weapons
+concat	disable all [unk] launch three torpedoes target alpha three
+concat	disable all close distance safe range
+concat	disable all target hotel one
+concat	fire two torpedoes at bravo two launch one missiles target hotel one
+concat	fire two torpedoes at bravo two cease fire
+concat	fire two torpedoes at bravo two resume fire
+concat	fire two torpedoes at bravo two approach target alpha one
+concat	fire two torpedoes at bravo two fall back from target bravo two
+concat	fire two torpedoes at bravo two switch to navigation
+concat	fire two torpedoes at bravo two navigation mode
+concat	fire two torpedoes at bravo two enable all
+concat	fire two torpedoes at bravo two disable all
+concat	fire two torpedoes at bravo two launch jackals target hotel two
+concat	fire two torpedoes at bravo two set heading two seven zero
+concat	fire two torpedoes at bravo two switch to weapons
+concat	fire two torpedoes at bravo two [unk] launch three torpedoes target alpha three
+concat	fire two torpedoes at bravo two close distance safe range
+concat	fire two torpedoes at bravo two target hotel one
+concat	launch jackals target hotel two launch one missiles target hotel one
+concat	launch jackals target hotel two cease fire
+concat	launch jackals target hotel two resume fire
+concat	launch jackals target hotel two approach target alpha one
+concat	launch jackals target hotel two fall back from target bravo two
+concat	launch jackals target hotel two switch to navigation
+concat	launch jackals target hotel two navigation mode
+concat	launch jackals target hotel two enable all
+concat	launch jackals target hotel two disable all
+concat	launch jackals target hotel two fire two torpedoes at bravo two
+concat	launch jackals target hotel two set heading two seven zero
+concat	launch jackals target hotel two switch to weapons
+concat	launch jackals target hotel two [unk] launch three torpedoes target alpha three
+concat	launch jackals target hotel two close distance safe range
+concat	launch jackals target hotel two target hotel one
+concat	set heading two seven zero launch one missiles target hotel one
+concat	set heading two seven zero cease fire
+concat	set heading two seven zero resume fire
+concat	set heading two seven zero approach target alpha one
+concat	set heading two seven zero fall back from target bravo two
+concat	set heading two seven zero switch to navigation
+concat	set heading two seven zero navigation mode
+concat	set heading two seven zero enable all
+concat	set heading two seven zero disable all
+concat	set heading two seven zero fire two torpedoes at bravo two
+concat	set heading two seven zero launch jackals target hotel two
+concat	set heading two seven zero switch to weapons
+concat	set heading two seven zero [unk] launch three torpedoes target alpha three
+concat	set heading two seven zero close distance safe range
+concat	set heading two seven zero target hotel one
+concat	switch to weapons launch one missiles target hotel one
+concat	switch to weapons cease fire
+concat	switch to weapons resume fire
+concat	switch to weapons approach target alpha one
+concat	switch to weapons fall back from target bravo two
+concat	switch to weapons switch to navigation
+concat	switch to weapons navigation mode
+concat	switch to weapons enable all
+concat	switch to weapons disable all
+concat	switch to weapons fire two torpedoes at bravo two
+concat	switch to weapons launch jackals target hotel two
+concat	switch to weapons set heading two seven zero
+concat	switch to weapons [unk] launch three torpedoes target alpha three
+concat	switch to weapons close distance safe range
+concat	switch to weapons target hotel one
+concat	[unk] launch three torpedoes target alpha three launch one missiles target hotel one
+concat	[unk] launch three torpedoes target alpha three cease fire
+concat	[unk] launch three torpedoes target alpha three resume fire
+concat	[unk] launch three torpedoes target alpha three approach target alpha one
+concat	[unk] launch three torpedoes target alpha three fall back from target bravo two
+concat	[unk] launch three torpedoes target alpha three switch to navigation
+concat	[unk] launch three torpedoes target alpha three navigation mode
+concat	[unk] launch three torpedoes target alpha three enable all
+concat	[unk] launch three torpedoes target alpha three disable all
+concat	[unk] launch three torpedoes target alpha three fire two torpedoes at bravo two
+concat	[unk] launch three torpedoes target alpha three launch jackals target hotel two
+concat	[unk] launch three torpedoes target alpha three set heading two seven zero
+concat	[unk] launch three torpedoes target alpha three switch to weapons
+concat	[unk] launch three torpedoes target alpha three close distance safe range
+concat	[unk] launch three torpedoes target alpha three target hotel one
+concat	close distance safe range launch one missiles target hotel one
+concat	close distance safe range cease fire
+concat	close distance safe range resume fire
+concat	close distance safe range approach target alpha one
+concat	close distance safe range fall back from target bravo two
+concat	close distance safe range switch to navigation
+concat	close distance safe range navigation mode
+concat	close distance safe range enable all
+concat	close distance safe range disable all
+concat	close distance safe range fire two torpedoes at bravo two
+concat	close distance safe range launch jackals target hotel two
+concat	close distance safe range set heading two seven zero
+concat	close distance safe range switch to weapons
+concat	close distance safe range [unk] launch three torpedoes target alpha three
+concat	close distance safe range target hotel one
+concat	target hotel one launch one missiles target hotel one
+concat	target hotel one cease fire
+concat	target hotel one resume fire
+concat	target hotel one approach target alpha one
+concat	target hotel one fall back from target bravo two
+concat	target hotel one switch to navigation
+concat	target hotel one navigation mode
+concat	target hotel one enable all
+concat	target hotel one disable all
+concat	target hotel one fire two torpedoes at bravo two
+concat	target hotel one launch jackals target hotel two
+concat	target hotel one set heading two seven zero
+concat	target hotel one switch to weapons
+concat	target hotel one [unk] launch three torpedoes target alpha three
+concat	target hotel one close distance safe range

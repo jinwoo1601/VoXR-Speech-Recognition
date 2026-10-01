@@ -1,0 +1,173 @@
+utterances compared: 699   gate: minScore 0.6
+
+==============================================================================
+BOTH DIRECTIONS — every column printed, including the zeros
+==============================================================================
+  newly-firing     0
+  slots-gained     0
+  intent-change    11
+  count-change     1
+  slots-lost       0
+  newly-silent     35
+  score-only       129
+
+BY GENERATION FAMILY
+  family      total  newly-firin  slots-gaine  intent-chan  count-chang   slots-lost  newly-silen   score-only
+  append        192            0            0            0            0            0           10          112
+  baseline       16            0            0            0            0            0            0            0
+  concat        240            0            0            9            1            0           14            4
+  delete         59            0            0            0            0            0            9            0
+  prepend       192            0            0            2            0            0            2           13
+
+### newly-firing: none
+
+### slots-gained: none
+
+### intent-change  (11)
+  [prepend] 'cease fire two torpedoes at bravo two'
+      before: cease_fire:1.000 | launch_weapon:0.800 [quantity=two,weapon=torpedoes,target=bravo two]
+      after : cease_fire:0.286 | launch_weapon:0.800 [quantity=two,weapon=torpedoes,target=bravo two]
+  [prepend] 'disengage target hotel one'
+      before: cease_fire:1.000 | approach_target:0.667 [target=hotel one]
+      after : cease_fire:0.250 | approach_target:0.667 [target=hotel one]
+  [concat] 'cease fire target hotel one'
+      before: cease_fire:1.000 | approach_target:0.667 [target=hotel one]
+      after : cease_fire:0.400 | approach_target:0.667 [target=hotel one]
+  [concat] 'resume fire target hotel one'
+      before: resume_fire:1.000 | approach_target:0.667 [target=hotel one]
+      after : resume_fire:0.400 | approach_target:0.667 [target=hotel one]
+  [concat] 'switch to navigation target hotel one'
+      before: mode_navigation:1.000 | approach_target:0.667 [target=hotel one]
+      after : mode_navigation:0.500 | approach_target:0.667 [target=hotel one]
+  [concat] 'navigation mode target hotel one'
+      before: mode_navigation:1.000 | approach_target:0.667 [target=hotel one]
+      after : mode_navigation:0.400 | approach_target:0.667 [target=hotel one]
+  [concat] 'enable all target hotel one'
+      before: mode_all:1.000 | approach_target:0.667 [target=hotel one]
+      after : mode_all:0.400 | approach_target:0.667 [target=hotel one]
+  [concat] 'disable all target hotel one'
+      before: mode_disable:1.000 | approach_target:0.667 [target=hotel one]
+      after : mode_disable:0.400 | approach_target:0.667 [target=hotel one]
+  [concat] 'launch jackals target hotel two target hotel one'
+      before: launch_weapon:1.000 [weapon=jackal,target=hotel two] | approach_target:0.667 [target=hotel one]
+      after : launch_weapon:0.571 [weapon=jackal,target=hotel two] | approach_target:0.667 [target=hotel one]
+  [concat] 'set heading two seven zero target hotel one'
+      before: set_heading:1.000 [heading=two seven zero] | approach_target:0.667 [target=hotel one]
+      after : set_heading:0.500 [heading=two seven zero] | approach_target:0.667 [target=hotel one]
+  [concat] 'switch to weapons target hotel one'
+      before: mode_weapons:1.000 | approach_target:0.667 [target=hotel one]
+      after : mode_weapons:0.500 | approach_target:0.667 [target=hotel one]
+
+### count-change  (1)
+  [concat] 'approach target alpha one target hotel one'
+      before: approach_target:1.000 [target=alpha one] | approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=alpha one] | approach_target:0.667 [target=hotel one]
+
+### slots-lost: none
+
+### newly-silent  (35)
+  [delete] 'launch one missiles target one'
+      before: launch_weapon:0.600 [quantity=one,weapon=missiles]
+      after : launch_weapon:0.167 [weapon=missiles]
+  [delete] 'launch one missiles target hotel'
+      before: launch_weapon:0.600 [quantity=one,weapon=missiles]
+      after : launch_weapon:0.167 [weapon=missiles]
+  [delete] 'fall back from target two'
+      before: retreat_from_target:0.600
+      after : (nothing)
+  [delete] 'fall back from target bravo'
+      before: retreat_from_target:0.600
+      after : (nothing)
+  [delete] 'switch to'
+      before: mode_weapons:0.667
+      after : (nothing)
+  [prepend] 'switch navigation mode'
+      before: mode_navigation:0.667 | mode_weapons:0.500
+      after : mode_navigation:0.500 | mode_weapons:0.500
+  [delete] 'fire two torpedoes at two'
+      before: launch_weapon:0.600 [quantity=two,weapon=torpedoes]
+      after : cease_fire:0.167 | launch_weapon:0.200 [weapon=torpedoes]
+  [delete] 'fire two torpedoes at bravo'
+      before: launch_weapon:0.600 [quantity=two,weapon=torpedoes]
+      after : cease_fire:0.167 | launch_weapon:0.200 [weapon=torpedoes]
+  [delete] '[unk] launch three torpedoes target three'
+      before: launch_weapon:0.600 [quantity=three,weapon=torpedoes]
+      after : launch_weapon:0.167 [weapon=torpedoes]
+  [delete] '[unk] launch three torpedoes target alpha'
+      before: launch_weapon:0.600 [quantity=three,weapon=torpedoes]
+      after : launch_weapon:0.167 [weapon=torpedoes]
+  [append] 'close distance safe range target'
+      before: set_distance_named:0.600 [range=safe range]
+      after : (nothing)
+  [append] 'close distance safe range disengage'
+      before: set_distance_named:0.400 [range=safe range] | cease_fire:1.000
+      after : cease_fire:0.200
+  [append] 'target hotel one target'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [append] 'target hotel one hotel'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [append] 'target hotel one one'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [append] 'target hotel one missiles'
+      before: approach_target:0.667 [target=hotel one] | launch_weapon:0.500 [weapon=missiles]
+      after : approach_target:0.500 [target=hotel one] | launch_weapon:0.500 [weapon=missiles]
+  [append] 'target hotel one distance'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [append] 'target hotel one heading'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [prepend] 'cease target hotel one'
+      before: cease_fire:0.500 | approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [append] 'target hotel one please'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [append] 'target hotel one now'
+      before: approach_target:0.667 [target=hotel one]
+      after : approach_target:0.500 [target=hotel one]
+  [concat] 'close distance safe range launch one missiles target hotel one'
+      before: set_distance_named:0.400 [range=safe range] | launch_weapon:1.000 [quantity=one,weapon=missiles,target=hotel one]
+      after : launch_weapon:0.556 [quantity=one,weapon=missiles,target=hotel one]
+  [concat] 'close distance safe range cease fire'
+      before: set_distance_named:0.400 [range=safe range] | cease_fire:1.000
+      after : cease_fire:0.333
+  [concat] 'close distance safe range resume fire'
+      before: set_distance_named:0.400 [range=safe range] | resume_fire:1.000
+      after : resume_fire:0.333
+  [concat] 'close distance safe range approach target alpha one'
+      before: set_distance_named:0.400 [range=safe range] | approach_target:1.000 [target=alpha one]
+      after : approach_target:0.429 [target=alpha one]
+  [concat] 'close distance safe range fall back from target bravo two'
+      before: set_distance_named:0.400 [range=safe range] | retreat_from_target:1.000 [target=bravo two]
+      after : retreat_from_target:0.556 [target=bravo two]
+  [concat] 'close distance safe range switch to navigation'
+      before: set_distance_named:0.400 [range=safe range] | mode_navigation:1.000
+      after : mode_navigation:0.429
+  [concat] 'close distance safe range navigation mode'
+      before: set_distance_named:0.400 [range=safe range] | mode_navigation:1.000
+      after : mode_navigation:0.333
+  [concat] 'close distance safe range enable all'
+      before: set_distance_named:0.400 [range=safe range] | mode_all:1.000
+      after : mode_all:0.333
+  [concat] 'close distance safe range disable all'
+      before: set_distance_named:0.400 [range=safe range] | mode_disable:1.000
+      after : mode_disable:0.333
+  [concat] 'close distance safe range fire two torpedoes at bravo two'
+      before: set_distance_named:0.400 [range=safe range] | launch_weapon:1.000 [quantity=two,weapon=torpedoes,target=bravo two]
+      after : launch_weapon:0.556 [quantity=two,weapon=torpedoes,target=bravo two]
+  [concat] 'close distance safe range launch jackals target hotel two'
+      before: set_distance_named:0.400 [range=safe range] | launch_weapon:1.000 [weapon=jackal,target=hotel two]
+      after : launch_weapon:0.500 [weapon=jackal,target=hotel two]
+  [concat] 'close distance safe range set heading two seven zero'
+      before: set_distance_named:0.400 [range=safe range] | set_heading:1.000 [heading=two seven zero]
+      after : set_heading:0.429 [heading=two seven zero]
+  [concat] 'close distance safe range switch to weapons'
+      before: set_distance_named:0.400 [range=safe range] | mode_weapons:1.000
+      after : mode_weapons:0.429
+  [concat] 'close distance safe range [unk] launch three torpedoes target alpha three'
+      before: set_distance_named:0.400 [range=safe range] | launch_weapon:1.000 [quantity=three,weapon=torpedoes,target=alpha three]
+      after : launch_weapon:0.556 [quantity=three,weapon=torpedoes,target=alpha three]
