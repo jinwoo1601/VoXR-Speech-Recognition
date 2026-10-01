@@ -1,5 +1,6 @@
 > Moved verbatim on 2026-10-01 (branch `light-harness-adopt`) from `.claude/verification-bindings.md`, the pre-harness workflow's verification procedure; the `unity` binding's `verification` key cites this file.
 > The file is now tracked at `Planning~/verification-recipe.md`, and `compile-check` reaches it through the `unity` binding's `verification` key rather than reading it directly. The body below is kept verbatim as it stood before the move, so these statements in it are superseded: that the file is gitignored with the rest of the workflow layer (`.claude/`); that `compile-check` reads it directly; that further detail lives in project memory `running-package-tests` (the maintainer's out-of-repo Claude memory, not this repo's `memory/`); and that the csproj is regenerated from `.claude/verification-bindings.md` (read: this file).
+> On 2026-10-01 (branch `light-workspace-move`) this repository moved from `D:\Game Development` to `D:\Workspace`, and the host `VoXR TestGround` with it; the body's paths were updated in place, nothing else. The `NativeBridge~/build*` CMake caches still name the old source tree, which CMake refuses, so the next native build configures fresh: delete `NativeBridge~/build` (and `build-desktop` in WSL) before configuring — CMake 3.22 has no `--fresh`.
 
 # Verification bindings — VoXR Speech Recognition
 
@@ -9,11 +10,11 @@ Moved verbatim from the project `CLAUDE.md` on 2026-08-23 (session-start token b
 
 What the `compile-check` agent runs, in this order. This is a bare UPM package — no `Assets/` or `ProjectSettings/` — so nothing compiles or tests standalone; all Unity verification goes through the host project.
 
-1. **Unity tests (authoritative):** host project `D:\Game Development\VoXR TestGround` (Unity **6000.4.7f1**), which references this package by local path (`file:D:/Game Development/VoXR-Speech-Recognition` in its manifest) — the checked-out working tree is what's tested. Procedure (full detail in project memory `running-package-tests`):
+1. **Unity tests (authoritative):** host project `D:\Workspace\VoXR TestGround` (Unity **6000.4.7f1**), which references this package by local path (`file:D:/Workspace/VoXR-Speech-Recognition` in its manifest) — the checked-out working tree is what's tested. Procedure (full detail in project memory `running-package-tests`):
    1. Unity editor must be closed (`<host>/Temp/UnityLockfile` gone).
    2. Rename `Tests~` → `Tests` in this repo; ensure `"testables": ["com.jinwoo1601.voxr"]` in the host manifest.
    3. Run **both** platforms — `Tests/Editor` is EditMode, `Tests/Runtime` is PlayMode (most parser/command tests are PlayMode; an EditMode-only run misses them):
-      `"/mnt/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Game Development\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<win path>.xml" -logFile "<win path>.log"` — no `-quit`; takes minutes on first import. Green = NUnit result XML with `failed="0"`.
+      `"/mnt/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Workspace\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<win path>.xml" -logFile "<win path>.log"` — no `-quit`; takes minutes on first import. Green = NUnit result XML with `failed="0"`.
    4. Revert: `Tests` → `Tests~`, delete Unity-generated `.meta` orphans (incl. root `Tests.meta`), restore the manifest.
 2. **NativeBridge (only when `NativeBridge~/` changed):**
    a. **arm64 build:** CMake/Ninja build per *Building NativeBridge* below. Green = `libvosk-bridge.so` builds with no errors.
@@ -52,15 +53,15 @@ From WSL, prefix paths with `/mnt/c/...` and call `.exe` variants directly:
 CMAKE="/mnt/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe"
 NDK_WIN="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK"
 
-"$CMAKE" -B "D:/Game Development/VoXR-Speech-Recognition/NativeBridge~/build" \
-         -S "D:/Game Development/VoXR-Speech-Recognition/NativeBridge~" \
+"$CMAKE" -B "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" \
+         -S "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~" \
          -DCMAKE_TOOLCHAIN_FILE="$NDK_WIN/build/cmake/android.toolchain.cmake" \
          -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-27 -DANDROID_STL=c++_shared \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_MAKE_PROGRAM="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/ninja.exe" \
          -G Ninja
 
-"$CMAKE" --build "D:/Game Development/VoXR-Speech-Recognition/NativeBridge~/build" --config Release -j 4
+"$CMAKE" --build "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" --config Release -j 4
 ```
 
 
@@ -99,14 +100,14 @@ Three sources, all referenced with `<Private>false</Private>`:
    hand-maintaining a module list.
 3. **Package assemblies the samples use** — `UnityEngine.UI.dll` (uGUI, for `UnityEngine.UI` /
    `UnityEngine.EventSystems`) and `Unity.InputSystem.dll`, taken from the **host project's**
-   `D:\Game Development\VoXR TestGround\Library\ScriptAssemblies\`. These are compiled per-project,
+   `D:\Workspace\VoXR TestGround\Library\ScriptAssemblies\`. These are compiled per-project,
    so they exist only after the host has imported at least once. No TextMeshPro reference is
    needed — no sample uses TMP.
 
 `<UnityData>` is `/mnt/c/Program Files/Unity/Hub/Editor/<version>/Editor/Data`. **If the editor
 version changes**, update the `UnityData` property and the `UNITY_6000_4_7` / `UNITY_*_OR_NEWER`
 defines. The authoritative source for both the reference set and the define list is the host
-project's Unity-generated `D:\Game Development\VoXR TestGround\Assembly-CSharp.csproj` — read its
+project's Unity-generated `D:\Workspace\VoXR TestGround\Assembly-CSharp.csproj` — read its
 `<DefineConstants>` and `<Reference>` hint paths and mirror them.
 
 ### Player shape: UNITY_EDITOR is deliberately not defined
@@ -131,7 +132,7 @@ A cheap standing sanity check on the compile set itself:
 
 ```bash
 cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
-  | grep -oE '/mnt/d/Game Development/VoXR-Speech-Recognition/Samples~/[^ "]*\.cs' | sort -u | wc -l
+  | grep -oE '/mnt/d/Workspace/VoXR-Speech-Recognition/Samples~/[^ "]*\.cs' | sort -u | wc -l
 ```
 
 must print **7**.
@@ -171,8 +172,8 @@ at that exact file:line, and green returned after revert.
 
   <PropertyGroup>
     <UnityData>/mnt/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data</UnityData>
-    <PkgRoot>/mnt/d/Game Development/VoXR-Speech-Recognition</PkgRoot>
-    <HostAsm>/mnt/d/Game Development/VoXR TestGround/Library/ScriptAssemblies</HostAsm>
+    <PkgRoot>/mnt/d/Workspace/VoXR-Speech-Recognition</PkgRoot>
+    <HostAsm>/mnt/d/Workspace/VoXR TestGround/Library/ScriptAssemblies</HostAsm>
   </PropertyGroup>
 
   <!-- Player-build shape: UNITY_EDITOR is deliberately NOT defined. -->

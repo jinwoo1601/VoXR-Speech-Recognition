@@ -1,6 +1,6 @@
 {
   "harness": "1.0.0",
-  "base": "../../Workspace/harness",
+  "base": "../harness",
   "preset": null,
   "packs": {
     "codex": "0.6.0",
@@ -70,7 +70,7 @@
     ".claude/references/vc-git/vc-guard-hook.py": "sha256:a170a02b0ed6ef7ab1c4e3e5ede77abe0b9d7e77aab802a758605760f9954dba",
     ".claude/references/vc-git/worktree-create-hook.py": "sha256:6769a06f98ee68ad14c7387e4056f4345573f73ce6237ab8f054fc2c79f139ea",
     ".claude/rules/CONSTITUTION.md": "sha256:e1b55b5ab1e484d89d3e871c45d44edce43e7562eb4b7ea3b00c5c19c6897cbf",
-    ".claude/settings.json": "sha256:ae2066ca8f050a20b6c76444ed2d022d91d9d6ffbb89dfbbc24c493298310d49",
+    ".claude/settings.json": "sha256:3f601688203ce79f3545ad1157d59b5c51a7c308169c7d9f8ed0c14ec4dd969a",
     ".claude/skills/architecture-doc/SKILL.md": "sha256:1ed0b255007717a4d72f750e055fdcac3f1db05e7b762c357f8aa7cf3f51ddb7",
     ".claude/skills/architecture-doc/assets/architecture-template.md": "sha256:01f85341257125befc801724debda8335065c60c5d9201674f3843e0bf0cdc96",
     ".claude/skills/architecture-doc/references/quality-bar.md": "sha256:c38f3e423efece52c1810131a4161457667cecaa6c75ffa382b573b34dc67945",
@@ -108,7 +108,8 @@
     ".claude/skills/tackle-issue/references/tree-path.md": "sha256:fe6ff78339f465415e7e89176c0ec29fffdf9ae6262e4b0e583e49fedb8983c6",
     ".claude/skills/unity-assembly-definitions/SKILL.md": "sha256:b9409880ed2da4b871fc71d6bde6c90b176fa91be919df75016170181ceeef2d",
     ".claude/skills/unity-assembly-definitions/references/architecture-guide.md": "sha256:1702868d647b3d5d8af13bca71080fd2e65fd3c6850cadfaeb26f4c4bb424703",
-    ".claude/skills/upgrade/SKILL.md": "sha256:c9fc7b5ad37047728ede642c7538752adc0c4aeb23f1a89366d8e991d40cac1b"
+    ".claude/skills/upgrade/SKILL.md": "sha256:c9fc7b5ad37047728ede642c7538752adc0c4aeb23f1a89366d8e991d40cac1b",
+    "CLAUDE.md": "sha256:217a09990dbe8a66ad15f3cbe3b3ab4698c967fb75d95e689b80126186028230"
   },
   "bindings": {
     "board": "core",

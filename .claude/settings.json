@@ -170,5 +170,9 @@
   },
   "worktree": {
     "baseRef": "head"
-  }
+  },
+  "claudeMdExcludes": [
+    "**/Workspace/.claude/rules/CONSTITUTION.md",
+    "**/Workspace/CLAUDE.md"
+  ]
 }
