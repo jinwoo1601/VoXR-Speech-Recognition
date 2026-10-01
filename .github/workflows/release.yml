@@ -72,8 +72,9 @@ jobs:
           # released — a stale pin sends new consumers to an older package.
           # CHANGELOG.md is excluded: its entries are a historical record and may
           # legitimately name older versions.
+          # The workflow layer (Planning~/, .claude/, memory/, CLAUDE.md) is excluded too: it is stripped from the release and never reaches a consumer.
           STALE_PINS="$(git grep -nE 'VoXR-Speech-Recognition\.git#v[0-9]+\.[0-9]+\.[0-9]+' \
-                          -- '*.md' ':!CHANGELOG.md' \
+                          -- '*.md' ':!CHANGELOG.md' ':!Planning~' ':!.claude' ':!memory' ':!CLAUDE.md' \
                         | grep -vF "VoXR-Speech-Recognition.git#v$VERSION" || true)"
           if [[ -n "$STALE_PINS" ]]; then
             echo "::error::Install pins still point at an older release. Roll them to #v$VERSION on main, then re-run."

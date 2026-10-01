@@ -1,4 +1,5 @@
 > Moved verbatim on 2026-10-01 (branch `light-harness-adopt`) from `.claude/verification-bindings.md`, the pre-harness workflow's verification procedure; the `unity` binding's `verification` key cites this file.
+> The file is now tracked at `Planning~/verification-recipe.md`, and `compile-check` reaches it through the `unity` binding's `verification` key rather than reading it directly. The body below is kept verbatim as it stood before the move, so these statements in it are superseded: that the file is gitignored with the rest of the workflow layer (`.claude/`); that `compile-check` reads it directly; that further detail lives in project memory `running-package-tests` (the maintainer's out-of-repo Claude memory, not this repo's `memory/`); and that the csproj is regenerated from `.claude/verification-bindings.md` (read: this file).
 
 # Verification bindings — VoXR Speech Recognition
 
