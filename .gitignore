@@ -35,6 +35,8 @@ desktop.ini
 .claude/scratch/
 .claude/worktrees/
 .scratch/
+# Raw Unity run logs stay local (they carry assembly tokens, the licence ID and the username); the results XMLs are tracked
+Planning~/verification-runs/**/*.log
 
 # Native bridge build output
 NativeBridge~/build*/
