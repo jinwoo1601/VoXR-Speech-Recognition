@@ -17,6 +17,6 @@ Highest-value files when investigating an issue or change:
 
 - **`KNOWN_LIMITATIONS.md`** (repo root) — known constraints with repro steps, root causes, and workarounds. Check here first; a reported "bug" may be a documented limitation.
 - **`Documentation~/troubleshooting.md`** — platform support table and common issues/solutions.
-- **`Documentation~/native-bridge.md`** — the C++ bridge architecture (pair with the build command below).
+- **`Documentation~/native-bridge.md`** — the C++ bridge architecture (its build command is in `Planning~/verification-recipe.md`, "Building NativeBridge"; the `verification` binding's Command 3 says when it runs).
 - **`Documentation~/command-recognition.md`** — the audio→command parsing pipeline.
 - **`Documentation~/api/`** — authoritative reference for each public type (`speech-recogniser.md`, `command-recogniser.md`, `data-types.md`, `error-codes.md`, …).
