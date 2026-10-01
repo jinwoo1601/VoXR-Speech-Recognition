@@ -188,6 +188,20 @@ namespace VoXR.Commands
             return -1;
         }
 
+        // HasSlot over a span, for VoxrCommandParser.UnfilledRequiredSlots (issue #160), which
+        // reads slot names out of pattern elements without cutting a substring per element. The
+        // null test is FindSlotIndex's rule kept: string.Equals never matches a null Name to "",
+        // whereas a null string's span is empty and would — and "{?}" asks for exactly "".
+        internal bool HasSlot(ReadOnlySpan<char> name)
+        {
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                if (Slots[i].Name != null && Slots[i].Name.AsSpan().SequenceEqual(name))
+                    return true;
+            }
+            return false;
+        }
+
         public override string ToString() => $"{Intent} ({Slots.Length} slots, score={Score:F2})";
     }
 

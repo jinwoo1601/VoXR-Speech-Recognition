@@ -4347,7 +4347,7 @@ namespace VoXR.Commands
             return anyMatch ? minConf : NoConfidence;
         }
 
-        internal static string ExtractSlotName(string element)
+        static string ExtractSlotName(string element)
         {
             if (element.Length < 3 || element[0] != '{' || element[element.Length - 1] != '}')
                 return null;
@@ -4359,7 +4359,7 @@ namespace VoXR.Commands
             return inner;
         }
 
-        internal static bool IsOptionalSlot(string element)
+        static bool IsOptionalSlot(string element)
         {
             return element.Length >= 4 && element[0] == '{' && element[1] == '?'
                 && element[element.Length - 1] == '}';
@@ -4381,30 +4381,104 @@ namespace VoXR.Commands
         // Optional slots are excluded — an omitted optional is not a missing argument, which is
         // the same line #66 draws at the eager gate.
         //
-        // Returns false when the pattern index is out of range, matching ComputeUnfilledSlots:
-        // with no pattern to read we cannot tell, and the conservative answer is to leave the
-        // caller's existing behaviour alone rather than refuse a command on a guess.
+        // Defined over UnfilledRequiredSlots below, the one walk all three readers of the
+        // question share (issue #160): this one, PendingCommandHandler.ComputeUnfilledSlots
+        // (what the speaker is asked for) and VoxrCommandRecogniser.TryResolveMissingSlots (what
+        // a resolver is offered). Asking only for the first element costs no allocation, because
+        // the walk materialises a slot name only when Current is read.
+        //
+        // Returns false when the walk's guards find no pattern to read: with no pattern we cannot
+        // tell, and the conservative answer is to leave the caller's existing behaviour alone
+        // rather than refuse a command on a guess.
         internal static bool HasUnfilledRequiredSlot(VoxrCommand cmd, VoxrCommandDefinition def)
         {
-            // Patterns is null only on a default(VoxrCommandDefinition) — the struct's zero
-            // value, which a failed lookup yields. Checked first so the length test below cannot
-            // dereference it.
-            if (
-                def.Patterns == null
-                || cmd.MatchedPatternIndex < 0
-                || cmd.MatchedPatternIndex >= def.Patterns.Length
-            )
-                return false;
+            var walk = new UnfilledRequiredSlots(cmd, def);
+            return walk.MoveNext();
+        }
 
-            var pattern = def.Patterns[cmd.MatchedPatternIndex];
-            for (int i = 0; i < pattern.Length; i++)
+        // The per-element half of the walk: whether a pattern element is a REQUIRED slot, and
+        // its name if so. Agrees exactly with ExtractSlotName != null && !IsOptionalSlot, but
+        // calls neither — ExtractSlotName cuts its substring before it can answer — and reads the
+        // name as a span over the element instead. The first test is ExtractSlotName's own null
+        // condition; the second is IsOptionalSlot with that condition already known true.
+        //
+        // The empty span is "{?}" alone. It is three characters, one short of IsOptionalSlot's
+        // four, so it is a REQUIRED slot, and ExtractSlotName names it "" — kept as found.
+        static bool TryGetRequiredSlotName(string element, out ReadOnlySpan<char> name)
+        {
+            if (
+                element.Length < 3
+                || element[0] != '{'
+                || element[element.Length - 1] != '}'
+                || (element.Length >= 4 && element[1] == '?')
+            )
             {
-                string slotName = ExtractSlotName(pattern[i]);
-                if (slotName != null && !IsOptionalSlot(pattern[i]) && !cmd.HasSlot(slotName))
-                    return true;
+                name = default;
+                return false;
             }
 
-            return false;
+            name =
+                element[1] == '?'
+                    ? ReadOnlySpan<char>.Empty
+                    : element.AsSpan(1, element.Length - 2);
+            return true;
+        }
+
+        // The unfilled REQUIRED slots of a command's matched pattern, in pattern order — the one
+        // walk behind HasUnfilledRequiredSlot, ComputeUnfilledSlots and TryResolveMissingSlots.
+        // It used to be three hand-kept copies, and two of them had already drifted on the
+        // guards (issue #160). Each consumer keeps only what is genuinely its own: the bool, the
+        // array, the early exit on the first slot that will not resolve.
+        //
+        // A struct whose GetEnumerator returns itself, so foreach neither boxes nor allocates.
+        // MoveNext tests elements through spans and allocates nothing; Current cuts the name
+        // string only when it is read, so a caller pays for the names it asks for and no others.
+        //
+        // A slot named twice in the pattern is yielded twice. De-duplicating is a consumer's
+        // decision, not the walk's: the pending question lists both occurrences, the resolver
+        // pass asks once.
+        internal struct UnfilledRequiredSlots
+        {
+            string[] _pattern;
+            VoxrCommand _cmd;
+            int _i;
+
+            // The one copy of the walk's guards. Patterns is null only on a
+            // default(VoxrCommandDefinition) — the struct's zero value, which a failed lookup
+            // yields — so it is tested first, before the length comparison can dereference it.
+            // MatchedPatternIndex == -1 is the public VoxrCommand constructor's default, and an
+            // index past the end is reached through the duplicate-intent divergence (#113/#120),
+            // where the parse wins on one definition and the lookup keeps another. All three
+            // leave _pattern null, which is a walk that yields nothing.
+            internal UnfilledRequiredSlots(in VoxrCommand cmd, VoxrCommandDefinition def)
+            {
+                _pattern =
+                    def.Patterns == null
+                    || cmd.MatchedPatternIndex < 0
+                    || cmd.MatchedPatternIndex >= def.Patterns.Length
+                        ? null
+                        : def.Patterns[cmd.MatchedPatternIndex];
+                _cmd = cmd;
+                _i = -1;
+            }
+
+            public UnfilledRequiredSlots GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                if (_pattern == null)
+                    return false;
+
+                while (++_i < _pattern.Length)
+                {
+                    if (TryGetRequiredSlotName(_pattern[_i], out var name) && !_cmd.HasSlot(name))
+                        return true;
+                }
+
+                return false;
+            }
+
+            public string Current => ExtractSlotName(_pattern[_i]);
         }
 
         internal float ScoreFollowUp(string intent, int patternIdx,

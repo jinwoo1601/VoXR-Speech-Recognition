@@ -422,24 +422,14 @@ namespace VoXR.Commands
             return PendingResolution.Cancelled(cancelled.Command);
         }
 
+        // The shared walk (issue #160) with its guards: an index the definition cannot be read
+        // with, or a default definition, yields nothing and so returns the empty array. A slot
+        // the pattern names twice is listed twice, in pattern order.
         internal string[] ComputeUnfilledSlots(VoxrCommand cmd, VoxrCommandDefinition def)
         {
-            if (cmd.MatchedPatternIndex < 0 ||
-                cmd.MatchedPatternIndex >= def.Patterns.Length)
-                return Array.Empty<string>();
-
-            var pattern = def.Patterns[cmd.MatchedPatternIndex];
             _unfilledBuf.Clear();
-
-            foreach (string element in pattern)
-            {
-                string slotName = VoxrCommandParser.ExtractSlotName(element);
-                if (slotName != null && !VoxrCommandParser.IsOptionalSlot(element)
-                    && !cmd.HasSlot(slotName))
-                {
-                    _unfilledBuf.Add(slotName);
-                }
-            }
+            foreach (string s in new VoxrCommandParser.UnfilledRequiredSlots(cmd, def))
+                _unfilledBuf.Add(s);
 
             return _unfilledBuf.Count > 0 ? _unfilledBuf.ToArray() : Array.Empty<string>();
         }

@@ -3509,13 +3509,15 @@ namespace VoXR.Tests.Runtime
 
         // ======== The divergence mirror (F-8, issue #160) ========
         //
-        // TryResolveMissingSlots walks the matched pattern through the SAME two helpers and the
-        // same guards as VoxrCommandParser.HasUnfilledRequiredSlot, so the set of slots a
-        // resolver is offered is exactly the set that makes IsIncomplete say true. Any
-        // divergence is a command that resolves and still does not fire, or fires still missing
-        // an argument. Today that mirror is maintained by a comment; issue #160 tracks folding
-        // the two walks into one. Until it lands, these are the executable form of it — the
-        // guards are pinned one by one so that a walk which drifts from the other is red
+        // Three readers ask which required slots of the matched pattern are unfilled:
+        // VoxrCommandParser.HasUnfilledRequiredSlot (whether IsIncomplete says true),
+        // TryResolveMissingSlots (what a resolver is offered) and
+        // PendingCommandHandler.ComputeUnfilledSlots (what the speaker is asked for). Any
+        // divergence is a command that resolves and still does not fire, fires still missing an
+        // argument, or a pending that asks for the wrong slot. Issue #160 folded the three hand-
+        // kept walks into one, VoxrCommandParser.UnfilledRequiredSlots; these keep the mirror
+        // executable all the same — the guards are pinned one by one, from the resolver's side
+        // and from the pending question's, so a consumer that drifts from the walk is red
         // somewhere rather than merely commented about.
         //
         // The fourth guard, a pattern whose REQUIRED SLOT LEADS, is pinned by
@@ -3802,6 +3804,216 @@ namespace VoXR.Tests.Runtime
                 "unresolved, because the same guard makes the completeness walk call it complete "
                     + "— the two answers agree, which is the whole of the mirror"
             );
+        }
+
+        // The same three shapes from the pending question's side. No resolver is registered,
+        // so an incomplete command goes pending and ComputeUnfilledSlots decides what the
+        // speaker is asked for — which has to be the set that made IsIncomplete say true, or
+        // the speaker answers a question the completeness rule did not ask.
+
+        [Test]
+        public void Pending_AsksOnlyForTheSlotsThatMakeTheCommandIncomplete()
+        {
+            // Resolver_IsOfferedOnlyTheSlotsThatMakeTheCommandIncomplete's grammar and
+            // utterance: an unspoken OPTIONAL slot is not asked for, and neither is a slot the
+            // parser already filled.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                    new VoxrSlotDefinition("flavour", new[] { "hot", "cold" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "launch",
+                                "{?flavour}",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder);
+
+            Assert.IsFalse(received.HasValue, "one required argument is missing");
+            var pending = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(pending.HasValue, "so the command goes pending");
+            Assert.AreEqual(
+                new[] { "track" },
+                pending.Value.UnfilledSlots,
+                "exactly the slot set that makes the command incomplete — no optional, and "
+                    + "nothing the speaker already said"
+            );
+        }
+
+        [Test]
+        public void Pending_ASlotNamedTwiceInOnePattern_IsListedTwice()
+        {
+            // Resolver_ASlotNamedTwiceInOnePattern_IsOneQuestionAndFillsBothOccurrences's
+            // grammar and utterance. The walk yields every occurrence and de-duplicating is a
+            // consumer's call: the resolver pass asks once, while the pending question has always
+            // listed both, and still does.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[]
+                            {
+                                "helm",
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "bearing",
+                                "north",
+                                "east",
+                                "{track}",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(
+                "helm launch all missiles from tube three at bearing north east"
+            );
+
+            Assert.IsFalse(received.HasValue, "both {track} occurrences are stranded");
+            var pending = _recogniser.EditorPendingCommand;
+            Assert.IsTrue(pending.HasValue, "so the command goes pending");
+            Assert.AreEqual(
+                new[] { "track", "track" },
+                pending.Value.UnfilledSlots,
+                "one entry per pattern occurrence, in pattern order"
+            );
+        }
+
+        [Test]
+        public void Pending_IsNotOpenedWhenTheMatchedPatternIndexIsOutOfRange()
+        {
+            // Resolver_IsNotOfferedWhenTheMatchedPatternIndexIsOutOfRange's grammar and
+            // utterance, with minScore raised above the candidate's 0.778. That alone is what
+            // routes it into the partial branch: the lookup keeps the single-pattern "standby"
+            // definition, against which the walk counts the command complete. The branch then
+            // asks ComputeUnfilledSlots with MatchedPatternIndex 1 against that definition, the
+            // walk's out-of-range guard yields nothing, no pending opens, and the candidate falls
+            // through to the reject — so the utterance is reported unrecognised rather than an
+            // IndexOutOfRangeException thrown inside the recognition callback.
+            LogAssert.Expect(
+                LogType.Warning,
+                new Regex("Intent 'launch_weapon' is registered by 2 command definitions")
+            );
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[]
+                        {
+                            new[] { "cease", "fire" },
+                            new[]
+                            {
+                                "helm",
+                                "launch",
+                                "{quantity}",
+                                "{weapon}",
+                                "from",
+                                "tube",
+                                "{tube}",
+                                "at",
+                                "{track}",
+                            },
+                        },
+                        allowPartialMatch: true
+                    ),
+                    new VoxrCommandDefinition(
+                        "launch_weapon",
+                        new[] { new[] { "standby" } },
+                        allowPartialMatch: true
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+            _recogniser.PendingTimeout = 30f;
+
+            // minScore has no test setter; the serialized field is the idiom
+            // VoxrCommandParserTests uses for it.
+            var minScoreField = typeof(VoxrCommandRecogniser).GetField(
+                "minScore",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            );
+            Assert.IsNotNull(minScoreField, "VoxrCommandRecogniser.minScore");
+            minScoreField.SetValue(_recogniser, 0.8f);
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            string unrecognised = null;
+            _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
+
+            // (8 x 1 - 1) / 9 = 0.778, now below the gate.
+            _recogniser.InjectText("helm launch all missiles from tube three at");
+
+            Assert.IsFalse(received.HasValue, "below the gate, so it does not fire");
+            Assert.IsFalse(
+                pending.HasValue,
+                "a pattern index the definition cannot be read with leaves nothing to ask for"
+            );
+            Assert.IsFalse(_recogniser.HasPendingCommand);
+            Assert.IsNotNull(unrecognised, "so the utterance is reported unrecognised");
         }
     }
 }
