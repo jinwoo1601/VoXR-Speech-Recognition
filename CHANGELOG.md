@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **A model directory must now contain `conf/model.conf` to be considered valid.** Structural validation checked for `am/final.mdl`, `conf/mfcc.conf` and the `graph/` directory; it now also requires `conf/model.conf` — the file holding the decoder's live configuration, its beam and lattice beam and the endpointer's trailing-silence rules, and the file the re-extraction fix below exists to let you change. Stock VOSK models all ship it, so nothing moves for an archive downloaded from alphacephei.com; an archive that genuinely lacks it now fails validation and raises `ModelLoadFailed` where it previously loaded, and the remedy is to restore the file rather than to route around the check. ([#145](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/145))
+- The unfilled-required-slot walk is one allocation-free parser enumeration, shared by completeness, the pending prompt and the slot resolver; no behaviour change (#160).
 
 ### Fixed
 

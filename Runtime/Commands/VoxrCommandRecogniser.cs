@@ -189,15 +189,12 @@ namespace VoXR.Commands
         // skipped and TryResolveMissingSlots returns at its HasResolvers guard, so the feature
         // allocates nothing at all.
         //
-        // With a resolver registered that is only half the story, and the stronger claim this
-        // comment used to make — that most utterances in such a game do not allocate either —
-        // was false. These four stay allocation-free, but the pass around them is not:
-        // TryResolveMissingSlots walks the matched pattern through
-        // VoxrCommandParser.ExtractSlotName, which is a substring factory — one heap string per
-        // slot element, two for an optional {?foo}, allocated before IsOptionalSlot discards it.
-        // That is paid per above-gate candidate per utterance, fully-spoken commands included,
-        // and it is the real residual cost of registering a resolver at all. Making that walk
-        // allocation-free is a parser change (issue #160), not a change to these four.
+        // With a resolver registered, these four stay allocation-free and so does the walk around
+        // them: TryResolveMissingSlots enumerates VoxrCommandParser.UnfilledRequiredSlots, which
+        // tests each pattern element through spans and cuts a slot-name string only for an
+        // unfilled required slot it hands out (issue #160). A fully-spoken command costs the
+        // pass nothing; an incomplete one costs one name string per unfilled slot, plus whatever
+        // the resolution itself builds.
         //
         // One answer per DISTINCT QUESTION per utterance -- slot plus the intent and matched
         // pattern of the command asking, which is every field of the VoxrSlotResolutionRequest
@@ -1734,18 +1731,19 @@ namespace VoXR.Commands
         // Offers every unfilled REQUIRED slot of the command's matched pattern to its registered
         // resolver, and answers with the filled command only if every one of them resolved.
         //
-        // The walk mirrors HasUnfilledRequiredSlot element for element, through the same two
-        // helpers and the same three guards, so the set of slots a resolver is offered is exactly
-        // the set that makes IsIncomplete say true. Any divergence there is a command that
-        // resolves and still does not fire, or fires still missing an argument.
+        // The walk is HasUnfilledRequiredSlot's own — VoxrCommandParser.UnfilledRequiredSlots,
+        // one guard preamble and one per-element test shared with ComputeUnfilledSlots too (issue
+        // #160) — so the set of slots a resolver is offered is exactly the set that makes
+        // IsIncomplete say true. Any divergence there is a command that resolves and still does
+        // not fire, or fires still missing an argument.
         //
         // The definition is a parameter rather than a lookup, and that is what the follow-up path
         // needs: it must resolve against the definition the command will actually fire under,
         // which is not always the one IsIncomplete reads.
         //
         // All-or-nothing. The first required slot that does not resolve ends the attempt with
-        // nothing materialised and nothing allocated, and the caller keeps exactly the command
-        // the parser produced.
+        // nothing materialised — the walk's one name string per unfilled slot read so far is all
+        // it allocated — and the caller keeps exactly the command the parser produced.
         bool TryResolveMissingSlots(
             in VoxrCommand cmd,
             VoxrCommandDefinition def,
@@ -1757,17 +1755,10 @@ namespace VoXR.Commands
             if (!_slotManager.HasResolvers)
                 return false;
 
-            // All three of HasUnfilledRequiredSlot's guards, not two. MatchedPatternIndex == -1 is
-            // the public constructor's default and reaches here through the pending machinery, and
-            // without the Patterns test the length comparison dereferences the null array a failed
-            // lookup's default(VoxrCommandDefinition) carries.
-            if (
-                def.Patterns == null
-                || cmd.MatchedPatternIndex < 0
-                || cmd.MatchedPatternIndex >= def.Patterns.Length
-            )
-                return false;
-
+            // The walk's guards live in UnfilledRequiredSlots, not here: an index the definition
+            // cannot be read with — MatchedPatternIndex == -1, the public constructor's default,
+            // reaches here through the pending machinery — or a failed lookup's
+            // default(VoxrCommandDefinition) yields no slot, and the loop below never runs.
             if (_resolveSlotScratch == null)
             {
                 _resolveSlotScratch = new List<VoxrSlotMatch>();
@@ -1776,20 +1767,13 @@ namespace VoXR.Commands
             _resolveSlotScratch.Clear();
             _resolveRecordScratch.Clear();
 
-            var pattern = def.Patterns[cmd.MatchedPatternIndex];
-            for (int p = 0; p < pattern.Length; p++)
+            foreach (string slotName in new VoxrCommandParser.UnfilledRequiredSlots(cmd, def))
             {
-                string slotName = VoxrCommandParser.ExtractSlotName(pattern[p]);
-                if (
-                    slotName == null
-                    || VoxrCommandParser.IsOptionalSlot(pattern[p])
-                    || cmd.HasSlot(slotName)
-                    // HasSlot reads the UNMODIFIED command, so it cannot see what this pass has
-                    // already added. A pattern naming the same required slot twice would
-                    // otherwise resolve it twice and append two identical VoxrSlotMatch and two
-                    // identical VoxrResolvedSlot entries.
-                    || ScratchHasSlot(_resolveSlotScratch, slotName)
-                )
+                // The walk reads the UNMODIFIED command, so it cannot see what this pass has
+                // already added, and it yields every occurrence of a slot the pattern names twice.
+                // Resolving the second would append two identical VoxrSlotMatch and two identical
+                // VoxrResolvedSlot entries.
+                if (ScratchHasSlot(_resolveSlotScratch, slotName))
                     continue;
 
                 var resolution = ResolveOnce(slotName, cmd.Intent, cmd.MatchedPatternIndex);

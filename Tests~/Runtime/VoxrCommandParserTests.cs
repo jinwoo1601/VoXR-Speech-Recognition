@@ -6134,6 +6134,174 @@ namespace VoXR.Tests.Runtime
             LogAssert.NoUnexpectedReceived();
         }
 
+        // ---------- The unfilled-required-slot walk (issue #160) ----------
+        //
+        // HasUnfilledRequiredSlot, PendingCommandHandler.ComputeUnfilledSlots and the
+        // recogniser's TryResolveMissingSlots all read one walk,
+        // VoxrCommandParser.UnfilledRequiredSlots. The divergence mirror in
+        // VoxrCommandRecogniserInjectionTests pins that the three agree; these pin what the walk
+        // costs and the two edges it has to keep exactly as the substring-based copies had them.
+
+        static VoxrCommandDefinition LaunchAtTrack() =>
+            new VoxrCommandDefinition(
+                "launch",
+                new[] { new[] { "launch", "{?flavour}", "{weapon}", "at", "{track}" } }
+            );
+
+        [Test]
+        public void HasUnfilledRequiredSlot_AllocatesNothingPerCall()
+        {
+            // The completeness question runs per candidate per utterance on the flush path
+            // (IsIncomplete), and before issue #160 it cut a substring out of every slot element
+            // it passed — two for the optional {?flavour} — fully-spoken commands included. The
+            // walk now tests elements through spans and only Current cuts a name, which this
+            // question never reads.
+            //
+            // Measured with the AllocatingGCMemory constraint for the reason
+            // EagerSelection_OverASiblingTie_AllocatesNothingPerCall records:
+            // GC.GetAllocatedBytesForCurrentThread is inert in this environment.
+            var def = LaunchAtTrack();
+
+            // Both commands are built OUT of the measured delegates, or the test would fail on
+            // its own garbage.
+            var complete = new VoxrCommand(
+                "launch",
+                new[]
+                {
+                    new VoxrSlotMatch("weapon", "missiles"),
+                    new VoxrSlotMatch("track", "alpha"),
+                },
+                1f,
+                1f,
+                "launch missiles at alpha",
+                null,
+                0
+            );
+            var incomplete = new VoxrCommand(
+                "launch",
+                new[] { new VoxrSlotMatch("weapon", "missiles") },
+                1f,
+                1f,
+                "launch missiles at",
+                null,
+                0
+            );
+
+            // The answers first, so the measurement is of the walk that gives them — and the
+            // complete command walks the WHOLE pattern, the optional slot included.
+            Assert.IsFalse(VoxrCommandParser.HasUnfilledRequiredSlot(complete, def));
+            Assert.IsTrue(VoxrCommandParser.HasUnfilledRequiredSlot(incomplete, def));
+
+            Assert.That(
+                () =>
+                {
+                    for (int i = 0; i < 100; i++)
+                        VoxrCommandParser.HasUnfilledRequiredSlot(complete, def);
+                },
+                Is.Not.AllocatingGCMemory(),
+                "a complete command walks every element and must allocate nothing"
+            );
+            Assert.That(
+                () =>
+                {
+                    for (int i = 0; i < 100; i++)
+                        VoxrCommandParser.HasUnfilledRequiredSlot(incomplete, def);
+                },
+                Is.Not.AllocatingGCMemory(),
+                "an incomplete one stops at the unfilled slot and must allocate nothing either"
+            );
+        }
+
+        [Test]
+        public void UnfilledWalk_BareQuestionMarkSlot_IsRequiredAndNamedEmpty()
+        {
+            // "{?}" is three characters, one short of the four IsOptionalSlot needs, so it has
+            // always been a REQUIRED slot, and ExtractSlotName has always named it "". The span
+            // predicate reads it as the empty span, and HasSlot's span overload must then match
+            // a slot named "" — but not a slot whose Name is null, which string.Equals never
+            // matched to "" either.
+            var def = new VoxrCommandDefinition("mark", new[] { new[] { "mark", "{?}" } });
+
+            var unfilled = new VoxrCommand("mark", null, 1f, 1f, "mark", null, 0);
+            Assert.IsTrue(
+                VoxrCommandParser.HasUnfilledRequiredSlot(unfilled, def),
+                "required, and nothing fills it"
+            );
+            Assert.AreEqual(
+                new[] { "" },
+                new PendingCommandHandler().ComputeUnfilledSlots(unfilled, def),
+                "and asked for by the name \"\""
+            );
+
+            var filled = new VoxrCommand(
+                "mark",
+                new[] { new VoxrSlotMatch("", "here") },
+                1f,
+                1f,
+                "mark here",
+                null,
+                0
+            );
+            Assert.IsFalse(
+                VoxrCommandParser.HasUnfilledRequiredSlot(filled, def),
+                "a slot named \"\" fills it"
+            );
+
+            var nullNamed = new VoxrCommand(
+                "mark",
+                new[] { new VoxrSlotMatch(null, "here") },
+                1f,
+                1f,
+                "mark here",
+                null,
+                0
+            );
+            Assert.IsTrue(
+                VoxrCommandParser.HasUnfilledRequiredSlot(nullNamed, def),
+                "a slot whose Name is null does not — its empty span must not pass for \"\""
+            );
+        }
+
+        [Test]
+        public void UnfilledWalk_EveryElementShape_YieldsExactlyTheRequiredNamesInOrder()
+        {
+            // The walk and ExtractSlotName/IsOptionalSlot read one slot grammar, so this pins the
+            // walk against that grammar shape by shape. Expected by the grammar as it stood
+            // before issue #160: braced and at least three characters is a slot; a "?" after the
+            // brace makes it optional from four characters up; the name drops the "?".
+            //   "word", "{}", "{", "x}"  — not slots
+            //   "{a}"                    — required, "a"
+            //   "{?b}", "{??}"           — optional
+            //   "{?}"                    — required, "" (three characters, one short of optional)
+            //   "{{}"                    — required, "{"
+            var def = new VoxrCommandDefinition(
+                "shapes",
+                new[] { new[] { "word", "{}", "{", "x}", "{a}", "{?b}", "{?}", "{??}", "{{}" } }
+            );
+            var cmd = new VoxrCommand("shapes", null, 1f, 1f, "word", null, 0);
+
+            var yielded = new List<string>();
+            foreach (string name in new VoxrCommandParser.UnfilledRequiredSlots(cmd, def))
+                yielded.Add(name);
+
+            Assert.AreEqual(new[] { "a", "", "{" }, yielded.ToArray());
+        }
+
+        [Test]
+        public void ComputeUnfilledSlots_DefaultDefinition_ReturnsEmpty()
+        {
+            // The pending copy used to carry two of the walk's three guards, not three: with no
+            // Patterns test, the length comparison dereferenced a default(VoxrCommandDefinition)'s
+            // null array. Unreachable from any caller today, but the guard now lives in the one
+            // walk every consumer shares.
+            var cmd = new VoxrCommand("launch", null, 1f, 1f, "launch", null, 0);
+
+            Assert.AreEqual(
+                Array.Empty<string>(),
+                new PendingCommandHandler().ComputeUnfilledSlots(cmd, default)
+            );
+        }
+
         // ---------- Three-state candidate ordering (issue #74, design DR-3) ----------
         //
         // These assert the comparator directly rather than through a selection result, because
