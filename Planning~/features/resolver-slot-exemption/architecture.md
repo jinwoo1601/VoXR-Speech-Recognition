@@ -106,6 +106,7 @@ Ordered lowest-risk-first within the dependencies (each phase builds on the one 
 - **Phase 3 — the batch runner given names.** Both constructors' `registeredSlotNames`; the three-way completeness verdict; the known-gap comment (:200-217) rewritten to the new contract; runner tests for score parity with the runtime, the verdict (and `required slot unfilled` kept when an unfilled slot is unregistered), and no-names behaviour unchanged. Green: Commands 1, 2 and 4 (public API). *Discharges:* F7.
 - **Phase 4 — the Batch Test window field (Could).** The serialized `registeredSlotNames`, drawn beside `activeSetNames` and passed by `CreateRunner`. Green: Commands 1–2; the manual Editor check is human-only and reported as deferred. *Discharges:* F11.
 - **Assets the build needs that code cannot author:** the game project `VR FTL-Like 3`'s `Prototype_Mauevering` grammar (`Set_Combat`, its 11 slot assets), the only scene that builds a parser (F10); the gitignored lab rig under `.scratch/lab-resolver-slot-scoring/` (`Lab.cs`, the corpus files) — present on 2026-10-02, not versioned, so F10 records "not run" with that reason if it is gone; the human's manual Editor check for F11.
+- Phase 0 — persisted plan (2026-10-02): [plan-0.md](plan-0.md)
 
 ## Risks, tradeoffs & open questions
 
