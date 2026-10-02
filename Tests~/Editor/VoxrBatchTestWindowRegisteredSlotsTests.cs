@@ -7,6 +7,7 @@
 using System;
 using System.Reflection;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using VoXR.Commands;
 using VoXR.Editor;
@@ -96,7 +97,7 @@ namespace VoXR.Tests.Editor
                 BindingFlags.Instance | BindingFlags.NonPublic
             );
 
-            Assert.IsNotNull(field, $"the window must carry a serialized '{name}' field");
+            Assert.IsNotNull(field, $"the window must carry a '{name}' field");
             return field;
         }
 
@@ -126,6 +127,24 @@ namespace VoXR.Tests.Editor
 
         static VoxrTestCase IncompleteCase() =>
             new VoxrTestCase { input = IncompleteAboveGate, expectedIntent = "launch_weapon" };
+
+        // F11, review finding GAP-2: the names are a serialized array field — Unity's serializer
+        // sees it, which a plain private field would not pass. Whether the list survives a domain
+        // reload itself remains the human's manual Editor check.
+        [Test]
+        public void RegisteredSlotNames_SerializedObject_IsArrayProperty()
+        {
+            using (var serialized = new SerializedObject(_window))
+            {
+                var property = serialized.FindProperty("registeredSlotNames");
+
+                Assert.IsNotNull(
+                    property,
+                    "the window must carry a serialized 'registeredSlotNames' field"
+                );
+                Assert.IsTrue(property.isArray, "'registeredSlotNames' must serialize as an array");
+            }
+        }
 
         // F11: with {target} registered, the window's runner exempts it from the score and
         // reports the point at which the runtime would consult a resolver.

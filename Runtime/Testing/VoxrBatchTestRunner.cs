@@ -245,6 +245,10 @@ namespace VoXR.Testing
             // passes on it, and a passing row carries no CSV reason, though the runtime may fire
             // the command if the game fills.
             //
+            // That verdict is given only where the registered slots are the utterance's only gap:
+            // a candidate the runtime would skip on confidence before asking any resolver (Step
+            // 3b) reports its confidence instead.
+            //
             // With no names it rules on the utterance alone, as before, and "required slot
             // unfilled" may name a slot the game resolves. Read a FAIL carrying that reason as
             // "incomplete as spoken", not as "will not fire", and check whether the game resolves
@@ -274,18 +278,26 @@ namespace VoXR.Testing
                     }
                     if (allRegistered)
                         rejectReason =
-                            "would ask resolver for '" + string.Join("', '", names) + "'";
+                            cmd.Confidence >= 0f && cmd.Confidence < _minConfidence
+                                ? ConfidenceReason(cmd)
+                                : "would ask resolver for '" + string.Join("', '", names) + "'";
                 }
                 return false;
             }
             if (cmd.Confidence >= 0f && cmd.Confidence < _minConfidence)
             {
-                rejectReason = FormattableString.Invariant(
-                    $"confidence {cmd.Confidence:F2} < minConfidence {_minConfidence:F2}");
+                rejectReason = ConfidenceReason(cmd);
                 return false;
             }
             rejectReason = null;
             return true;
+        }
+
+        string ConfidenceReason(VoxrCommand cmd)
+        {
+            return FormattableString.Invariant(
+                $"confidence {cmd.Confidence:F2} < minConfidence {_minConfidence:F2}"
+            );
         }
 
         static string CheckSlots(ExpectedSlot[] expected, VoxrSlotMatch[] actual)

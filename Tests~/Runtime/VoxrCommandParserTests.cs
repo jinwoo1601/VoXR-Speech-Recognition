@@ -6747,6 +6747,42 @@ namespace VoXR.Tests.Runtime
             );
         }
 
+        [Test]
+        public void ExemptSlot_EagerTieOnScore_FewerExemptedWins()
+        {
+            // DR-9 on the eager scan, review finding GAP-1. "set alpha on": `set_tracked` is
+            // adopted first at 3/3 with its registered {track} missed (one exempted slot);
+            // `set_plain` ties it on start and score with none, so DR-9 hands it the scan. It is
+            // complete and spans the buffer, but is a prefix of `set_tracked`, so the verdict is
+            // HoldExtendable — had `set_tracked` kept the scan, its missed slot would refuse: None.
+            // Mutation: bestExemptedSlots stuck at 0 ties `set_plain` on every key — no displace.
+            var parser = new VoxrCommandParser(
+                new[]
+                {
+                    new VoxrSlotDefinition("ship", new[] { "alpha" }),
+                    new VoxrSlotDefinition("track", new[] { "hotel" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "set_tracked",
+                        new[] { new[] { "set", "{ship}", "on", "{track}" } }
+                    ),
+                    new VoxrCommandDefinition(
+                        "set_plain",
+                        new[] { new[] { "set", "{ship}", "on" } }
+                    ),
+                },
+                registeredSlots: new RegisteredSlotNames(new[] { "track" })
+            );
+
+            Assert.AreEqual(
+                EagerCommitVerdict.HoldExtendable,
+                parser.TryEagerCommit(new[] { "set", "alpha", "on" }, null, 0.6f, 0f),
+                "fewer exempted slots wins the eager scan as it does the flush"
+            );
+        }
+
 #if UNITY_EDITOR
         [Test]
         public void ExemptSlot_RunnerUpScore_IsItsSelectionScore()
@@ -6796,6 +6832,54 @@ namespace VoXR.Tests.Runtime
                 1e-5f,
                 "the runner-up's score is its own selection score"
             );
+        }
+
+        [Test]
+        public void ExemptSlot_RunnerUpsTieOnScore_FewerExemptedIsRunnerUp()
+        {
+            // F6 (M5), review finding GAP-1. "set alpha on": `set_plain` wins at 3/3 with no
+            // exemption. `set_tracked_bearing` (3/3, two exempted) and then `set_tracked` (3/3,
+            // one) lose to it, so each reaches the runner-up slot through the non-Better site;
+            // they tie on start and score, and DR-9 gives `set_tracked` the slot.
+            // Mutation: the slot's exempted count stuck at 0, `set_tracked`'s 1 loses DR-9 to it.
+            var slots = new[]
+            {
+                new VoxrSlotDefinition("ship", new[] { "alpha" }),
+                new VoxrSlotDefinition("track", new[] { "hotel" }),
+                new VoxrSlotDefinition("bearing", new[] { "north" }),
+            };
+            var parser = new VoxrCommandParser(
+                slots,
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "set_plain",
+                        new[] { new[] { "set", "{ship}", "on" } }
+                    ),
+                    new VoxrCommandDefinition(
+                        "set_tracked_bearing",
+                        new[] { new[] { "set", "{ship}", "on", "{track}", "{bearing}" } }
+                    ),
+                    new VoxrCommandDefinition(
+                        "set_tracked",
+                        new[] { new[] { "set", "{ship}", "on", "{track}" } }
+                    ),
+                },
+                registeredSlots: new RegisteredSlotNames(new[] { "track", "bearing" })
+            );
+
+            var results = parser.Parse("set alpha on", null);
+
+            Assert.AreEqual(1, results.Length);
+            Assert.AreEqual("set_plain", results[0].Command.Intent, "no exemption wins the round");
+
+            var entry = parser.LastParseDiagnostics[0];
+            Assert.AreEqual(
+                "set_tracked",
+                entry.RunnerUpIntent,
+                "fewer exempted slots ranks second"
+            );
+            Assert.AreEqual(1f, entry.RunnerUpScore, 1e-5f, "3/3: its {track} miss is exempt");
         }
 #endif
 

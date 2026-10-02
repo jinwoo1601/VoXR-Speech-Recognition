@@ -396,6 +396,27 @@ namespace VoXR.Tests.Editor
         }
 
         [Test]
+        public void Run_RegisteredSlotUnfilledBelowMinConfidence_RejectedOnConfidence()
+        {
+            // F7, review finding WRAP-1: the runtime skips a candidate below minConfidence
+            // (Step 3b) before asking any resolver, so the verdict names confidence, not the
+            // resolver — 0.2 against the runner's default minConfidence 0.4.
+            var runner = CreateLongFormRunner(new[] { "target" });
+            var result = runner.Run(
+                new VoxrTestCase
+                {
+                    input = IncompleteAboveGate,
+                    expectedIntent = "launch_weapon",
+                    wordConfidence = 0.2f,
+                }
+            );
+
+            Assert.IsFalse(result.Passed);
+            StringAssert.Contains("confidence", result.FailureReason);
+            StringAssert.DoesNotContain("would ask resolver", result.FailureReason);
+        }
+
+        [Test]
         public void CommandSetConstructor_RegisteredSlotNames_SameVerdict()
         {
             // F7: the command-set constructor takes the names too, with the same verdict.
