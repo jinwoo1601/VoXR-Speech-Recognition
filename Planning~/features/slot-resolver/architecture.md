@@ -360,6 +360,13 @@ Each phase is compile-clean and independently verifiable. `compile-check` runs *
 - **Deferred to Phase 4 (product docs, post-G2):** `Documentation~/editor-testing.md:68-72` states the schema version as `3` and enumerates the per-slot fields; `CHANGELOG.md` needs the `[Unreleased]` entry naming `resolved`, `resolvedReason` and the `3` → `4` bump (additive, so tooling written against `3` still reads the file). `KNOWN_LIMITATIONS.md` gains F25's entry as already planned.
 - **Line numbers in §3 and §7 are stale for `VoxrCommandRecogniser.cs` by roughly +307** (Phases 1 and 2), and by +166 inside the Step 5 `#if UNITY_EDITOR` blocks. The other four files did not move. Re-verify before citing.
 
+### Addendum 2026-10-03 — resolver-slot-exemption (#161)
+
+Later work supersedes four passages, left as written (this feature's record of its own build). Decisions: `../resolver-slot-exemption/architecture.md`.
+
+- **§1 "does not own" (the parser, unchanged — a slot nobody spoke earns no score) and §3 "Untouched, deliberately: `VoxrCommandParser`"** no longer hold. Under A5 (DR-8, DR-9) a missed required slot with a registered resolver costs 0 raw / 0 den in the parser (still counted missed elsewhere), and fewer exempted slots ranks right after score. The parser reads the registry through a read-only seam, `IRegisteredSlotNames` (implemented by `DynamicSlotManager`), snapshotted once per pass. A registered resolver now changes the score; resolution itself still does not (F5).
+- **§9 D-13 ("documented, not fixed"), §3 row S15 (comment only) and the §12 runner risk** are superseded for a runner given names: `VoxrBatchTestRunner` takes `registeredSlotNames` (last parameter, both constructors), scores as the runtime does, and reports `would ask resolver for '…'` where registered slots are the only gap. A runner given none behaves as before.
+
 ## 12. Risks
 
 - **The Step 5 substitution is mechanical and wide.** 11 references across 10 lines, through `:884`, inside a block whose comments carry more reasoning than its code. A missed reference compiles and runs, and produces a follow-up that resolves for the completeness split but fires the unresolved command. Mitigated by making `followUp` the only name in scope after the split — deleting the substitution's source rather than trusting the sweep.
