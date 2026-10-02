@@ -35,4 +35,4 @@ An exempt miss leaves raw and den (adr-0001), but the parser also counts missed 
 
 ## Status
 
-Accepted on 2026-10-02 by the human's ruling in conversation, after the lab. Recorded in `scoring-model.md` Amendment A5 (§0E), which re-locks only at G1.
+Accepted on 2026-10-02 by the human's ruling in conversation, after the lab. Recorded in `scoring-model.md` Amendment A5 (§0E), which re-locks only at G1. Re-locked with Amendment A5 at G1 on 2026-10-02.

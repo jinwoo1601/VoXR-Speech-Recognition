@@ -43,4 +43,4 @@ The score is raw / (den + coverage), and today a missed required slot is `-1` ra
 
 ## Status
 
-Accepted on 2026-10-02 by the human's ruling in conversation. Recorded in `scoring-model.md` Amendment A5 (§0E), which re-locks only at G1.
+Accepted on 2026-10-02 by the human's ruling in conversation. Recorded in `scoring-model.md` Amendment A5 (§0E), which re-locks only at G1. Re-locked with Amendment A5 at G1 on 2026-10-02.

@@ -21,7 +21,7 @@ sources:
 
 **Branch:** `design-resolver-slot-scoring`
 **Origin:** issue #161, raised from #148's requirements §8 E-2 (measurement 2026-09-16).
-**Status:** In design — opened at G0 2026-10-01; model settled 2026-10-02; awaiting G1.
+**Status:** **G1 LOCKED 2026-10-02.** Rulings in adr-0001 through adr-0005 and `scoring-model.md` §0E A5.6. This document is immutable from here; a contradiction found during implementation reopens it on a new design branch and re-locks.
 
 **Scope, agreed at G0 (2026-10-01):** decide how the scoring model charges a required slot that a registered slot resolver (#148) can fill, choosing among the issue's four options; settle option 4's open questions (when the exemption applies, its interaction with the leading-required-miss bar, its effect on the sibling-tie reachability scan and the eager gate); say why the chosen shape beats the existing slot-less sibling-pattern workaround; and amend `Planning~/design-docs/scoring-model.md` (LOCKED) on this branch, re-locked by the human at G1.
 
@@ -128,15 +128,23 @@ The idiom the grammar already uses (`intercept track {track}` beside `intercept 
 
 A captain says "launch missiles": the pattern scores as though the target slot were not part of it, clears the gate, and the recogniser asks the game, which names the target or declines — the elided order fires with its filled slot on record, or turns into a question (#148's player value; ruling 9). Nothing the speaker did not say is credited as said, and the bar is untouched (ruling 3). The exempt miss still counts for the eager gate, so no command with an unfilled required slot commits early (`scoring-model.md` §3 goal 4), and the coverage term is untouched (goal 2). Where the author already wrote a slot-less sibling, it keeps winning (adr-0004).
 
-## 7. Status / openness
+## 7. Feature backlog — locked at G1 (2026-10-02)
 
-- **Status: draft.** The model was settled on 2026-10-02; its five forks are recorded in adr-0001 through adr-0005 and amend `scoring-model.md` as Amendment A5 (§0E, proposed). G1 locks both.
-- **All numbers provisional → the tuning pass:** `minScore` (0.6); the shape-(b) threshold D ≥ 4; every score quoted on this page.
+One feature. It is **Full**: the design leaves open how the parser sees the registry and how each tool is given the same registered set (M5), so the build writes its own requirements and architecture docs.
+
+| Feature | Scope |
+|---|---|
+| `feat-resolver-slot-exemption` | Build DR-8 and DR-9 (`scoring-model.md` §0E) in the parser: the exemption and the fewer-exempted-slots selection key, the resolver registry read at parse time, and every scoring site agreeing with it (flush, eager, pending follow-up re-score, Editor runner-up comparison, the batch test runner given the registered set — M5); tests; the two DocCheck pin moves (§7 A start 2 0.167 → 0.400; `fire at` 0.333 → 1.000). After G2: `scoring.md`, `command-recognition.md` authoring guidance, a `KNOWN_LIMITATIONS.md` entry for thin firing and the two-command rows, and `CHANGELOG.md`. **Full.** |
+
+## 8. Status / openness
+
+- **Status: G1 LOCKED 2026-10-02.** The model was settled on 2026-10-02; its five forks are recorded in adr-0001 through adr-0005 and amend `scoring-model.md` as Amendment A5 (§0E, ratified at the same G1).
+- **All numbers provisional → the tuning pass:** `minScore` (0.6); the shape-(b) threshold D ≥ 4; every score quoted on this page — owner: the tuning pass of `feat-resolver-slot-exemption`.
 - **Hard dependencies / open:**
-  - Real elision shapes and acoustics are unmeasured; R5 human-corpus evidence could reopen adr-0005.
-  - The game's `Prototype_CIC` and `Prototype_TacticalMap` scenes cannot build a parser (5 dangling slot-asset GUIDs, `burn_level` and `direction` among the missing slots) — the game's bug, outside this topic — so only `Prototype_Mauevering` was measured.
-  - The feature backlog is G1's (g1-lock), not this doc's.
+  - Real elision shapes and acoustics are unmeasured; R5 human-corpus evidence could reopen adr-0005 — owner: the maintainer, through Phase C instrument R5 (human corpus).
+  - The game's `Prototype_CIC` and `Prototype_TacticalMap` scenes cannot build a parser (5 dangling slot-asset GUIDs, `burn_level` and `direction` among the missing slots) — the game's bug, outside this topic — so only `Prototype_Mauevering` was measured — owner: the maintainer, in the `VR FTL-Like 3` project, outside this topic.
+  - The feature backlog is §7's, written at G1.
 
-## 8. Related
+## 9. Related
 
 `Planning~/design-docs/scoring-model.md` (§0E Amendment A5, §3, §5.1, §5.3) · `Planning~/design-docs/leading-miss-bar.md` · `Planning~/features/slot-resolver/requirements.md` (§2, §6 E-1, §8 E-2, F19) · `Planning~/research/2026-09-05-next-level/05-rulings.md` (rulings 3 and 9) · `Planning~/design-docs/resolver-slot-scoring/lab-2026-10-02.md` · `Planning~/design-docs/resolver-slot-scoring/decisions/adr-0001-exempt-fillable-slot-in-parser.md` · `…/adr-0002-fillable-means-registered.md` · `…/adr-0003-exemption-changes-arithmetic-only.md` · `…/adr-0004-fewer-exempted-slots-tie-break.md` · `…/adr-0005-thin-firing-accepted.md`

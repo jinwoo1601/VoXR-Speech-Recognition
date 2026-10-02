@@ -1,6 +1,6 @@
 # Design: Re-derived Command Scoring Model
 
-- **Status:** **REOPENED 2026-10-02 on `design-resolver-slot-scoring` for Amendment A5 (§0E); re-lock pending G1.** **LOCKED — re-locked at G1 (human sign-off, 2026-08-14) with Amendment A3** (§0C), which corrects **§5.2's orphan test**: a token the candidate's own next required element failed to match is charged rather than tested against the start predicate. Found by measurement during item 2's Phase 7 A/B, not by re-reading — the rule as locked let a candidate be *rewarded for matching less* and fired the wrong command. Immutable again from here. Previously: re-locked at G1 (human sign-off, 2026-08-13) with Amendment A2 which adds **DR-7** — admission to selection requires more evidence for a candidate than against it — and **supersedes A1 ruling 2**, whose stated rationale implementation proved false. Immutable again from here. Previously: LOCKED at G1 (human sign-off, 2026-08-12), DR-1…DR-5 ratified as proposed with DR-3 routed to the issue lane as #66 (§10); re-locked at G1 (human sign-off, 2026-08-13) with **Amendment A1** (§0), which adds **DR-6** and a second cross-lane prerequisite ahead of backlog item 1. DR-3 is *completed* by DR-6, not superseded. The §9 backlog is canonical.
+- **Status:** **LOCKED — re-locked at G1 (human sign-off, 2026-10-02) with Amendment A5** (§0E), which exempts a resolver-fillable missed required slot from the score (DR-8) and adds the fewer-exempted-slots selection key (DR-9). Immutable again from here. Previously: re-locked at G1 (human sign-off, 2026-08-14) with Amendment A3 (§0C), which corrects **§5.2's orphan test**: a token the candidate's own next required element failed to match is charged rather than tested against the start predicate. Found by measurement during item 2's Phase 7 A/B, not by re-reading — the rule as locked let a candidate be *rewarded for matching less* and fired the wrong command. Immutable again from here. Previously: re-locked at G1 (human sign-off, 2026-08-13) with Amendment A2 which adds **DR-7** — admission to selection requires more evidence for a candidate than against it — and **supersedes A1 ruling 2**, whose stated rationale implementation proved false. Immutable again from here. Previously: LOCKED at G1 (human sign-off, 2026-08-12), DR-1…DR-5 ratified as proposed with DR-3 routed to the issue lane as #66 (§10); re-locked at G1 (human sign-off, 2026-08-13) with **Amendment A1** (§0), which adds **DR-6** and a second cross-lane prerequisite ahead of backlog item 1. DR-3 is *completed* by DR-6, not superseded. The §9 backlog is canonical.
 
   **Why reopened (2026-08-13):** implementing backlog item 1 revealed that **A1 ruling 2's stated rationale is false**. That ruling accepted the zero-crossing on the premise that "`minScore` at the recogniser is the real gate — at default settings a user sees nothing new." Three independently reproduced mechanisms show otherwise: at default settings the change can **create a false positive**, **lose a true positive**, and **widen pending entry**. The *decision* may well still be right; the *premise it was ruled on* is not, so the ruling is re-put with correct facts. Per the workflow's rule — implementation contradicting a locked decision means reopening and re-locking, never patching in place — `feat-fidelity-miss-cost` is **halted with its code unchanged** pending this ruling. Everything outside A1 ruling 2 stands exactly as locked.
 - **Branch:** `design-scoring-model`
@@ -286,9 +286,9 @@ about the *rule* rather than replaying the *corpus*. Treat a clean A/B on this c
 about the demo grammar, not about the grammar space — the #42 shapes live in `DocCheck`'s synthetic
 grammars, and even there only the three-element form was pinned.
 
-## 0E. Amendment A5 — resolver-fillable slots are not charged (PROPOSED 2026-10-02, re-lock at G1)
+## 0E. Amendment A5 — resolver-fillable slots are not charged (RATIFIED 2026-10-02)
 
-> **PROPOSED — re-lock pending G1.** Raised on `design-resolver-slot-scoring` (issue #161) and settled with the human in conversation on 2026-10-02; the rulings are in §A5.6. The design is `Planning~/design-docs/resolver-slot-scoring.md`, its forks are ADRs under `Planning~/design-docs/resolver-slot-scoring/decisions/`, and the measurement is `Planning~/design-docs/resolver-slot-scoring/lab-2026-10-02.md`. The lab's arms are named A0, A4 and A4L; lab arm A4 is unrelated to Amendment A4 (§0D).
+> **RATIFIED — re-locked at G1 (human sign-off in conversation, 2026-10-02).** Raised on `design-resolver-slot-scoring` (issue #161) and settled with the human in conversation on 2026-10-02; the rulings are in §A5.6. The design is `Planning~/design-docs/resolver-slot-scoring.md`, its forks are ADRs under `Planning~/design-docs/resolver-slot-scoring/decisions/`, and the measurement is `Planning~/design-docs/resolver-slot-scoring/lab-2026-10-02.md`. The lab's arms are named A0, A4 and A4L; lab arm A4 is unrelated to Amendment A4 (§0D).
 
 ### A5.1 What was found
 
@@ -478,7 +478,7 @@ This satisfies goal 1 for every pattern of **3 or more elements**. Two-element p
 
 **`RequiredSlotMissPenalty` stays at `-1.0`.** A missing required *slot* means the command's argument is absent — materially different from a missing function word, and already routed to the pending/partial path. Leaving it untouched keeps `allowPartialMatch` behaviour intact.
 
-> **AMENDED by Amendment A5 (§0E, pending G1):** except for a slot with a registered resolver — see DR-8.
+> **AMENDED by Amendment A5 (§0E, ratified at G1 2026-10-02):** except for a slot with a registered resolver — see DR-8.
 
 **Accepted consequence — ratified 2026-08-12.** Two dropped literals on a 5-element pattern now score `3/5 = 0.60` and pass the gate (was `0.40`). With all slots extracted, firing is the right outcome. **The gate stays `≥`**; it is not tightened to `>` to exclude the boundary case.
 
@@ -518,7 +518,7 @@ Rules carried over unchanged by symmetry, so leading and trailing are genuinely 
 
 Selection keys are otherwise **unchanged**: earliest start → score → consumed span → literal count → registration order. The score key now carries coverage, so the consumed-span key (#41) demotes to what it was always meant to be — a tie-break for genuinely equal candidates — rather than the sole carrier of "explains more". #41's behaviour is preserved, not superseded.
 
-> **AMENDED by Amendment A5 (§0E, pending G1):** a key is added immediately after score — fewer exempted slots ranks better — so the order becomes earliest start → score → fewer exempted slots → consumed span → literal count → registration order; see DR-9.
+> **AMENDED by Amendment A5 (§0E, ratified at G1 2026-10-02):** a key is added immediately after score — fewer exempted slots ranks better — so the order becomes earliest start → score → fewer exempted slots → consumed span → literal count → registration order; see DR-9.
 
 `minScore` stays at `0.6`, and **does not scale with pattern length** (option (c) in #65, rejected as DR-2).
 
