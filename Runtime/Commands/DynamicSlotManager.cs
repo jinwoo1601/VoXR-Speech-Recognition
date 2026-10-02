@@ -4,7 +4,7 @@
 // Layer:    Runtime.Commands
 // Owns:     DynamicSlotManager (internal sealed class: the provider and resolver registries)
 // Depends:  VoxrSlotDefinition, VoxrSlotType, VoxrSlotResolutionRequest,
-//           VoxrSlotResolution
+//           VoxrSlotResolution, IRegisteredSlotNames
 // ============================================================================
 using System;
 using System.Collections.Generic;

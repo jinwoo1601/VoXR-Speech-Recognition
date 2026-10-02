@@ -5985,6 +5985,58 @@ namespace VoXR.Tests.Runtime
             LogAssert.NoUnexpectedReceived();
         }
 
+        // ---------- DR-8 exemption cost (issue #161, Amendment A5) ----------
+
+        [Test]
+        public void ExemptSlot_AllocatesNothingPerCall()
+        {
+            // The DR-8 exemption runs where the leading-miss latch does: in TryMatchScored's
+            // required-slot-miss branch, on the innermost (command x pattern x startIdx) triple of
+            // both selection paths, with SnapshotRegisteredSlots run once per pass ahead of it. It
+            // is one bool load and a byte increment per exempt miss, a mask allocated once at
+            // construction, and a snapshot that writes into that mask through HashSet.Contains —
+            // and this is what says it stays that way with a set registered. Measured as the test
+            // above is, for the reasons it records: over TryEagerCommit, with the
+            // AllocatingGCMemory constraint, never GC.GetAllocatedBytesForCurrentThread.
+            //
+            // The same two-command shape as above, for the same reason: `hold` matches the buffer
+            // exactly and wins, so the verdict is Commit whatever the exemption does, and `launch`
+            // is the LOSING candidate whose registered {track} misses on every call. A literal-only
+            // winner, because a matched slot allocates its own captured value.
+            var parser = new VoxrCommandParser(
+                new[] { new VoxrSlotDefinition("track", new[] { "alpha" }) },
+                new[]
+                {
+                    new VoxrCommandDefinition("hold", new[] { new[] { "bravo", "charlie" } }),
+                    new VoxrCommandDefinition("launch", new[] { new[] { "bravo", "{track}" } }),
+                },
+                registeredSlots: new RegisteredSlotNames(new[] { "track" })
+            );
+
+            // ONE array instance, hoisted OUT of the measured delegate: allocating it inside
+            // would be the test failing on its own garbage.
+            var tokens = new[] { "bravo", "charlie" };
+
+            // The exempt branch has to be REACHED: "charlie" is no {track} value, so scoring
+            // `launch` runs it on every call. This call is also the warm-up — the extendability
+            // analysis and the coverage tables are built lazily on the first eager check.
+            Assert.AreEqual(
+                EagerCommitVerdict.Commit,
+                parser.TryEagerCommit(tokens, null, 0.6f, 0f),
+                "the fully-matched rival wins, so this verdict does not depend on the exemption"
+            );
+
+            Assert.That(
+                () =>
+                {
+                    for (int i = 0; i < 100; i++)
+                        parser.TryEagerCommit(tokens, null, 0.6f, 0f);
+                },
+                Is.Not.AllocatingGCMemory()
+            );
+            LogAssert.NoUnexpectedReceived();
+        }
+
         // ---------- Word-confidence builder cost (issue #146) ----------
 
         // Assigned inside a measured region so the deliberate allocation that proves the
@@ -6567,6 +6619,185 @@ namespace VoXR.Tests.Runtime
             // copy; this is the pin the note used to say did not exist.
             Assert.AreEqual(32, UnsafeUtility.SizeOf<VoxrCommandParser.MatchResult>());
         }
+
+        // ── The DR-8 exemption (issue #161, Amendment A5) ───────────────────────────────────
+        //
+        // A missed required slot whose name has a registered resolver costs 0 raw and 0 den,
+        // and still counts as MISSED everywhere else (adr-0003). Parser-level: the registered
+        // set reaches these through the constructor, as it does for the batch runner and rigs.
+
+        [Test]
+        public void ExemptSlot_ElidedSlot_ScoresTwoThirds()
+        {
+            // F1 (DR-8, M1). "launch missiles" against `launch missiles target {track}`: two
+            // literals matched, `target` missed (0 raw, 1 den) and {track} missed. Registered,
+            // {track} costs nothing — 2/3. With no source it is (2 - 1) / 4 = 0.25, today's
+            // arithmetic exactly (F8).
+            var slots = new[] { new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }) };
+            var commands = new[]
+            {
+                new VoxrCommandDefinition(
+                    "launch_missiles",
+                    new[] { new[] { "launch", "missiles", "target", "{track}" } }
+                ),
+            };
+
+            var registered = new VoxrCommandParser(
+                slots,
+                commands,
+                registeredSlots: new RegisteredSlotNames(new[] { "track" })
+            );
+            var unregistered = new VoxrCommandParser(slots, commands);
+
+            Assert.AreEqual(
+                2f / 3f,
+                ParseOne(registered, "launch missiles").Command.Score,
+                1e-5f,
+                "the registered slot's miss is left out of both sides"
+            );
+            Assert.AreEqual(
+                0.25f,
+                ParseOne(unregistered, "launch missiles").Command.Score,
+                1e-5f,
+                "and with no source the miss is charged as before"
+            );
+        }
+
+        [Test]
+        public void ExemptSlot_KeepsTheForcedOrphanCharge()
+        {
+            // F1 with F2's orphan-table half (adr-0003; lab surprise 6). `set_burn` starts at
+            // "cut", matches it and misses its registered {burn_level}: 1 raw, 1 den. The miss
+            // still counts for the orphan-table selector (requiredAfterLastMatch), so the
+            // trailing "drive" is a FORCED orphan even though `drive_slow` could begin there:
+            // 1 / (1 + 1 skipped + 1 forced orphan) = 1/3. Had the selector lost the miss, the
+            // trailing "drive" would go uncharged and it would be 1/2.
+            var parser = new VoxrCommandParser(
+                new[] { new VoxrSlotDefinition("burn_level", new[] { "full", "half" }) },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "set_burn",
+                        new[] { new[] { "cut", "{burn_level}" } }
+                    ),
+                    new VoxrCommandDefinition(
+                        "drive_slow",
+                        new[] { new[] { "drive", "slow", "now" } }
+                    ),
+                },
+                registeredSlots: new RegisteredSlotNames(new[] { "burn_level" })
+            );
+
+            var result = ParseOne(parser, "drive cut drive");
+
+            Assert.AreEqual("set_burn", result.Command.Intent);
+            Assert.AreEqual(1f / 3f, result.Command.Score, 1e-5f);
+        }
+
+        [Test]
+        public void ExemptSlot_Stutter_KeepsTheRealCommand()
+        {
+            // F2: the exemption is arithmetic only, so a stutter's phantom candidate stays
+            // inadmissible. At the first "launch" every required slot after the verb misses —
+            // exempt, all of them, under the demo set — yet the DR-7 ledger still counts them
+            // (matched 1, missed 3), so it never competes. The real command at the second
+            // "launch" fills weapon, quantity and target: 5 / (5 + 1 skipped) = 5/6.
+            var parser = new VoxrCommandParser(
+                MakeSlots(),
+                MakeCommands(),
+                registeredSlots: new RegisteredSlotNames(
+                    new[] { "weapon", "target", "range", "heading" }
+                )
+            );
+
+            var result = ParseOne(parser, "launch launch all missiles target hotel one");
+
+            Assert.AreEqual("launch_weapon", result.Command.Intent);
+            Assert.AreEqual(5f / 6f, result.Command.Score, 1e-5f);
+            Assert.AreEqual("missiles", result.Command.GetSlot("weapon"));
+            Assert.AreEqual("all", result.Command.GetSlot("quantity"));
+            Assert.AreEqual("hotel one", result.Command.GetSlot("target"));
+        }
+
+        [Test]
+        public void ExemptSlot_MedialMiss_IsNotEagerCommitted()
+        {
+            // F2 (M2): an exempt miss never commits early. "fire now" against `fire {track} now`
+            // scores 2/2 = 1.0 with {track} registered (1/3 with no source), is admitted (missed
+            // 1, matched 2), latches nothing (`fire` matched) and owes no tail (`now` matched
+            // last) — so the score gate, the bar and the tail condition all let it through, and
+            // the #66 completeness condition (bestMissedRequiredSlot) is the only thing left to
+            // refuse it. It waits for the flush, where the resolver is asked.
+            var parser = new VoxrCommandParser(
+                new[] { new VoxrSlotDefinition("track", new[] { "alpha" }) },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "fire_at",
+                        new[] { new[] { "fire", "{track}", "now" } }
+                    ),
+                },
+                registeredSlots: new RegisteredSlotNames(new[] { "track" })
+            );
+
+            Assert.AreEqual(
+                EagerCommitVerdict.None,
+                parser.TryEagerCommit(new[] { "fire", "now" }, null, 0.6f, 0f),
+                "a medial exempt miss is refused by the completeness condition alone"
+            );
+        }
+
+#if UNITY_EDITOR
+        [Test]
+        public void ExemptSlot_RunnerUpScore_IsItsSelectionScore()
+        {
+            // F6 (M5): the Editor runner-up is ranked by the same comparator and scored by the
+            // same arithmetic as selection. `set_tracked` is registered first and scores 3/3 with
+            // its registered {track} missed (one exempted slot); `set_plain` scores 3/3 with none,
+            // so DR-9 gives it the round and `set_tracked` is the runner-up — at the score it gets
+            // when parsed alone, not one re-derived under different rules.
+            var slots = new[]
+            {
+                new VoxrSlotDefinition("ship", new[] { "alpha" }),
+                new VoxrSlotDefinition("track", new[] { "hotel" }),
+            };
+            var tracked = new VoxrCommandDefinition(
+                "set_tracked",
+                new[] { new[] { "set", "{ship}", "on", "{track}" } }
+            );
+            var plain = new VoxrCommandDefinition(
+                "set_plain",
+                new[] { new[] { "set", "{ship}", "on" } }
+            );
+
+            var parser = new VoxrCommandParser(
+                slots,
+                new[] { tracked, plain },
+                registeredSlots: new RegisteredSlotNames(new[] { "track" })
+            );
+
+            var results = parser.Parse("set alpha on", null);
+
+            Assert.AreEqual(1, results.Length);
+            Assert.AreEqual("set_plain", results[0].Command.Intent, "fewer exempted slots wins");
+
+            var entry = parser.LastParseDiagnostics[0];
+            Assert.AreEqual("set_tracked", entry.RunnerUpIntent);
+            Assert.AreEqual(1f, entry.RunnerUpScore, 1e-5f);
+
+            var alone = new VoxrCommandParser(
+                slots,
+                new[] { tracked },
+                registeredSlots: new RegisteredSlotNames(new[] { "track" })
+            );
+            Assert.AreEqual(
+                ParseOne(alone, "set alpha on").Command.Score,
+                entry.RunnerUpScore,
+                1e-5f,
+                "the runner-up's score is its own selection score"
+            );
+        }
+#endif
 
         // ── The runtime sibling-tie record (issue #74 item 3, seam A) ───────────────────────
         //

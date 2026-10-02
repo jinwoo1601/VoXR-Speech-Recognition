@@ -200,10 +200,14 @@ namespace VoXR.Commands
         //
         // RequiredSlotMissPenalty stays at -1.0: a missing required SLOT means the command's
         // argument is absent, which is materially different from a dropped function word.
+        // Since Amendment A5 (DR-8) that -1.0 is charged only for a slot with no registered
+        // resolver: a registered one costs 0 raw and 0 den, yet still counts as MISSED to
+        // everything else (the completeness flags, the latch, the DR-7 ledger).
         //
-        // That -1.0 is no longer the only thing holding such a candidate down. It used to be:
-        // the partial/pending branch is reached by scoring BELOW minScore and only for a command
-        // that opted into allowPartialMatch (off by default), so once a slot-missing candidate
+        // Where it is charged, that -1.0 is no longer the only thing holding such a candidate
+        // down. It used to be: the partial/pending branch is reached by scoring BELOW minScore
+        // and only for a command that opted into allowPartialMatch (off by default), so once a
+        // slot-missing candidate
         // cleared the gate it simply fired with the argument absent — true on main at five
         // elements, and this change lifted one further band (eight elements, one dropped literal
         // alongside the missed slot) over it. TryEagerCommit refused that shape (issue #66) but
@@ -1274,8 +1278,9 @@ namespace VoXR.Commands
         // The other construction-time hazard two patterns can carry (issue #74): they are
         // identical but for one required literal, so when the recogniser drops that one word
         // the surviving evidence fits both EXACTLY equally — same start, same score, same
-        // consumed span, same literal count. Selection exhausts every key it has and falls
-        // through to its last, the order the patterns were registered in. The word that would
+        // exempted-slot count, same consumed span, same literal count. Selection exhausts every
+        // key it has and falls through to its last, the order the patterns were registered in.
+        // The word that would
         // have decided is precisely the word that went missing, so no scorer can recover the
         // intent; the evidence is not weak but absent.
         //
@@ -2437,8 +2442,9 @@ namespace VoXR.Commands
                 + $"patterns {JoinWith(patternTexts, "and")} {differ} "
                 + $"({JoinWith(values, "or")}). If that word is "
                 + "dropped, these patterns match the remainder equally — same score, same "
-                + "consumed span, same literal count — and selection falls through to "
-                + "registration order, so the wrong intent can fire. Make them differ in more "
+                + "exempted-slot count, same consumed span, same literal count — and selection "
+                + "falls through to registration order, so the wrong intent can fire. Make them "
+                + "differ in more "
                 + "than one element — the only fix that removes the tie rather than moving it "
                 + "— mark the more destructive one requiresConfirmation, or enable "
                 + "disambiguateSiblingTies on VoxrCommandRecogniser to ask the speaker which "
@@ -3394,10 +3400,13 @@ namespace VoXR.Commands
             // routed anywhere from here — an earlier version of this comment claimed that and
             // was wrong (issue #73). It ignores it because Parse is the reporting layer and
             // applies no threshold of its own: dropping such candidates here would also delete
-            // the only input the allowPartialMatch/pending path has, since that path is fed
-            // precisely by slot-missing candidates scoring below minScore. The flush path's
-            // completeness condition therefore lives in the recogniser, which is where the
-            // gate it belongs beside lives.
+            // the only input the allowPartialMatch/pending path has, since that path is fed by
+            // slot-missing candidates — those scoring below minScore, and the incomplete ones
+            // above it (issue #73, VoxrCommandRecogniser's `cmd.Score < minScore || incomplete`
+            // branch), including those a resolver declined (issue #148; DR-8 leaves a
+            // registered slot's miss out of the score, so more of them arrive above it). The
+            // flush path's completeness condition therefore lives in the recogniser, which is
+            // where the gate it belongs beside lives. Set for an exempt miss too (DR-8).
             public bool MissedRequiredSlot;
 
             // Whether any REQUIRED element sits after the last element that actually
@@ -3713,6 +3722,9 @@ namespace VoXR.Commands
             // of a convention: this reads the counters that DEFINE "required".
             bool leadingRequiredMissed = false;
             bool missedRequiredSlot = false;
+            // Missed required slots with a registered resolver, which DR-8 leaves out of the
+            // score; the DR-9 key reads it (MatchResult.ExemptedSlots).
+            byte exemptedSlots = 0;
             // Required elements that have missed since the last one that actually matched.
             // Reset by every match, so a non-zero value at the end means the pattern's TAIL
             // is what went unmatched (issue #70) — a medial miss is followed by a match and
@@ -3770,8 +3782,18 @@ namespace VoXR.Commands
                     }
                     else if (!isOptional)
                     {
-                        rawScore += RequiredSlotMissPenalty;
-                        denominator += MatchScore;
+                        // DR-8 (Amendment A5): a slot with a registered resolver costs 0 raw and
+                        // 0 den — the arithmetic only. _anyExempt first: the mask is null with no
+                        // source and stale while nothing is registered. Everything below stays
+                        // unconditional (adr-0003), so an exempt slot is still MISSED to the
+                        // latch, the DR-7 ledger, the completeness flags and the orphan table.
+                        if (!(_anyExempt && _exemptSlot[slotIdx]))
+                        {
+                            rawScore += RequiredSlotMissPenalty;
+                            denominator += MatchScore;
+                        }
+                        else
+                            exemptedSlots++;
                         // Before the increment, or the guard can never hold (issue #124, DR-1).
                         // Uniform over element type by DR-2: the first required element is the
                         // pattern's ANCHOR, and a pattern that matched nothing of its anchor has
@@ -3880,6 +3902,7 @@ namespace VoXR.Commands
                 MissedRequiredSlot = missedRequiredSlot,
                 HasUnmatchedRequiredTail = requiredAfterLastMatch > 0,
                 LeadingRequiredMissed = leadingRequiredMissed,
+                ExemptedSlots = exemptedSlots,
                 EndIdx = tokenIdx,
                 ConsumedEndIdx = consumedEndIdx,
                 MatchedRequired = matchedRequired,
@@ -4172,7 +4195,9 @@ namespace VoXR.Commands
         // — ParseInternal's extraction loop and TryEagerCommit's scan — calls this first, over
         // the token array it is about to score, and the tables then stay valid for that whole
         // parse: the leading term re-bases per round through the searchStart subtraction, and
-        // the trailing term is searchStart-independent by construction.
+        // the trailing term is searchStart-independent by construction. Running it first also
+        // snapshots the registered-slot set the DR-8 exemption reads, so the start probe and
+        // selection score against one set.
         internal void BuildCoverageTables(string[] tokens)
         {
             SnapshotRegisteredSlots();
@@ -4635,8 +4660,19 @@ namespace VoXR.Commands
                     }
                     else if (!IsOptionalSlot(element))
                     {
-                        rawScore += RequiredSlotMissPenalty;
-                        denominator += MatchScore;
+                        // DR-8 by the same mask as TryMatchScored (M5): a slot with a
+                        // registered resolver is left out of both sides.
+                        if (
+                            !(
+                                _anyExempt
+                                && _slotIndex.TryGetValue(slotName, out int idx)
+                                && _exemptSlot[idx]
+                            )
+                        )
+                        {
+                            rawScore += RequiredSlotMissPenalty;
+                            denominator += MatchScore;
+                        }
                     }
                     // Unfilled optional slots contribute 0 to both numerator and denominator.
                 }
@@ -4844,6 +4880,12 @@ namespace VoXR.Commands
             // Required LITERALS are not covered by this condition — a dropped function word
             // still leaves every argument present. They are covered by the tail condition
             // below instead, which is the case that actually matters for them.
+            //
+            // Since Amendment A5 an exempt miss — a slot with a registered resolver (DR-8) —
+            // costs no score at all, so the arithmetic no longer sinks it even by coincidence.
+            // This guard alone refuses a medial one; a trailing one the tail condition below
+            // refuses too (M2). Either way an exempt miss never commits here and waits for the
+            // flush, where the resolver is asked.
             if (bestMissedRequiredSlot)
                 return EagerCommitVerdict.None;
 

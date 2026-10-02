@@ -388,12 +388,14 @@ namespace VoXR.Commands
         /// <para>
         /// A resolver is consulted only for a candidate that has cleared the round's score floor
         /// AND whose only remaining defect is one or more unfilled required slots. Both gates
-        /// matter, and the score one is not a formality: on this feature's own measurement it is
-        /// the gate that decides the outcome in the large majority of real cases, so a resolver
-        /// that is never asked has far more often been passed over for a candidate scoring below
-        /// the floor than for one that was already complete. The floor is <c>minScore</c> on the
-        /// ordinary parse path; on the follow-up path that completes a pending command with a
-        /// spoken fill it is instead a positive score, which is that path's fire-floor by design.
+        /// stay. Registering does change the score, from the next utterance: a missed required
+        /// slot that has a registered resolver costs the candidate nothing, so a command whose
+        /// only gap is that slot reaches the floor at the score of what was actually said. What
+        /// else went unspoken -- a dropped word, a missed slot with no resolver -- still costs
+        /// what it did, and can still hold a candidate under the floor, where its resolver is
+        /// never asked. The floor is <c>minScore</c> on the ordinary parse path; on the follow-up
+        /// path that completes a pending command with a spoken fill it is instead a positive
+        /// score, which is that path's fire-floor by design.
         /// </para>
         /// <para>
         /// A round's winning command will not ask a resolver for the first required element of

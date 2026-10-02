@@ -113,12 +113,18 @@ namespace AbRig
         {
             // ---- scoring.md §7 A — a clean multi-slot command -------------------------
             {
+                // Built with the lab's demo-grammar registered set (issue #161, Amendment A5):
+                // this block's start-2 claim is a resolver claim — a registered {weapon} missed
+                // costs nothing (DR-8).
                 var p = new VoxrCommandParser(
                     new[] { Slot("weapon", "missiles"), Slot("target", "hotel one") },
                     new[]
                     {
                         Cmd("launch_weapon", new[] { "launch", "{weapon}", "target", "{target}" }),
-                    }
+                    },
+                    registeredSlots: new RegisteredSlotNames(
+                        new[] { "weapon", "target", "range", "heading" }
+                    )
                 );
                 var pat = new[] { "launch", "{weapon}", "target", "{target}" };
                 const string u = "launch missiles target hotel one";
@@ -138,7 +144,7 @@ namespace AbRig
                     "scoring.md §7 A",
                     "start 2 (misses launch+weapon)",
                     Candidate(p, u, 2, pat),
-                    0.167f
+                    0.400f
                 );
                 ExpectText(
                     "scoring.md §7 A",
@@ -255,7 +261,15 @@ namespace AbRig
                 var slots = new[] { Slot("target", "hotel one") };
                 var bare = new[] { "fire" };
                 var full = new[] { "fire", "at", "{target}" };
-                var p = new VoxrCommandParser(slots, new[] { Cmd("fire", bare, full) });
+                // The demo-grammar registered set, as §7 A above: the 'fire at' row is a resolver
+                // claim — a registered {target} missed costs nothing (DR-8).
+                var p = new VoxrCommandParser(
+                    slots,
+                    new[] { Cmd("fire", bare, full) },
+                    registeredSlots: new RegisteredSlotNames(
+                        new[] { "weapon", "target", "range", "heading" }
+                    )
+                );
                 Expect(
                     "scoring.md §6",
                     "buffer 'fire' — bare",
@@ -272,7 +286,7 @@ namespace AbRig
                     "scoring.md §6",
                     "buffer 'fire at' — fire at {target}",
                     Candidate(p, "fire at", 0, full),
-                    0.333f
+                    1.00f
                 );
                 Expect(
                     "scoring.md §6",
