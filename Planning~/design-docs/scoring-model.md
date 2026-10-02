@@ -1,6 +1,6 @@
 # Design: Re-derived Command Scoring Model
 
-- **Status:** **LOCKED — re-locked at G1 (human sign-off, 2026-08-14) with Amendment A3** (§0C), which corrects **§5.2's orphan test**: a token the candidate's own next required element failed to match is charged rather than tested against the start predicate. Found by measurement during item 2's Phase 7 A/B, not by re-reading — the rule as locked let a candidate be *rewarded for matching less* and fired the wrong command. Immutable again from here. Previously: re-locked at G1 (human sign-off, 2026-08-13) with Amendment A2 which adds **DR-7** — admission to selection requires more evidence for a candidate than against it — and **supersedes A1 ruling 2**, whose stated rationale implementation proved false. Immutable again from here. Previously: LOCKED at G1 (human sign-off, 2026-08-12), DR-1…DR-5 ratified as proposed with DR-3 routed to the issue lane as #66 (§10); re-locked at G1 (human sign-off, 2026-08-13) with **Amendment A1** (§0), which adds **DR-6** and a second cross-lane prerequisite ahead of backlog item 1. DR-3 is *completed* by DR-6, not superseded. The §9 backlog is canonical.
+- **Status:** **LOCKED — re-locked at G1 (human sign-off, 2026-10-02) with Amendment A5** (§0E), which exempts a resolver-fillable missed required slot from the score (DR-8) and adds the fewer-exempted-slots selection key (DR-9). Immutable again from here. Previously: re-locked at G1 (human sign-off, 2026-08-14) with Amendment A3 (§0C), which corrects **§5.2's orphan test**: a token the candidate's own next required element failed to match is charged rather than tested against the start predicate. Found by measurement during item 2's Phase 7 A/B, not by re-reading — the rule as locked let a candidate be *rewarded for matching less* and fired the wrong command. Immutable again from here. Previously: re-locked at G1 (human sign-off, 2026-08-13) with Amendment A2 which adds **DR-7** — admission to selection requires more evidence for a candidate than against it — and **supersedes A1 ruling 2**, whose stated rationale implementation proved false. Immutable again from here. Previously: LOCKED at G1 (human sign-off, 2026-08-12), DR-1…DR-5 ratified as proposed with DR-3 routed to the issue lane as #66 (§10); re-locked at G1 (human sign-off, 2026-08-13) with **Amendment A1** (§0), which adds **DR-6** and a second cross-lane prerequisite ahead of backlog item 1. DR-3 is *completed* by DR-6, not superseded. The §9 backlog is canonical.
 
   **Why reopened (2026-08-13):** implementing backlog item 1 revealed that **A1 ruling 2's stated rationale is false**. That ruling accepted the zero-crossing on the premise that "`minScore` at the recogniser is the real gate — at default settings a user sees nothing new." Three independently reproduced mechanisms show otherwise: at default settings the change can **create a false positive**, **lose a true positive**, and **widen pending entry**. The *decision* may well still be right; the *premise it was ruled on* is not, so the ruling is re-put with correct facts. Per the workflow's rule — implementation contradicting a locked decision means reopening and re-locking, never patching in place — `feat-fidelity-miss-cost` is **halted with its code unchanged** pending this ruling. Everything outside A1 ruling 2 stands exactly as locked.
 - **Branch:** `design-scoring-model`
@@ -286,6 +286,81 @@ about the *rule* rather than replaying the *corpus*. Treat a clean A/B on this c
 about the demo grammar, not about the grammar space — the #42 shapes live in `DocCheck`'s synthetic
 grammars, and even there only the three-element form was pinned.
 
+## 0E. Amendment A5 — resolver-fillable slots are not charged (RATIFIED 2026-10-02)
+
+> **RATIFIED — re-locked at G1 (human sign-off in conversation, 2026-10-02).** Raised on `design-resolver-slot-scoring` (issue #161) and settled with the human in conversation on 2026-10-02; the rulings are in §A5.6. The design is `Planning~/design-docs/resolver-slot-scoring.md`, its forks are ADRs under `Planning~/design-docs/resolver-slot-scoring/decisions/`, and the measurement is `Planning~/design-docs/resolver-slot-scoring/lab-2026-10-02.md`. The lab's arms are named A0, A4 and A4L; lab arm A4 is unrelated to Amendment A4 (§0D).
+
+### A5.1 What was found
+
+**A slot resolver never sees the short orders it was built for.** Resolvers (#148) are registered by slot name only, globally (`RegisterSlotResolver(slotName, …)`), at runtime with no parser rebuild, and are consulted only for a candidate at or above `minScore`. §5.1 keeps a missed required slot at `-1` raw and `+1` den, so a pattern whose only gap is the slot the game would fill is sunk by the score gate before the completeness gate is ever asked. #148's own example, `"launch missiles"` against `launch missiles target {track}`, scores **0.250** (`Planning~/features/slot-resolver/requirements.md` §8 E-2). E-2's measurement on the game's `Set_Combat` found a resolver reachable for **18/40** pattern×required-slot occurrences dropping the slot alone and **5/40** in the natural spoken form (slot and its orphaned literal dropped), with **0/4** weapon-release occurrences reachable in that form.
+
+The lab reproduced the baseline exactly on the staged parser (A0: (a) 18/40, (b) 5/40, `{track}` 7/15 and 2/15, `launch_missile` (b) 0/4, 0 barred; `"launch missiles"` 0.250000 on the demo grammar), then measured the exemption shapes in §A5.3 against it. Ellipsis — game-state resolution of an omitted required slot, ruling 9 — and the score gate pull against each other, and #148's requirements record the scoring question as a change to this doc, not to the feature.
+
+### A5.2 What is *not* in question
+
+The leading-required-miss bar (`Planning~/design-docs/leading-miss-bar.md`, ruling 3) is absolute and unchanged: an exempt anchor is still refused first. The eager gate is unchanged: an exempt miss still counts as a missed required slot for DR-3, so eager never commits it. `minScore` stays one global, flat value (DR-2), 0.6 provisional, with no per-command threshold. The coverage term — §5.2 with A3's charged-token rule — is unchanged: the exemption touches only the slot's own term.
+
+### A5.3 The fork
+
+How should the scoring model charge a required slot that a registered resolver can fill?
+
+1. **Ship as built** — the option taken for #148 on 2026-09-16.
+2. **Credit a resolver-filled slot as matched** — `"launch missiles"` → 0.75.
+3. **Waive the miss penalty only** — `"launch missiles"` → 0.50, still under the gate.
+4. **Exempt a resolver-fillable missed slot from the score** — 0 raw, 0 den: **(4a)** in the parser, everywhere a pattern is scored; **(4b)** only in a recogniser re-score for the `minScore` check.
+
+Each option, and why the others lost, is in `adr-0001-exempt-fillable-slot-in-parser.md`. Option 4 opened four further forks, each with its own record: what makes a slot fillable (`adr-0002-fillable-means-registered.md`); whether the exemption also leaves the DR-7 ledger and the start probe, lab arm A4, or changes score arithmetic only, lab arm A4L (`adr-0003-exemption-changes-arithmetic-only.md`); whether selection gains a fewer-exempted-slots key (`adr-0004-fewer-exempted-slots-tie-break.md`); and whether thin firing gets a guard (`adr-0005-thin-firing-accepted.md`).
+
+### A5.4 Measured comparison, A0 vs A4L
+
+`Set_Combat` on the one buildable scene grammar (`Prototype_Mauevering`), F = all 9 required slot names, `minScore` 0.6; the corpus rows use the demo grammar with F = `weapon,target,range,heading`. Figures from the recon record.
+
+| | A0 | A4L |
+|---|---|---|
+| reachable, slot dropped alone (shape (a)) | 18/40 | **35/40** |
+| reachable, slot and its literal dropped (shape (b)) | 5/40 | **28/40** (37/40 per command) |
+| `{track}` reachable, (a) / (b) | 7/15 / 2/15 | 15/15 / **12/15** |
+| weapon release reachable, (b) | 0/4 | **4/4** |
+| barred | 0 | 0 |
+| thin utterances firing with a missing slot (of 124) | 0 | **16** (2 one-word, 14 two-word) |
+| fully spoken utterances whose fire changes (of 81) | — | **0** |
+| 699-row corpus, fired differences | — | 66 (37 new single fires, 29 extra fires; 0 A0 fires removed or altered) |
+| eager Commit, 378 Set_Combat prefixes | 40 | 40 |
+| corpus prefix verdicts, 4014 prefixes | — | byte-identical |
+| start probe, 4959 positions | — | 0 differ |
+| rounds decided by the new key | — | 14, all same-intent siblings |
+| DocCheck | 66/66 | 64/66 (the two direct score pins) |
+
+Lab arm A4 — the exemption also leaving the DR-7 ledger and the start probe — reached the same 35/40 and 28/40 but let stutter fragments win round 1 on the start key (`launch launch all missiles target hotel one` → a 0.333 fragment) and failed DocCheck 62/66; that is why A4L was ruled (adr-0003).
+
+### A5.5 What this changes if ratified
+
+§5.1 gains the exemption (DR-8) and §5.3's key list gains one key (DR-9). The model rules, in full:
+
+- **M1.** A missed required slot whose name has a registered resolver contributes 0 to raw and 0 to den. A spoken fillable slot scores as today (+1/+1). Every other missed required slot keeps −1/+1.
+- **M2.** The exempt miss still counts as missed for DR-7 admission and the admissibility/start probe; still sets the leading-miss latch (the bar refuses an exempt anchor first, ruling 3); still counts as a missed required slot for the eager gate (DR-3: eager never commits it; elided commands wait for the flush). The coverage term and A3's charged-token rule are unchanged — the exemption touches only the slot's own term (lab: `drive cut drive` 1/3).
+- **M3.** Selection keys become: earliest start → score → fewer exempted slots → consumed span → literal count → registration order.
+- **M4.** Registration is read at parse time; the score is fixed then. Resolution (Step 3b) never changes it; a declining resolver leaves the command incomplete → pending (`allowPartialMatch`) or rejected, as today — pending already admits any score > 0, so no new exposure there.
+- **M5.** The rule is uniform over every place a pattern is scored (flush, eager, pending follow-up re-score, Editor runner-up comparison, the batch test runner given the registered set) — how is the architecture doc's.
+- **M6.** Unchanged: `minScore` (one global, 0.6 provisional), the bar, the sibling-tie reachability warning (construction-time, discriminator is a literal), the confidence gate.
+
+**DR-8 (M1 + M2 + M4) — a resolver-fillable missed required slot is not charged, and is still missed.** A missed required slot whose name has a registered resolver contributes 0 to raw and 0 to den; every other missed required slot keeps −1/+1. The exempt miss still counts as missed for DR-7 admission, the admissibility/start probe, the leading-miss latch and the eager gate, and the coverage term is untouched. Registration is read at parse time and the score is fixed then; resolution never changes it.
+
+**DR-9 (M3) — fewer exempted slots ranks better, immediately after score.** Selection orders earliest start → score → fewer exempted slots → consumed span → literal count → registration order.
+
+**Not affected.** DR-1…DR-7, §5.2's coverage model and A3's rule, `minScore` (DR-2), the bar, and the confidence gate. Two DocCheck score pins move — §7 A start 2 0.167 → 0.400 and `fire at` 0.333 → 1.000 — and the product docs follow after G2.
+
+### A5.6 Rulings (human, in conversation, 2026-10-01 and 2026-10-02)
+
+1. **(G0, 2026-10-01) Design track.** The work runs on `design-resolver-slot-scoring`.
+2. **(G0, 2026-10-01) Proceed from the grammar measurement.** Real speakers' elision shapes are recorded as unmeasured.
+3. **(Settle, 2026-10-02) Measure in a lab before G1.** Done: `Planning~/design-docs/resolver-slot-scoring/lab-2026-10-02.md`.
+4. **A5.3 → option 4a**, exempt from the score, in the parser (adr-0001).
+5. **"Fillable" means a resolver is registered for that slot name**, not an author mark on the pattern; the configuration-dependent score, the global slot names and tool disagreement without the registry are accepted costs (adr-0002).
+6. **The exemption changes score arithmetic only — lab arm A4L**, ruled after the lab, over arm A4 (adr-0003).
+7. **Tie-break: fewer exempted slots ranks better, immediately after score** (adr-0004).
+8. **Thin firing is accepted and documented, with no guard**; its residues — 16 thin fires under A4L and 2 corpus rows firing two commands — are accepted, and the ruling is reopenable on R5 human-corpus evidence (adr-0005).
+
 ## 1. Problem
 
 Two symptoms, which #65 correctly identifies as one underlying cause.
@@ -403,6 +478,8 @@ This satisfies goal 1 for every pattern of **3 or more elements**. Two-element p
 
 **`RequiredSlotMissPenalty` stays at `-1.0`.** A missing required *slot* means the command's argument is absent — materially different from a missing function word, and already routed to the pending/partial path. Leaving it untouched keeps `allowPartialMatch` behaviour intact.
 
+> **AMENDED by Amendment A5 (§0E, ratified at G1 2026-10-02):** except for a slot with a registered resolver — see DR-8.
+
 **Accepted consequence — ratified 2026-08-12.** Two dropped literals on a 5-element pattern now score `3/5 = 0.60` and pass the gate (was `0.40`). With all slots extracted, firing is the right outcome. **The gate stays `≥`**; it is not tightened to `>` to exclude the boundary case.
 
 ### 5.2 Coverage — one rule, both sides (symptom 2)
@@ -440,6 +517,8 @@ Rules carried over unchanged by symmetry, so leading and trailing are genuinely 
 ### 5.3 Selection and gates
 
 Selection keys are otherwise **unchanged**: earliest start → score → consumed span → literal count → registration order. The score key now carries coverage, so the consumed-span key (#41) demotes to what it was always meant to be — a tie-break for genuinely equal candidates — rather than the sole carrier of "explains more". #41's behaviour is preserved, not superseded.
+
+> **AMENDED by Amendment A5 (§0E, ratified at G1 2026-10-02):** a key is added immediately after score — fewer exempted slots ranks better — so the order becomes earliest start → score → fewer exempted slots → consumed span → literal count → registration order; see DR-9.
 
 `minScore` stays at `0.6`, and **does not scale with pattern length** (option (c) in #65, rejected as DR-2).
 
