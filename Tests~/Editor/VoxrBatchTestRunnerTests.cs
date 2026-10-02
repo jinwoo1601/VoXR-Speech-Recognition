@@ -219,35 +219,46 @@ namespace VoXR.Tests.Editor
         // stranded gives (7 x 1 - 1) / 8 = 0.75 instead.
         const string IncompleteAboveGate = "launch all missiles from tube three at";
 
-        static VoxrBatchTestRunner CreateLongFormRunner() =>
-            new VoxrBatchTestRunner(
-                new[]
-                {
-                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
-                    new VoxrSlotDefinition("target", new[] { "hotel one", "hotel two" }),
-                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
-                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
-                },
-                new[]
-                {
-                    new VoxrCommandDefinition(
-                        "launch_weapon",
+        static VoxrSlotDefinition[] LongFormSlots() =>
+            new[]
+            {
+                new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                new VoxrSlotDefinition("target", new[] { "hotel one", "hotel two" }),
+                new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+            };
+
+        static VoxrCommandDefinition[] LongFormCommands() =>
+            new[]
+            {
+                new VoxrCommandDefinition(
+                    "launch_weapon",
+                    new[]
+                    {
                         new[]
                         {
-                            new[]
-                            {
-                                "launch",
-                                "{quantity}",
-                                "{weapon}",
-                                "from",
-                                "tube",
-                                "{tube}",
-                                "at",
-                                "{target}",
-                            },
-                        }
-                    ),
-                }
+                            "launch",
+                            "{quantity}",
+                            "{weapon}",
+                            "from",
+                            "tube",
+                            "{tube}",
+                            "at",
+                            "{target}",
+                        },
+                    }
+                ),
+            };
+
+        static VoxrBatchTestRunner CreateLongFormRunner(
+            string[] registeredSlotNames = null,
+            float minScore = 0.6f
+        ) =>
+            new VoxrBatchTestRunner(
+                LongFormSlots(),
+                LongFormCommands(),
+                minScore: minScore,
+                registeredSlotNames: registeredSlotNames
             );
 
         [Test]
@@ -299,6 +310,152 @@ namespace VoXR.Tests.Editor
             Assert.IsTrue(result.Passed, result.FailureReason);
             Assert.IsNull(result.ActualIntent, "nothing may be accepted");
             Assert.AreEqual(6f / 8f, result.Score, 0.001f, "and it really did clear minScore");
+        }
+
+        // ─── Given registered slot names (F7, issue #161) ───────────────
+        //
+        // Given the game's registered slot names the runner scores as the runtime does — a
+        // registered slot's miss is left out of the score (DR-8) — and reports "would ask
+        // resolver for '…'" where the runtime would consult a resolver. It never calls one, so
+        // that verdict is a rejection.
+
+        [Test]
+        public void Run_RegisteredSlotUnfilled_RejectedAsWouldAskResolver()
+        {
+            // F7: seven matched, {target} exempt — 7/7.
+            var runner = CreateLongFormRunner(new[] { "target" });
+            var result = runner.Run(
+                new VoxrTestCase { input = IncompleteAboveGate, expectedIntent = "launch_weapon" }
+            );
+
+            Assert.IsFalse(
+                result.Passed,
+                "the runner never calls a resolver, so it cannot certify"
+            );
+            Assert.AreEqual(
+                "expected intent 'launch_weapon' but rejected: would ask resolver for 'target'",
+                result.FailureReason
+            );
+            Assert.AreEqual(1f, result.Score, 0.001f, "7/7: the registered slot's miss is exempt");
+        }
+
+        [Test]
+        public void Run_TwoRegisteredSlotsUnfilled_NamedInPatternOrder()
+        {
+            // F7: six matched, {tube} medial and {target} tail both exempt — 6/6, and the reason
+            // names them in pattern order.
+            var runner = CreateLongFormRunner(new[] { "tube", "target" });
+            var testCase = new VoxrTestCase
+            {
+                input = "launch all missiles from tube at",
+                expectedIntent = "launch_weapon",
+            };
+            var result = runner.Run(testCase);
+
+            StringAssert.EndsWith("would ask resolver for 'tube', 'target'", result.FailureReason);
+            Assert.AreEqual(1f, result.Score, 0.001f, "6/6: both misses are exempt");
+
+            string csv = VoxrBatchTestRunner.ToCsv(runner.RunAll(new[] { testCase }));
+            StringAssert.Contains("\"" + result.FailureReason + "\"", csv);
+        }
+
+        [Test]
+        public void Run_UnregisteredSlotUnfilled_KeepsRequiredSlotUnfilled()
+        {
+            // F7: {tube} is not registered, so it is charged and the runtime would pend, not ask
+            // a resolver — raw 6 - 1 = 5, denominator 6 + 1 = 7, {target} exempt.
+            var runner = CreateLongFormRunner(new[] { "target" }, minScore: 0.3f);
+            var result = runner.Run(
+                new VoxrTestCase
+                {
+                    input = "launch all missiles from tube at",
+                    expectedIntent = "launch_weapon",
+                }
+            );
+
+            Assert.AreEqual(
+                "expected intent 'launch_weapon' but rejected: required slot unfilled",
+                result.FailureReason
+            );
+            Assert.AreEqual(5f / 7f, result.Score, 0.001f);
+        }
+
+        [Test]
+        public void Run_ExpectedRejection_RegisteredSlotUnfilled_Passes()
+        {
+            // F7: the one-way cut — a case expecting rejection passes on "would ask resolver".
+            var runner = CreateLongFormRunner(new[] { "target" });
+            var result = runner.Run(
+                new VoxrTestCase { input = IncompleteAboveGate, expectedIntent = null }
+            );
+
+            Assert.IsTrue(result.Passed, result.FailureReason);
+            Assert.IsNull(result.ActualIntent);
+            Assert.IsNull(result.FailureReason);
+            Assert.AreEqual(1f, result.Score, 0.001f);
+        }
+
+        [Test]
+        public void CommandSetConstructor_RegisteredSlotNames_SameVerdict()
+        {
+            // F7: the command-set constructor takes the names too, with the same verdict.
+            var runner = new VoxrBatchTestRunner(
+                LongFormSlots(),
+                new[] { new VoxrCommandSet("combat", LongFormCommands()) },
+                new[] { "combat" },
+                registeredSlotNames: new[] { "target" }
+            );
+            var result = runner.Run(
+                new VoxrTestCase { input = IncompleteAboveGate, expectedIntent = "launch_weapon" }
+            );
+
+            Assert.AreEqual(
+                "expected intent 'launch_weapon' but rejected: would ask resolver for 'target'",
+                result.FailureReason
+            );
+            Assert.AreEqual(1f, result.Score, 0.001f);
+        }
+
+        [Test]
+        public void Constructors_NullRegisteredSlotName_Throws()
+        {
+            // F7: a null name is refused, as RegisterSlotResolver(null, …) is.
+            var names = new[] { "target", null };
+
+            var a = Assert.Throws<ArgumentNullException>(() =>
+                new VoxrBatchTestRunner(
+                    LongFormSlots(),
+                    LongFormCommands(),
+                    registeredSlotNames: names
+                )
+            );
+            Assert.AreEqual("registeredSlotNames", a.ParamName);
+
+            var b = Assert.Throws<ArgumentNullException>(() =>
+                new VoxrBatchTestRunner(
+                    LongFormSlots(),
+                    new[] { new VoxrCommandSet("combat", LongFormCommands()) },
+                    new[] { "combat" },
+                    registeredSlotNames: names
+                )
+            );
+            Assert.AreEqual("registeredSlotNames", b.ParamName);
+        }
+
+        [Test]
+        public void Run_EmptyRegisteredSlotNames_BehavesAsNoNames()
+        {
+            // F7: an empty array is no source — today's runner, 6/8 and "required slot unfilled".
+            var runner = CreateLongFormRunner(new string[0]);
+            var result = runner.Run(
+                new VoxrTestCase { input = IncompleteAboveGate, expectedIntent = "launch_weapon" }
+            );
+
+            Assert.AreEqual(6f / 8f, result.Score, 0.001f);
+            Assert.AreEqual(
+                "expected intent 'launch_weapon' but rejected: required slot unfilled",
+                result.FailureReason
+            );
         }
 
         [Test]

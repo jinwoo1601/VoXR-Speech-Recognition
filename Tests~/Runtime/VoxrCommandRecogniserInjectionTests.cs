@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using VoXR;
 using VoXR.Commands;
+using VoXR.Testing;
 
 namespace VoXR.Tests.Runtime
 {
@@ -2475,38 +2476,41 @@ namespace VoXR.Tests.Runtime
         // cannot quietly turn these into score-gate tests.
         const string BareLaunchOrder = "launch all missiles from tube three at";
 
-        void ConfigureResolvableSync(bool allowPartial = true)
-        {
-            _recogniser.Configure(
-                new[]
-                {
-                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
-                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
-                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
-                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
-                },
-                new[]
-                {
-                    new VoxrCommandDefinition(
-                        "launch_weapon",
+        static VoxrSlotDefinition[] ResolvableSlots() =>
+            new[]
+            {
+                new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+            };
+
+        static VoxrCommandDefinition[] ResolvableCommands(bool allowPartial) =>
+            new[]
+            {
+                new VoxrCommandDefinition(
+                    "launch_weapon",
+                    new[]
+                    {
                         new[]
                         {
-                            new[]
-                            {
-                                "launch",
-                                "{quantity}",
-                                "{weapon}",
-                                "from",
-                                "tube",
-                                "{tube}",
-                                "at",
-                                "{track}",
-                            },
+                            "launch",
+                            "{quantity}",
+                            "{weapon}",
+                            "from",
+                            "tube",
+                            "{tube}",
+                            "at",
+                            "{track}",
                         },
-                        allowPartialMatch: allowPartial
-                    ),
-                }
-            );
+                    },
+                    allowPartialMatch: allowPartial
+                ),
+            };
+
+        void ConfigureResolvableSync(bool allowPartial = true)
+        {
+            _recogniser.Configure(ResolvableSlots(), ResolvableCommands(allowPartial));
             _recogniser.BufferWindow = 0f;
             _recogniser.CommandCooldown = 0f;
             _recogniser.PendingTimeout = 30f;
@@ -2788,6 +2792,56 @@ namespace VoXR.Tests.Runtime
                 fired.Confidence,
                 1e-5f,
                 "and the confidence is the word data's, which resolution does not touch"
+            );
+        }
+
+        [Test]
+        public void Resolver_BatchRunnerGivenNames_ScoresAsTheRecogniser()
+        {
+            // F7 (R1): given the game's registered slot names, the batch runner scores an
+            // utterance as the recogniser does — the same snapshot, the same DR-8 arithmetic
+            // (7/7 = 1.0). It never calls the resolver, so where the recogniser fires the runner
+            // reports the rejection "would ask resolver for 'track'".
+            ConfigureResolvableSync(allowPartial: true);
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(
+                BareLaunchOrder,
+                VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunchOrder, 0.9f)
+            );
+            Assert.IsTrue(received.HasValue, "resolved, so it fires");
+
+            var runner = new VoxrBatchTestRunner(
+                ResolvableSlots(),
+                ResolvableCommands(allowPartial: true),
+                registeredSlotNames: new[] { "track" }
+            );
+            var result = runner.Run(
+                new VoxrTestCase
+                {
+                    input = BareLaunchOrder,
+                    expectedIntent = "launch_weapon",
+                    wordConfidence = 0.9f,
+                }
+            );
+
+            Assert.AreEqual(
+                received.Value.Score,
+                result.Score,
+                1e-5f,
+                "the runner scores the utterance as the recogniser that fired it did"
+            );
+            Assert.AreEqual(1f, result.Score, 1e-5f, "7/7: the registered slot's miss is exempt");
+            Assert.AreEqual(
+                "expected intent 'launch_weapon' but rejected: would ask resolver for 'track'",
+                result.FailureReason
             );
         }
 
