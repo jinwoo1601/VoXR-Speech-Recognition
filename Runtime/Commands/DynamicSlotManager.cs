@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace VoXR.Commands
 {
-    internal sealed class DynamicSlotManager
+    internal sealed class DynamicSlotManager : IRegisteredSlotNames
     {
         Dictionary<string, Func<string[]>> _providers;
 
@@ -106,6 +106,13 @@ namespace VoXR.Commands
         }
 
         internal bool HasResolvers => _resolvers != null && _resolvers.Count > 0;
+
+        // The parser's view of the resolver registry, read live so a registration needs no
+        // rebuild. Explicit, so the manager's own internal surface is unchanged.
+        bool IRegisteredSlotNames.Any => HasResolvers;
+
+        bool IRegisteredSlotNames.Contains(string slotName) =>
+            _resolvers != null && _resolvers.ContainsKey(slotName);
 
         internal void RegisterResolver(
             string slotName,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.TestTools;
 using UnityEngine.TestTools.Constraints;
 using VoXR;
@@ -6309,8 +6310,8 @@ namespace VoXR.Tests.Runtime
         // floor and one refused by DR-7's admission rule both simply fail to win, and a TIE is
         // invisible from the winner alone — which is the whole defect DR-3 addresses.
         //
-        // The keys, in order: start index (lower wins), score (higher), consumed span (higher),
-        // literal count (higher). Equal on all four is Tied.
+        // The keys, in order: start index (lower wins), score (higher), exempted slots (fewer,
+        // DR-9), consumed span (higher), literal count (higher). Equal on all five is Tied.
 
         // Sentinels as the two selection loops actually initialise them. Named rather than
         // inlined so the "no incumbent" tests below are obviously about that state.
@@ -6322,7 +6323,8 @@ namespace VoXR.Tests.Runtime
             int consumedEndIdx = 4,
             int literalCount = 2,
             int matchedRequired = 3,
-            int missedRequired = 0
+            int missedRequired = 0,
+            byte exemptedSlots = 0
         ) =>
             new VoxrCommandParser.MatchResult
             {
@@ -6331,6 +6333,7 @@ namespace VoXR.Tests.Runtime
                 LiteralCount = literalCount,
                 MatchedRequired = matchedRequired,
                 MissedRequired = missedRequired,
+                ExemptedSlots = exemptedSlots,
             };
 
         // The incumbent every "beaten by" case below is compared against: start 0, score 0.75,
@@ -6338,7 +6341,7 @@ namespace VoXR.Tests.Runtime
         static VoxrCommandParser.CandidateOrder Against(
             VoxrCommandParser.MatchResult candidate,
             int startIdx = 0
-        ) => VoxrCommandParser.CompareCandidate(candidate, startIdx, 0.75f, 0, 4, 2);
+        ) => VoxrCommandParser.CompareCandidate(candidate, startIdx, 0.75f, 0, 4, 2, 0);
 
         [Test]
         public void CompareCandidate_ZeroScore_IsWorse()
@@ -6370,7 +6373,8 @@ namespace VoXR.Tests.Runtime
                     NoIncumbentScore,
                     NoIncumbentStartIdx,
                     0,
-                    -1
+                    -1,
+                    0
                 )
             );
         }
@@ -6390,7 +6394,8 @@ namespace VoXR.Tests.Runtime
                     NoIncumbentScore,
                     NoIncumbentStartIdx,
                     0,
-                    -1
+                    -1,
+                    0
                 )
             );
         }
@@ -6407,7 +6412,8 @@ namespace VoXR.Tests.Runtime
                     0.75f,
                     3,
                     4,
-                    2
+                    2,
+                    0
                 )
             );
             // ...and a later start loses even while winning on all three.
@@ -6419,7 +6425,8 @@ namespace VoXR.Tests.Runtime
                     0.75f,
                     0,
                     4,
-                    2
+                    2,
+                    0
                 )
             );
         }
@@ -6462,6 +6469,103 @@ namespace VoXR.Tests.Runtime
             // returned false here, indistinguishable from a loss, so the incumbent kept the win
             // on registration order alone and nothing recorded that it had been a coin flip.
             Assert.AreEqual(VoxrCommandParser.CandidateOrder.Tied, Against(Cand()));
+        }
+
+        [Test]
+        public void CompareCandidate_ExemptedSlots_FewerWinsWhenStartAndScoreAgree()
+        {
+            // DR-9: of two candidates that start and score alike, the one leaning less on
+            // resolvers wins.
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Better,
+                VoxrCommandParser.CompareCandidate(Cand(exemptedSlots: 0), 0, 0.75f, 0, 4, 2, 1)
+            );
+        }
+
+        [Test]
+        public void CompareCandidate_ExemptedSlots_MoreLosesWhenStartAndScoreAgree()
+        {
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Worse,
+                Against(Cand(exemptedSlots: 1))
+            );
+        }
+
+        [Test]
+        public void CompareCandidate_Score_OutranksExemptedSlots()
+        {
+            // A higher score wins even while carrying more exemptions...
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Better,
+                Against(Cand(score: 0.8f, exemptedSlots: 2))
+            );
+            // ...and a lower one loses even against an incumbent carrying more.
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Worse,
+                VoxrCommandParser.CompareCandidate(Cand(score: 0.7f), 0, 0.75f, 0, 4, 2, 2)
+            );
+        }
+
+        [Test]
+        public void CompareCandidate_ExemptedSlots_OutranksConsumedSpanAndLiteralCount()
+        {
+            // Fewer exemptions win even while losing on span and literal count...
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Better,
+                VoxrCommandParser.CompareCandidate(
+                    Cand(consumedEndIdx: 3, literalCount: 0),
+                    0,
+                    0.75f,
+                    0,
+                    4,
+                    2,
+                    1
+                )
+            );
+            // ...and more exemptions lose even while winning on both.
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Worse,
+                Against(Cand(consumedEndIdx: 9, literalCount: 9, exemptedSlots: 1))
+            );
+        }
+
+        [Test]
+        public void CompareCandidate_ExemptedSlots_EqualFallsThroughToConsumedSpan()
+        {
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Better,
+                VoxrCommandParser.CompareCandidate(
+                    Cand(consumedEndIdx: 5, exemptedSlots: 1),
+                    0,
+                    0.75f,
+                    0,
+                    4,
+                    2,
+                    1
+                )
+            );
+            Assert.AreEqual(
+                VoxrCommandParser.CandidateOrder.Worse,
+                VoxrCommandParser.CompareCandidate(
+                    Cand(consumedEndIdx: 3, exemptedSlots: 1),
+                    0,
+                    0.75f,
+                    0,
+                    4,
+                    2,
+                    1
+                )
+            );
+        }
+
+        [Test]
+        public void MatchResult_Size_IsThirtyTwoBytes()
+        {
+            // MatchResult is returned by value into the innermost body of both selection loops,
+            // and its layout note relies on ExemptedSlots and the three bools sharing the bytes
+            // before EndIdx. A field added or reordered past that widens every per-candidate
+            // copy; this is the pin the note used to say did not exist.
+            Assert.AreEqual(32, UnsafeUtility.SizeOf<VoxrCommandParser.MatchResult>());
         }
 
         // ── The runtime sibling-tie record (issue #74 item 3, seam A) ───────────────────────

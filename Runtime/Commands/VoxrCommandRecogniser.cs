@@ -279,7 +279,8 @@ namespace VoXR.Commands
                 GetFollowUpGrammarWords(),
                 cancelVocabulary,
                 disambiguateSiblingTies,
-                minScore
+                minScore,
+                registeredSlots: _slotManager
             );
             _grammar.Rebuild(_slots, commands, GetFollowUpGrammarWords());
 
@@ -465,7 +466,8 @@ namespace VoXR.Commands
                 GetFollowUpGrammarWords(),
                 cancelVocabulary,
                 disambiguateSiblingTies,
-                minScore
+                minScore,
+                registeredSlots: _slotManager
             );
         }
 

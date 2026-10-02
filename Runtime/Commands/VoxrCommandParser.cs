@@ -1,7 +1,7 @@
 // ============================================================================
 // Purpose:  Pure C# pattern matcher: scores tokenized VOSK output against command patterns
 // Layer:    Runtime.Commands
-// Owns:     VoxrCommandParser (internal class), EagerCommitVerdict (internal enum), SiblingMember, SiblingSet (internal readonly structs), TiedSiblingRival, TiedSiblingRecord (internal structs)
+// Owns:     VoxrCommandParser (internal class), EagerCommitVerdict (internal enum), SiblingMember, SiblingSet (internal readonly structs), TiedSiblingRival, TiedSiblingRecord (internal structs), IRegisteredSlotNames (internal interface), RegisteredSlotNames (internal sealed class)
 // Depends:  VoxrSlotDefinition, VoxrCommandDefinition, VoxrSlotMatch, VoxrCommand, VoxrCommandResult, VoxrNumberParser, VoxrFollowUpVocabulary
 // ============================================================================
 using System;
@@ -134,6 +134,36 @@ namespace VoXR.Commands
         }
     }
 
+    // The read-only question "is a resolver registered for this slot name?", which the parser
+    // asks its source once per pass (SnapshotRegisteredSlots). Ordinal. DynamicSlotManager
+    // answers it over its live registry, so a registration needs no rebuild; RegisteredSlotNames
+    // answers it from a fixed set. Declared here rather than beside DynamicSlotManager because
+    // the A/B rig stages a fixed file list without DynamicSlotManager.cs.
+    internal interface IRegisteredSlotNames
+    {
+        bool Any { get; }
+        bool Contains(string slotName);
+    }
+
+    // A fixed, immutable IRegisteredSlotNames, copied at construction — for callers with no
+    // DynamicSlotManager (the batch runner, tests, the rigs). Null names means an empty set.
+    internal sealed class RegisteredSlotNames : IRegisteredSlotNames
+    {
+        readonly HashSet<string> _names;
+
+        public RegisteredSlotNames(IEnumerable<string> names)
+        {
+            _names =
+                names != null
+                    ? new HashSet<string>(names, StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal);
+        }
+
+        public bool Any => _names.Count > 0;
+
+        public bool Contains(string slotName) => _names.Contains(slotName);
+    }
+
     internal class VoxrCommandParser
     {
         internal const string UnkToken = "[unk]";
@@ -232,6 +262,17 @@ namespace VoXR.Commands
         readonly Dictionary<string, int> _slotIndex;
 
         readonly string[] _slotNames;
+
+        // Where the parser asks which slots have a resolver registered; null when the caller
+        // gave no source, which is today's parser exactly. Held, not copied, so a registration
+        // reaches the next pass without a rebuild.
+        readonly IRegisteredSlotNames _registeredSlots;
+
+        // The source as one pass sees it, written by SnapshotRegisteredSlots and indexed like
+        // _slotNames. Allocated once here, and only when a source is given; not read while
+        // _anyExempt is false.
+        readonly bool[] _exemptSlot;
+        bool _anyExempt;
 
         // Cached stripped forms of optional literals (pattern element -> literal without '?')
         readonly Dictionary<string, string> _optionalLiteralCache;
@@ -463,12 +504,18 @@ namespace VoXR.Commands
         // assigned after the warning it governs had already been emitted — and it inherits
         // recordSiblingTies' sharper reason too, since a rebuild builds a new parser. It is not
         // applied to parsing in any form; _minScore sets out what reads it and what does not.
+        //
+        // registeredSlots is where the parser asks which slots have a resolver registered — the
+        // recogniser's DynamicSlotManager, or a fixed RegisteredSlotNames. A constructor
+        // parameter for recordSiblingTies' reason, and held rather than copied so a registration
+        // needs no rebuild. Null is today's parser.
         public VoxrCommandParser(VoxrSlotDefinition[] slots, VoxrCommandDefinition[] commands,
             float coverageWeight = DefaultCoverageWeight,
             string[] additionalGrammarWords = null,
             string[] effectiveCancelVocabulary = null,
             bool recordSiblingTies = false,
-            float minScore = DefaultMinScore
+            float minScore = DefaultMinScore,
+            IRegisteredSlotNames registeredSlots = null
         )
         {
             if (slots == null) throw new ArgumentNullException(nameof(slots));
@@ -505,6 +552,10 @@ namespace VoXR.Commands
                 _slotIndex[slots[i].Name] = i;
                 _slotNames[i] = slots[i].Name;
             }
+
+            _registeredSlots = registeredSlots;
+            if (registeredSlots != null)
+                _exemptSlot = new bool[slots.Length];
 
             // Build per-slot first-word lookup (canonical values + aliases)
             _slotLookups = new Dictionary<string, List<SlotValueEntry>>[slots.Length];
@@ -2502,6 +2553,7 @@ namespace VoXR.Commands
                 int bestConsumedEndIdx = 0;
                 int bestSlotCount = 0;
                 bool bestLeadingRequiredMissed = false;
+                int bestExemptedSlots = 0;
 
 #if UNITY_EDITOR
                 // The round's second-ranked candidate: what would have won had the winner not
@@ -2521,6 +2573,7 @@ namespace VoXR.Commands
                 int runnerUpStartIdx = int.MaxValue;
                 int runnerUpConsumedEndIdx = 0;
                 int runnerUpLiteralCount = -1;
+                int runnerUpExemptedSlots = 0;
 #endif
 
                 // Declared HERE, with the round's other best* locals, and not outside the loop:
@@ -2587,7 +2640,8 @@ namespace VoXR.Commands
                                 bestScore,
                                 bestStartIdx,
                                 bestConsumedEndIdx,
-                                bestLiteralCount
+                                bestLiteralCount,
+                                bestExemptedSlots
                             );
 
                             if (order == CandidateOrder.Better)
@@ -2603,6 +2657,7 @@ namespace VoXR.Commands
                                     runnerUpStartIdx = bestStartIdx;
                                     runnerUpConsumedEndIdx = bestConsumedEndIdx;
                                     runnerUpLiteralCount = bestLiteralCount;
+                                    runnerUpExemptedSlots = bestExemptedSlots;
                                 }
 #endif
                                 bestScore = matchResult.Score;
@@ -2614,6 +2669,7 @@ namespace VoXR.Commands
                                 bestConsumedEndIdx = matchResult.ConsumedEndIdx;
                                 bestSlotCount = matchResult.SlotCount;
                                 bestLeadingRequiredMissed = matchResult.LeadingRequiredMissed;
+                                bestExemptedSlots = matchResult.ExemptedSlots;
 
                                 // Clear-on-adopt: a new incumbent has its own rivals, and the
                                 // old one's are about a candidate that no longer wins. This rule
@@ -2763,7 +2819,8 @@ namespace VoXR.Commands
                                     runnerUpScore,
                                     runnerUpStartIdx,
                                     runnerUpConsumedEndIdx,
-                                    runnerUpLiteralCount
+                                    runnerUpLiteralCount,
+                                    runnerUpExemptedSlots
                                 );
                                 if (runnerUpOrder == CandidateOrder.Better)
                                 {
@@ -2772,6 +2829,7 @@ namespace VoXR.Commands
                                     runnerUpStartIdx = startIdx;
                                     runnerUpConsumedEndIdx = matchResult.ConsumedEndIdx;
                                     runnerUpLiteralCount = matchResult.LiteralCount;
+                                    runnerUpExemptedSlots = matchResult.ExemptedSlots;
                                 }
                             }
 #endif
@@ -3380,14 +3438,20 @@ namespace VoXR.Commands
             // it after the trailing ints instead and it costs a byte plus three of new padding,
             // widening every per-candidate copy to 36. Measured, not assumed. This also matches
             // architecture §2.1's own wording, "beside the two completeness flags it already
-            // carries".
+            // carries". ExemptedSlots, below, now fills the last byte of that hole, so the next
+            // small field has no free padding left before EndIdx.
             //
             // The precondition, so a later edit knows when this reasoning lapses: it holds
             // because every field here is a primitive, which is what makes the struct
             // managed-sequential. Add one reference-type field and CoreCLR and Mono are free to
-            // reorder, at which point declaration order stops meaning anything and nothing in
-            // the repo would notice — there is no size pin anywhere to catch it.
+            // reorder, at which point declaration order stops meaning anything — and the size
+            // test (MatchResult_Size_IsThirtyTwoBytes) pins it, so that is what would notice.
             public bool LeadingRequiredMissed;
+
+            // How many of this candidate's missed REQUIRED slots were exempt — a resolver was
+            // registered for them — and so left out of the score. A byte, bound 255 per
+            // pattern, so it sits in the padding byte before EndIdx; see the layout note above.
+            internal byte ExemptedSlots;
 
             // Where the match stopped, including any [unk] skipped ahead of a trailing
             // element that matched nothing. Drives searchStart and the eager whole-buffer gate.
@@ -3433,8 +3497,8 @@ namespace VoXR.Commands
 
         // Candidate ordering, shared by ParseInternal and TryEagerCommit so the eager verdict
         // never names a pattern the flush would not fire. Earliest start wins, then highest
-        // score, then the longer consumed span, then literal count, with registration order as
-        // the final deterministic fallback.
+        // score, then fewer exempted slots (DR-9), then the longer consumed span, then literal
+        // count, with registration order as the final deterministic fallback.
         //
         // That invariant read "the eager verdict always names the pattern the subsequent flush
         // will fire" until issue #74's DR-5 had TryEagerCommit REFUSE on a sibling tie. The old
@@ -3460,7 +3524,8 @@ namespace VoXR.Commands
             float bestScore,
             int bestStartIdx,
             int bestConsumedEndIdx,
-            int bestLiteralCount
+            int bestLiteralCount,
+            int bestExemptedSlots
         )
         {
             if (candidate.Score <= 0f)
@@ -3510,6 +3575,10 @@ namespace VoXR.Commands
                 return startIdx < bestStartIdx ? CandidateOrder.Better : CandidateOrder.Worse;
             if (candidate.Score != bestScore)
                 return candidate.Score > bestScore ? CandidateOrder.Better : CandidateOrder.Worse;
+            if (candidate.ExemptedSlots != bestExemptedSlots)
+                return candidate.ExemptedSlots < bestExemptedSlots
+                    ? CandidateOrder.Better
+                    : CandidateOrder.Worse;
             if (candidate.ConsumedEndIdx != bestConsumedEndIdx)
                 return candidate.ConsumedEndIdx > bestConsumedEndIdx
                     ? CandidateOrder.Better
@@ -4073,6 +4142,30 @@ namespace VoXR.Commands
             return count;
         }
 
+        // Copies the registered-slot source into _exemptSlot, so one pass reads one set even if
+        // a registration lands mid-utterance. The first statement of BuildCoverageTables (so the
+        // start probe and selection agree) and of ScoreFollowUp. Only the grammar's own slot
+        // names are looked up, so a resolver for a name the grammar lacks changes nothing.
+        void SnapshotRegisteredSlots()
+        {
+            if (_registeredSlots == null)
+                return;
+            if (!_registeredSlots.Any)
+            {
+                _anyExempt = false;
+                return;
+            }
+
+            bool anyExempt = false;
+            for (int i = 0; i < _slotNames.Length; i++)
+            {
+                bool exempt = _registeredSlots.Contains(_slotNames[i]);
+                _exemptSlot[i] = exempt;
+                anyExempt |= exempt;
+            }
+            _anyExempt = anyExempt;
+        }
+
         // -------- Coverage tables (issue #65 §5.2) --------
 
         // Rebuilds the per-utterance coverage tables. Every path that reaches TryMatchScored
@@ -4082,6 +4175,8 @@ namespace VoXR.Commands
         // the trailing term is searchStart-independent by construction.
         internal void BuildCoverageTables(string[] tokens)
         {
+            SnapshotRegisteredSlots();
+
             int n = tokens.Length;
             if (_recognisedPrefix == null || _recognisedPrefix.Length < n + 1)
             {
@@ -4494,6 +4589,8 @@ namespace VoXR.Commands
         internal float ScoreFollowUp(string intent, int patternIdx,
             IReadOnlyList<VoxrSlotMatch> filledSlots)
         {
+            SnapshotRegisteredSlots();
+
             // Find the command by intent
             string[] pattern = null;
             for (int ci = 0; ci < _commands.Length; ci++)
@@ -4619,6 +4716,7 @@ namespace VoXR.Commands
             bool bestMissedRequiredSlot = false;
             bool bestHasUnmatchedRequiredTail = false;
             bool bestLeadingRequiredMissed = false;
+            int bestExemptedSlots = 0;
 
             // The first sibling rival found tying the current incumbent, or -1. Cleared
             // whenever a new incumbent is adopted: Tied means the whole key tuple compared
@@ -4657,7 +4755,8 @@ namespace VoXR.Commands
                             bestScore,
                             bestStartIdx,
                             bestConsumedEndIdx,
-                            bestLiteralCount
+                            bestLiteralCount,
+                            bestExemptedSlots
                         );
 
                         if (order == CandidateOrder.Better)
@@ -4672,6 +4771,7 @@ namespace VoXR.Commands
                             bestMissedRequiredSlot = matchResult.MissedRequiredSlot;
                             bestHasUnmatchedRequiredTail = matchResult.HasUnmatchedRequiredTail;
                             bestLeadingRequiredMissed = matchResult.LeadingRequiredMissed;
+                            bestExemptedSlots = matchResult.ExemptedSlots;
                             bestTiedSiblingCommandIdx = -1;
                             bestTiedSiblingPatternIdx = -1;
                         }
