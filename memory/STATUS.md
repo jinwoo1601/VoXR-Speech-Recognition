@@ -4,9 +4,9 @@ updated: 2026-10-02
 
 ## Current
 
-- **`main` at the PR #166 merge (`light-160-unify-unfilled-slot-walk`, G2-lite 2026-10-01); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146, #147, #148, #160; next release via `release`.
+- **`main` at the PR #167 merge (`design-resolver-slot-scoring`, G1 2026-10-02); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146, #147, #148, #160; next release via `release`.
 - **Open issues:** #161 ellipsis vs the score gate — design locked at G1 2026-10-02 (`scoring-model.md` A5); closes with its feature.
-- **Next:** `feat-resolver-slot-exemption` (Full) off the `resolver-slot-scoring` backlog, once PR for `design-resolver-slot-scoring` is merged — `g0-open`.
+- **Next:** `feat-resolver-slot-exemption` (Full) off the `resolver-slot-scoring` backlog, ready to open — `g0-open`.
 - **Plan of action** (2026-09-06 rulings, `Planning~/research/2026-09-05-next-level/05-rulings.md`): Phase A complete (#143–#148, #150, #153, #154 merged).
 - Phase B free probes, none run: classify the 73 field false triggers; NCE/ECE of grammar `conf`; recorded coughs through the WebRTC VAD; Quest adb audio-effects session.
 - Phase C instruments, none started: R1 parser A/B rig joined to the push-audio harness (gates Phase D); R5 human corpus; R4 negative corpus.
