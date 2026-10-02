@@ -20,6 +20,9 @@ namespace VoXR.Editor
         [SerializeField] VoxrCommandSetAsset[] commandSetAssets;
         [SerializeField] string[] activeSetNames;
 
+        [SerializeField]
+        string[] registeredSlotNames;
+
         [SerializeField] float minScore = 0.6f;
         [SerializeField] float minConfidence = 0.4f;
         [SerializeField] float coverageWeight = VoxrCommandParser.DefaultCoverageWeight;
@@ -37,6 +40,7 @@ namespace VoXR.Editor
         SerializedProperty _propSlotAssets;
         SerializedProperty _propCommandSetAssets;
         SerializedProperty _propActiveSetNames;
+        SerializedProperty _propRegisteredSlotNames;
 
         [MenuItem("Window/VoXR/Batch Test Runner")]
         static void Open()
@@ -51,6 +55,7 @@ namespace VoXR.Editor
             _propSlotAssets = _serializedSelf.FindProperty(nameof(slotAssets));
             _propCommandSetAssets = _serializedSelf.FindProperty(nameof(commandSetAssets));
             _propActiveSetNames = _serializedSelf.FindProperty(nameof(activeSetNames));
+            _propRegisteredSlotNames = _serializedSelf.FindProperty(nameof(registeredSlotNames));
         }
 
         void OnDisable()
@@ -89,6 +94,15 @@ namespace VoXR.Editor
 
             EditorGUILayout.PropertyField(_propActiveSetNames,
                 new GUIContent("Active Sets"), true);
+
+            EditorGUILayout.PropertyField(
+                _propRegisteredSlotNames,
+                new GUIContent(
+                    "Registered Slots",
+                    "Slot names your game registers a resolver for; the run scores them as the runtime does."
+                ),
+                true
+            );
 
             EditorGUILayout.Space(2);
             minScore = EditorGUILayout.FloatField("Min Score", minScore);
@@ -342,7 +356,11 @@ namespace VoXR.Editor
 
                 if (activeSetNames != null && activeSetNames.Length > 0)
                     return new VoxrBatchTestRunner(slots, sets, activeSetNames,
-                        minScore, minConfidence, coverageWeight);
+                        minScore,
+                        minConfidence,
+                        coverageWeight,
+                        registeredSlotNames
+                    );
 
                 // No active set filter — use all commands from all sets
                 var allNames = new string[sets.Length];
@@ -350,7 +368,11 @@ namespace VoXR.Editor
                     allNames[i] = sets[i].Name;
 
                 return new VoxrBatchTestRunner(slots, sets, allNames,
-                    minScore, minConfidence, coverageWeight);
+                    minScore,
+                    minConfidence,
+                    coverageWeight,
+                    registeredSlotNames
+                );
             }
             catch (Exception e)
             {
