@@ -16,3 +16,7 @@ updated: 2026-10-03
 
 Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT> · <route> · v<date> — <title>`, VERDICT OPEN or OPEN-DRIFTED.
 
+
+- **RSE-1** · OPEN · release · v2026-10-04 — `[Unreleased]` #148 and #144 entries predate #161 (short pattern never reaches a resolver; runner-up order without DR-9): reword at release
+- **RSE-2** · OPEN · light-lane · v2026-10-04 — codex page contract wants frontmatter on product pages; no `Documentation~` page has any: rule on the contract vs this surface
+- **RSE-3** · OPEN · issue · v2026-10-04 — a `VoxrTestCase` added by the Inspector + button gets word confidence 0.00, not -1 (`VoxrTestCase.cs:25`): file as an issue?

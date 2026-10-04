@@ -8,10 +8,32 @@ Pure C# runner for regression-testing command definitions. No MonoBehaviour depe
 
 | Constructor | Description |
 |-------------|-------------|
-| `VoxrBatchTestRunner(slots, commands, minScore, minConfidence, coverageWeight)` | All commands active as a flat list. |
-| `VoxrBatchTestRunner(slots, sets, activeSetNames, minScore, minConfidence, coverageWeight)` | Named command sets with explicit active set selection. |
+| `VoxrBatchTestRunner(slots, commands, minScore, minConfidence, coverageWeight, registeredSlotNames)` | All commands active as a flat list. |
+| `VoxrBatchTestRunner(slots, sets, activeSetNames, minScore, minConfidence, coverageWeight, registeredSlotNames)` | Named command sets with explicit active set selection. |
 
 All three tuning parameters are optional. Two of them are gates -- `minScore` and `minConfidence` -- while `coverageWeight` is not a gate but the weight charged for recognised words a match leaves unexplained. They default to `0.6`, `0.4`, and `1.0`, which are the recogniser's defaults today; but the runner's `minScore` and `minConfidence` defaults are its own literals rather than the recogniser's, so the two can drift apart. Only `coverageWeight` defaults from the parser's shared constant. Pass the values your `VoxrCommandRecogniser` uses rather than relying on the defaults matching, so batch results track runtime behaviour. Since #140 `minScore` also reaches the parser the runner builds, so the Editor-only authoring warnings a batch run logs at construction — the sibling-tie warning and the cancel-collision report — are judged against the same threshold the run gates on, rather than against `0.6` regardless. `coverageWeight` was named `skippedWordPenalty` before #65 — a **named**-argument caller must update; positional callers are unaffected.
+
+### `registeredSlotNames`
+
+Both constructors take a last optional parameter, `string[] registeredSlotNames = null`: the slot names your game registers a [slot resolver](../command-recognition.md#slot-resolvers-when-the-game-knows-what-the-speaker-left-out) for. The runner builds no recogniser, so it has no resolver registry of its own; this is how it learns which slots the runtime would leave out of the score.
+
+- **Given names**, the runner scores as the runtime does: a missed required slot whose name is listed [costs nothing](../scoring.md#a-missed-slot-the-game-can-fill-costs-nothing), and selection prefers fewer such slots, exactly as in `VoxrCommandRecogniser`. Pass the same names the game registers, or batch scores will not track the runtime's.
+- **`null` or an empty array** means no names, and the runner behaves exactly as it does with the parameter omitted.
+- **A name the grammar does not use** is ignored.
+- **A `null` element** throws `ArgumentNullException`, as `RegisterSlotResolver(null, …)` does.
+
+The runner **never calls a resolver**. A resolver is game code and a corpus run has no game behind it, so whether the game would fill the slot or decline cannot be known here. Where the runtime would ask, the runner reports that it would — as a rejection:
+
+| The round's unfilled required slots | Confidence | Reject reason |
+|---|---|---|
+| none | — | none from this check — the confidence gate rules as usual |
+| every one listed in `registeredSlotNames` | at or above `minConfidence`, or `-1` | `would ask resolver for 'track'` — several are named in pattern order, each once: `would ask resolver for 'missile', 'track'` |
+| every one listed in `registeredSlotNames` | below `minConfidence` | the confidence reason, `confidence 0.30 < minConfidence 0.40` — the runtime skips such a candidate before any resolver is asked |
+| any one not listed, or no names given | — | `required slot unfilled` |
+
+The score gate runs first, so a round below `minScore` reports its score whatever its slots. The verdict reaches `FailureReason` — `expected intent 'launch_weapon' but rejected: would ask resolver for 'track'` — and through it the `Reason` column of `ToCsv`; the CSV header is unchanged, and a reason carrying a comma is quoted.
+
+**Because the verdict is a rejection, the cut is one-way.** A case that expects rejection passes on `would ask resolver for …`, and a passing row carries no `Reason`, though at runtime the command fires if the game fills the slot. A case that expects the intent fails on it. Read the verdict as "the runtime would ask the game here", and pin what the game answers with a runtime test through `InjectText`, where a resolver can be registered.
 
 > **Batch scores are a lower bound, not the runtime score.** [Coverage](../scoring.md#2-coverage) exempts the literal `[unk]` token, which is what a grammar-constrained decoder returns for a word outside its vocabulary. This runner receives real text instead, so a trailing word the decoder would have hidden arrives verbatim and is charged: "cease fire please" scores `2 / (2 + 1)` = `0.67` here against `1.00` through the live decoder. Expect batch scores at or below what the same utterance gets at runtime, and treat a batch regression on a grammar whose users add natural filler with that in mind.
 
@@ -50,7 +72,7 @@ Only when **every** round was barred does the case come back with `ActualIntent`
 | Field | Type | Description |
 |-------|------|-------------|
 | `TestCase` | `VoxrTestCase` | The test case that produced this result. |
-| `ActualIntent` | `string` | The intent that was accepted, or null when no command passed the thresholds -- or when the round the runner reports was refused for a missing required slot (`required slot unfilled`), or when **every** round was barred for missing its first required element so no round was left to report. Both are separate checks from the thresholds. |
+| `ActualIntent` | `string` | The intent that was accepted, or null when no command passed the thresholds -- or when the round the runner reports was refused for a missing required slot (`required slot unfilled`, or `would ask resolver for …` given [`registeredSlotNames`](#registeredslotnames)), or when **every** round was barred for missing its first required element so no round was left to report. Both are separate checks from the thresholds. |
 | `ActualSlots` | `VoxrSlotMatch[]` | Slot matches from the accepted command. Never null — an empty array when nothing was accepted or the accepted command took no slots. |
 | `Score` | `float` | The score of the round that was **accepted** — the runner stops at the first round clearing the gates, so this is not the highest score seen. When nothing was accepted it is the highest score among the rejected rounds, and `0` when no round was left to report — which covers both "nothing matched" and "every round that matched was barred". |
 | `Confidence` | `float` | Minimum word confidence across matched tokens (-1 if unavailable). |
