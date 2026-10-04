@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using VoXR;
 using VoXR.Commands;
+using VoXR.Testing;
 
 namespace VoXR.Tests.Runtime
 {
@@ -2464,47 +2465,52 @@ namespace VoXR.Tests.Runtime
 
         // ======== Slot resolvers on the accept path (issue #148, Phase 2) ========
 
-        // The resolver rows need an incomplete candidate that CLEARS minScore, which this
-        // fixture's own MakeCommands cannot give: a resolver is offered only a candidate that
-        // already passed the score gate (F7, made explicit by D-5). Eight elements, seven matched
-        // and {track} stranded: (7 x 1 - 1) / 8 = 0.75 — the same arithmetic
+        // The resolver rows need an incomplete candidate that CLEARS minScore whether or not a
+        // resolver is registered: a resolver is offered only a candidate that already passed the
+        // score gate (F7, made explicit by D-5). Eight elements, seven matched and {track}
+        // stranded. With a {track} resolver registered the stranded slot costs nothing
+        // (Amendment A5, DR-8): 7/7 = 1.0. With none it is (7 x 1 - 1) / 8 = 0.75 — the same
+        // arithmetic
         // VoxrPendingCommandTests.PartialMatch_AboveGateButIncomplete_EntersPendingInsteadOfFiring
-        // derives, and above the gate by a margin rather than on it, so a scoring change cannot
-        // quietly turn these into score-gate tests.
+        // derives. Either way above the gate by a margin rather than on it, so a scoring change
+        // cannot quietly turn these into score-gate tests.
         const string BareLaunchOrder = "launch all missiles from tube three at";
+
+        static VoxrSlotDefinition[] ResolvableSlots() =>
+            new[]
+            {
+                new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
+                new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
+                new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
+            };
+
+        static VoxrCommandDefinition[] ResolvableCommands(bool allowPartial) =>
+            new[]
+            {
+                new VoxrCommandDefinition(
+                    "launch_weapon",
+                    new[]
+                    {
+                        new[]
+                        {
+                            "launch",
+                            "{quantity}",
+                            "{weapon}",
+                            "from",
+                            "tube",
+                            "{tube}",
+                            "at",
+                            "{track}",
+                        },
+                    },
+                    allowPartialMatch: allowPartial
+                ),
+            };
 
         void ConfigureResolvableSync(bool allowPartial = true)
         {
-            _recogniser.Configure(
-                new[]
-                {
-                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
-                    new VoxrSlotDefinition("weapon", new[] { "missiles", "torpedoes" }),
-                    new VoxrSlotDefinition("quantity", new[] { "all", "one", "two" }),
-                    new VoxrSlotDefinition("tube", new[] { "one", "two", "three" }),
-                },
-                new[]
-                {
-                    new VoxrCommandDefinition(
-                        "launch_weapon",
-                        new[]
-                        {
-                            new[]
-                            {
-                                "launch",
-                                "{quantity}",
-                                "{weapon}",
-                                "from",
-                                "tube",
-                                "{tube}",
-                                "at",
-                                "{track}",
-                            },
-                        },
-                        allowPartialMatch: allowPartial
-                    ),
-                }
-            );
+            _recogniser.Configure(ResolvableSlots(), ResolvableCommands(allowPartial));
             _recogniser.BufferWindow = 0f;
             _recogniser.CommandCooldown = 0f;
             _recogniser.PendingTimeout = 30f;
@@ -2564,9 +2570,14 @@ namespace VoXR.Tests.Runtime
             // which is a different feature with the same silence.
             //
             // Both halves are built to clear the score gate. Eight elements, seven matched and
-            // one required slot missed: (7 x 1 - 1) / 8 = 0.75 either way, so D-5's score gate
-            // cannot be the thing that keeps the resolver away from the barred half. The only
-            // difference between the two utterances is WHERE the missed slot sits.
+            // one required slot missed — a slot with a registered resolver, which Amendment A5
+            // (DR-8) leaves out of the score: 7/7 = 1.0 either way, so D-5's score gate cannot be
+            // the thing that keeps the resolver away from the barred half. The only difference
+            // between the two utterances is WHERE the missed slot sits.
+            //
+            // This is also F2's exempt anchor: the exemption is arithmetic only (adr-0003), so an
+            // exempt {track} still counts as MISSED to the leading-miss latch — the barred half
+            // scores 7/7, is barred all the same, and the game is asked nothing (trackCalls 0).
             _recogniser.Configure(
                 new[]
                 {
@@ -2644,10 +2655,10 @@ namespace VoXR.Tests.Runtime
             Assert.AreEqual("come to course steady on heading south west", unrecognised);
 
             // The control, and what makes the silence above about POSITION rather than score or
-            // registration: the same grammar, the same one missed required slot, the same
-            // (7 - 1) / 8 = 0.75 — the miss has only moved to the tail. Here the resolver IS
-            // consulted and the command fires, so a resolver that is simply unreachable on this
-            // grammar cannot explain the zero above.
+            // registration: the same grammar, the same one missed required slot, the same 7/7
+            // (DR-8, {bearing} being registered too) — the miss has only moved to the tail. Here
+            // the resolver IS consulted and the command fires, so a resolver that is simply
+            // unreachable on this grammar cannot explain the zero above.
             _recogniser.InjectText("alpha come to course steady on heading");
 
             Assert.IsTrue(received.HasValue, "a tail miss on the same grammar resolves and fires");
@@ -2727,17 +2738,24 @@ namespace VoXR.Tests.Runtime
         [Test]
         public void Resolver_FilledSlot_DoesNotChangeTheScoreOrConfidence()
         {
-            // F19. Resolution is not evidence: the slot was never spoken, so nothing about the
-            // transcript changed and nothing about the score may. The comparison is against the
-            // SAME utterance with the resolver unregistered — which also discharges F2's second
-            // half, that unregistering restores the pre-feature behaviour exactly.
+            // F19, re-pinned as F5 by Amendment A5. Resolution is not evidence: the slot was
+            // never spoken, so nothing about the transcript changed and nothing about the score
+            // may. The comparison is the SAME utterance under ONE registered resolver that fills
+            // it and then declines it: the registered set is the same both times, so the parser
+            // fixes the score before Step 3b ever asks (DR-8, 7/7 = 1.0), and whether the game
+            // answers cannot move it.
+            //
+            // This used to compare against the resolver UNREGISTERED. Under DR-8 unregistering
+            // changes the score (back to 0.75), so that equality no longer holds by design; the
+            // unregister arm now lives in Resolver_RegisteredSet_IsReadFromTheNextUtterance.
             ConfigureResolvableSync(allowPartial: true);
 
             var words = VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunchOrder, 0.9f);
 
+            bool fill = true;
             _recogniser.RegisterSlotResolver(
                 "track",
-                _ => new VoxrSlotResolution("alpha", "main target")
+                _ => fill ? new VoxrSlotResolution("alpha", "main target") : VoxrSlotResolution.None
             );
 
             VoxrCommand? received = null;
@@ -2748,17 +2766,19 @@ namespace VoXR.Tests.Runtime
             _recogniser.InjectText(BareLaunchOrder, words);
             Assert.IsTrue(received.HasValue, "resolved, so it fires");
             var fired = received.Value;
-            Assert.GreaterOrEqual(
+            Assert.AreEqual(
+                1f,
                 fired.Score,
-                _recogniser.MinScore,
-                "and it cleared the gate on what was actually spoken"
+                1e-5f,
+                "7/7: the registered slot's miss is left out of the score (DR-8)"
             );
 
-            Assert.IsTrue(_recogniser.UnregisterSlotResolver("track"));
+            fill = false;
 
             _recogniser.InjectText(BareLaunchOrder, words);
-            Assert.IsTrue(pending.HasValue, "unregistered, so the same utterance pends again");
+            Assert.IsTrue(pending.HasValue, "declined, so the same utterance pends");
             var unresolved = pending.Value;
+            Assert.AreEqual(1f, unresolved.Score, 1e-5f, "the same 7/7, though nothing filled it");
 
             Assert.AreEqual(
                 unresolved.Score,
@@ -2775,15 +2795,200 @@ namespace VoXR.Tests.Runtime
             );
         }
 
+        [Test]
+        public void Resolver_BatchRunnerGivenNames_ScoresAsTheRecogniser()
+        {
+            // F7 (R1): given the game's registered slot names, the batch runner scores an
+            // utterance as the recogniser does — the same snapshot, the same DR-8 arithmetic
+            // (7/7 = 1.0). It never calls the resolver, so where the recogniser fires the runner
+            // reports the rejection "would ask resolver for 'track'".
+            ConfigureResolvableSync(allowPartial: true);
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(
+                BareLaunchOrder,
+                VoxrSpeechRecogniser.CreateSimulatedWords(BareLaunchOrder, 0.9f)
+            );
+            Assert.IsTrue(received.HasValue, "resolved, so it fires");
+
+            var runner = new VoxrBatchTestRunner(
+                ResolvableSlots(),
+                ResolvableCommands(allowPartial: true),
+                registeredSlotNames: new[] { "track" }
+            );
+            var result = runner.Run(
+                new VoxrTestCase
+                {
+                    input = BareLaunchOrder,
+                    expectedIntent = "launch_weapon",
+                    wordConfidence = 0.9f,
+                }
+            );
+
+            Assert.AreEqual(
+                received.Value.Score,
+                result.Score,
+                1e-5f,
+                "the runner scores the utterance as the recogniser that fired it did"
+            );
+            Assert.AreEqual(1f, result.Score, 1e-5f, "7/7: the registered slot's miss is exempt");
+            Assert.AreEqual(
+                "expected intent 'launch_weapon' but rejected: would ask resolver for 'track'",
+                result.FailureReason
+            );
+        }
+
+        // -------- The DR-8 exemption at the recogniser (issue #161, Amendment A5) --------
+
+        [Test]
+        public void Resolver_ElidedCommand_FiresAtTheFlush()
+        {
+            // F2 (M2): an exempt miss never commits early. With the {track} resolver registered
+            // BareLaunchOrder scores 7/7 = 1.0, but {track} is still MISSED, so the eager scan
+            // refuses it — the completeness condition, and here the tail condition too, since
+            // {track} is the pattern's last element. A 1.5 s window holds it to the flush, where
+            // Step 3b asks the resolver and the command fires.
+            ConfigureResolvableSync(allowPartial: true);
+            _recogniser.BufferWindow = 1.5f;
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText(BareLaunchOrder);
+            Assert.IsFalse(received.HasValue, "nothing fires before the flush");
+
+            _recogniser.FlushPendingBuffer();
+            Assert.IsTrue(received.HasValue, "the flush resolves it and it fires");
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"));
+        }
+
+        [Test]
+        public void Resolver_SlotLessSibling_WinsOnFewerExemptedSlots()
+        {
+            // F3 (DR-9, M3), end to end. "intercept track alpha" matches both patterns 3/3 = 1.0:
+            // #0 by leaving its registered {burn_level} out of the score (one exempted slot), #1
+            // outright (none). Without DR-9 they would tie and #0 would win on registration order,
+            // and Step 3b would ask the game for a burn level nobody mentioned. Fewer exempted
+            // slots ranks right after score, so #1 wins, is complete, and fires as spoken.
+            _recogniser.Configure(
+                new[]
+                {
+                    new VoxrSlotDefinition("track", new[] { "alpha", "bravo" }),
+                    new VoxrSlotDefinition("burn_level", new[] { "hard burn" }),
+                },
+                new[]
+                {
+                    new VoxrCommandDefinition(
+                        "intercept_target",
+                        new[]
+                        {
+                            new[] { "intercept", "track", "{track}", "{burn_level}" },
+                            new[] { "intercept", "track", "{track}" },
+                        }
+                    ),
+                }
+            );
+            _recogniser.BufferWindow = 0f;
+            _recogniser.CommandCooldown = 0f;
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("bravo", "main target")
+            );
+            int burnLevelCalls = 0;
+            _recogniser.RegisterSlotResolver(
+                "burn_level",
+                _ =>
+                {
+                    burnLevelCalls++;
+                    return new VoxrSlotResolution("hard burn", "standing order");
+                }
+            );
+
+            VoxrCommand? received = null;
+            _recogniser.OnCommandRecognised += cmd => received = cmd;
+
+            _recogniser.InjectText("intercept track alpha");
+
+            Assert.IsTrue(received.HasValue);
+            Assert.AreEqual("intercept_target", received.Value.Intent);
+            Assert.AreEqual(1, received.Value.MatchedPatternIndex, "the slot-less pattern wins");
+            Assert.AreEqual("alpha", received.Value.GetSlot("track"), "the spoken value");
+            Assert.AreEqual(0, burnLevelCalls, "and the game is never asked for a burn level");
+        }
+
+        [Test]
+        public void Resolver_RegisteredSet_IsReadFromTheNextUtterance()
+        {
+            // F4 (adr-0002, M4): what is registered is read on the next utterance, with no
+            // rebuild and no NotifySlotChanged. The same utterance is scored three times, the
+            // pending each opens read and cancelled before the next:
+            //   - a resolver for `bearing`, a name the grammar lacks: nothing changes, nothing
+            //     throws — (7 x 1 - 1) / 8 = 0.75;
+            //   - a declining `track` resolver: {track} is registered, so 7/7 = 1.0, and the
+            //     decline pends it at that score;
+            //   - `track` unregistered again: back to 0.75.
+            ConfigureResolvableSync(allowPartial: true);
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+
+            _recogniser.RegisterSlotResolver(
+                "bearing",
+                _ => new VoxrSlotResolution("north", "not in this grammar")
+            );
+            Assert.DoesNotThrow(() => _recogniser.InjectText(BareLaunchOrder));
+            Assert.IsTrue(pending.HasValue);
+            Assert.AreEqual(
+                0.75f,
+                pending.Value.Score,
+                1e-5f,
+                "a name the grammar lacks changes nothing"
+            );
+            _recogniser.CancelPendingCommand();
+
+            pending = null;
+            _recogniser.RegisterSlotResolver("track", _ => VoxrSlotResolution.None);
+            _recogniser.InjectText(BareLaunchOrder);
+            Assert.IsTrue(pending.HasValue, "declined, so it pends");
+            Assert.AreEqual(1f, pending.Value.Score, 1e-5f, "registered, so {track} costs nothing");
+            _recogniser.CancelPendingCommand();
+
+            pending = null;
+            Assert.IsTrue(_recogniser.UnregisterSlotResolver("track"));
+            _recogniser.InjectText(BareLaunchOrder);
+            Assert.IsTrue(pending.HasValue);
+            Assert.AreEqual(
+                0.75f,
+                pending.Value.Score,
+                1e-5f,
+                "unregistered, so it is charged again"
+            );
+        }
+
         // -------- Sibling tie x resolver (issue #148, architecture 5.5 / D-11) --------
         //
         // disambiguateSiblingTies is frozen into the parser at Configure time, so it is set
         // BEFORE Configure here exactly as it is in the disambiguation block above.
         //
         // Nine elements, differing only at element 5 ("mode" / "level"), with a trailing required
-        // {track}. Spoken without the discriminator AND without the track: seven matched and one
-        // required slot missed, (7 x 1 - 1) / 9 = 0.667 for BOTH siblings, so they tie clear of
-        // the 0.60 gate and the winner is incomplete until a resolver fills it.
+        // {track}. Spoken without the discriminator AND without the track: seven matched, the
+        // discriminator missed, and {track} missed. Every test here registers a {track} resolver,
+        // so Amendment A5 (DR-8) leaves that miss out of the score: 7/8 = 0.875 for BOTH
+        // siblings, with one exempted slot EACH, so the DR-9 key does not part them either. They
+        // tie clear of the 0.60 gate and the winner is incomplete until a resolver fills it.
         void ConfigureAskingWithAResolvableTail()
         {
             _recogniser.DisambiguateSiblingTies = true;
@@ -2991,11 +3196,14 @@ namespace VoXR.Tests.Runtime
         //   fires by being chosen. So bravo really does reach a handler here.
         //
         //   Eight elements, because the tie has to clear the gate: both siblings match k
-        //   required elements after the anchor, miss the required {target} (-1) and miss their
-        //   own discriminator (0), over a denominator of k + 3 — so k / (k + 3) >= minScore, and
-        //   k = 5 gives 5/8 = 0.6250 against the 0.60 default. The four-element form the review
-        //   sketched ties nowhere: CompareCandidate refuses MissedRequired > MatchedRequired
-        //   before any comparison key is read. Do not shorten this grammar to tidy it.
+        //   required elements after the anchor, miss the required {target} and miss their own
+        //   discriminator (0). Unregistered, {target} costs -1 over a denominator of k + 3, so
+        //   k / (k + 3) >= minScore, and k = 5 gives 5/8 = 0.6250 against the 0.60 default. The
+        //   tests here register a {target} resolver, so Amendment A5 (DR-8) leaves its miss out
+        //   of the score: 6/7 = 0.857, with one exempted slot each — still a tie, DR-9's key
+        //   included. The four-element form the review sketched ties nowhere: CompareCandidate
+        //   refuses MissedRequired > MatchedRequired before any comparison key is read, and an
+        //   exempt miss still counts there (adr-0003). Do not shorten this grammar to tidy it.
         //
         // What must never happen: the resolver registered for {target} — the one the WINNER
         // needs — filling the RIVAL's {target}. That would let game state supply the very anchor
@@ -3064,9 +3272,10 @@ namespace VoXR.Tests.Runtime
             _recogniser.PendingTimeout = 30f;
         }
 
-        // {target} and the discriminator both elided. Both siblings score 5/8 = 0.6250 and tie
-        // on every CompareCandidate key (start index, score, consumed end, literal count —
-        // MatchedRequired is not among them), so bravo is recorded as alpha's tied rival.
+        // {target} and the discriminator both elided. With the {target} resolver registered both
+        // siblings score 6/7 = 0.857 (DR-8) and tie on every CompareCandidate key (start index,
+        // score, exempted slots — one each — consumed end, literal count; MatchedRequired is not
+        // among them), so bravo is recorded as alpha's tied rival.
         const string BareGateOrder = "one set course for the gate";
 
         // The control's utterance: the same order with {target} SPOKEN. Both siblings rise to
@@ -3459,9 +3668,12 @@ namespace VoXR.Tests.Runtime
             VoxrCommand? received = null;
             _recogniser.OnCommandRecognised += cmd => received = cmd;
 
-            // (7 x 1 - 2) / 9 = 0.556, BELOW the gate, so this is the ordinary allowPartialMatch
-            // pending and no resolution is offered to it — the clean way to get a live pending
-            // of one intent underneath an utterance of another.
+            // {tube} and {track} both stranded. {track} has a resolver, so Amendment A5 (DR-8)
+            // leaves its miss out of the score: (7 x 1 - 1) / 8 = 0.75, over the gate. But
+            // resolution is all-or-nothing in pattern order and stops at {tube}, which has none,
+            // so the resolver is never called and this is the ordinary allowPartialMatch pending
+            // — the clean way to get a live pending of one intent underneath an utterance of
+            // another.
             _recogniser.InjectText("helm fire all torpedoes from tube at");
             Assert.IsTrue(_recogniser.HasPendingCommand, "precondition: a pending two slots short");
             Assert.AreEqual(
@@ -3597,8 +3809,9 @@ namespace VoXR.Tests.Runtime
             VoxrCommand? received = null;
             _recogniser.OnCommandRecognised += cmd => received = cmd;
 
-            // The unsatisfied optional leaves the denominator at 8: (7 x 1 - 1) / 8 = 0.75, the
-            // same arithmetic the fixtures above use, so the score gate is not what is speaking.
+            // The unsatisfied optional leaves the denominator out, and the {track} resolver leaves
+            // its miss out too (Amendment A5, DR-8): 7/7 = 1.0, the same arithmetic the fixtures
+            // above use, so the score gate is not what is speaking.
             _recogniser.InjectText(BareLaunchOrder);
 
             Assert.IsTrue(received.HasValue, "the one genuinely missing argument resolved");
@@ -3636,8 +3849,9 @@ namespace VoXR.Tests.Runtime
             // every one of them or the command it hands back is one the completeness rule still
             // refuses.
             //
-            // Thirteen elements, eleven matched and both {track} occurrences stranded:
-            // (11 x 1 - 2) / 13 = 0.692, clear of the 0.60 gate.
+            // Thirteen elements, eleven matched and both {track} occurrences stranded. {track}
+            // has a resolver, so Amendment A5 (DR-8) leaves both misses out of the score:
+            // 11/11 = 1.0, clear of the 0.60 gate (unregistered it would be 9/13 = 0.692).
             _recogniser.Configure(
                 new[]
                 {
@@ -3789,7 +4003,8 @@ namespace VoXR.Tests.Runtime
             VoxrCommand? received = null;
             _recogniser.OnCommandRecognised += cmd => received = cmd;
 
-            // (8 x 1 - 1) / 9 = 0.778, clear of the gate.
+            // 8/8 = 1.0 with the {track} resolver registered (Amendment A5, DR-8; unregistered
+            // (8 x 1 - 1) / 9 = 0.778), clear of the gate either way.
             _recogniser.InjectText("helm launch all missiles from tube three at");
 
             Assert.AreEqual(

@@ -696,10 +696,12 @@ deliberate trade-offs rather than oversights.
   "scuttle", "the", "drone", "on", "{track}"]`, then register a resolver that
   ignores its request:
   `recogniser.RegisterSlotResolver("track", _ => new VoxrSlotResolution(Designated.TrackId, "designated"))`.
-  Say "weapons officer scuttle the drone on". Seven required elements with one
-  missing slot scores `5/7` = 0.71, clears the default `minScore`, and the
-  resolver fills `{track}` — so the scuttle fires against the designated track
-  with nothing having been said about it.
+  Say "weapons officer scuttle the drone on". The missing `{track}` has a
+  registered resolver, so it
+  [costs nothing](Documentation~/scoring.md#a-missed-slot-the-game-can-fill-costs-nothing):
+  `6/6` = 1.00 clears the default `minScore`, and the resolver fills `{track}` —
+  so the scuttle fires against the designated track with nothing having been
+  said about it.
 - **Where seen**: issue
   [#148](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/148)
   (requirements E-1). PR #159 widened the ask to carry context, which is what
@@ -733,100 +735,180 @@ deliberate trade-offs rather than oversights.
     passes through every downstream gate unchanged, so the confirmation is still
     asked for.
 
-### A resolvable slot on a short pattern never reaches the resolver
+### A resolvable slot is still not reached when the rest of a short order costs too much
 
 - **Symptom**: You register a resolver for a required slot, the speaker omits
-  it, and nothing changes — the resolver is never even called. The utterance is
-  refused, or goes pending under `allowPartialMatch`, exactly as it did before
-  you registered anything.
+  it, and the resolver is never called. The utterance is refused, or goes
+  pending under `allowPartialMatch`, as though nothing were registered.
 - **Repro**: Register `launch_weapon : ["launch", "missiles", "target",
-  "{track}"]` and a resolver for `track`, then inject "launch missiles". The
-  candidate scores `0.25` against the default `minScore` of `0.6` and is refused
-  by the **score** gate, which is consulted before completeness. The resolver's
-  invocation count is `0`.
+  "{track}"]` and a resolver for `track`. Inject "launch missiles": it scores
+  `2 / 3` = `0.67` — the missed `{track}`
+  [costs nothing](Documentation~/scoring.md#a-missed-slot-the-game-can-fill-costs-nothing),
+  the dropped `target` still costs its share — and the resolver is asked. Now
+  inject "launch missiles please": injected text arrives verbatim, so the
+  trailing word is charged as unexplained, the candidate scores `2 / (3 + 1)` =
+  `0.50`, the **score** gate refuses it before completeness is consulted, and the
+  resolver's invocation count is `0`.
 - **Where seen**: issue
   [#148](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/148),
-  measured against the real parser on a live 20-command grammar (2026-09-16) and
-  ruled *ship as built, document the arithmetic*. Of 40 pattern×required-slot
-  occurrences in that grammar, 18 (45%) were reachable when only the slot was
-  dropped and 5 (12.5%) when the natural spoken form dropped the orphaned
-  literal with it; 0 of 4 weapon-release occurrences were reachable in the
-  natural form.
-- **Root cause**: **resolution does not change the score, and that is exactly
-  why this limit exists.** A slot nobody spoke earns no credit — resolution
-  changes the completeness answer and nothing else — so the command keeps the
-  score the transcript earned, and the score gate then refuses it for not having
-  been spoken. A missed required slot costs a full element
-  (`RequiredSlotMissPenalty = -1`), and that costs proportionally most on short
-  patterns, which is what aggressive orders are. Counting `D` **required**
-  elements of the matched pattern (optionals drop out of both sides of the
-  ratio, so they do not count towards `D`):
-  - **The slot alone is dropped**: the score is `(D − 2) / D`, which clears the
-    default `minScore` of `0.6` only at **`D ≥ 5`**.
+  which put the score gate ahead of resolution, and issue
+  [#161](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/161),
+  which stopped charging a registered slot's miss.
+- **Root cause**: a resolver is offered only a candidate that has already
+  cleared `minScore`, and registering one removes only that slot's own cost — 0
+  raw, 0 denominator — without crediting it as spoken. Everything else is
+  charged as it always was: a dropped literal, a missed slot with no resolver,
+  and words the pattern leaves unexplained. Counting `D` **required** elements of
+  the matched pattern (optionals drop out of both sides of the ratio, so they do
+  not count towards `D`), with every other element spoken:
+  - **The slot alone is dropped**: `(D − 1) / (D − 1)` = `1.00` at any length.
   - **The slot *and* the orphaned literal that introduced it are dropped** — the
-    natural spoken form: the score is `(D − 3) / D`, which needs **`D ≥ 8`**.
+    natural spoken form: `(D − 2) / (D − 1)`, which clears the default
+    `minScore` of `0.6` at **`D ≥ 4`**. At `D = 3` the candidate has matched
+    fewer required elements than it missed and is not
+    [admitted](Documentation~/scoring.md#admission-what-counts-as-a-candidate-at-all)
+    at all.
+  - **No slack at `D = 4`**: one unexplained word on top drops `2 / 3` to
+    `2 / 4` = `0.50`. At `D = 5` the same word leaves `3 / 5` = `0.60`, which
+    still clears.
 
-  So `launch missiles target {track}` (`D = 4`) scores `(4 − 3) / 4` = `0.25` in
-  the natural form and never reaches a resolver, while `gunnery concentrate all
-  fire on {track}` (`D = 6`) scores `(6 − 2) / 6` = `0.67` with the "on" spoken
-  and `(6 − 3) / 6` = `0.5` without it — reachable in one form and not the
-  other, on the same pattern.
+  Three other things keep a resolver from being asked whatever the score: a
+  missed slot that is the pattern's first required element is
+  [barred](Documentation~/scoring.md#the-leading-required-miss-bar); a candidate
+  below `minConfidence`, or whose intent is on its debounce cooldown, is not
+  offered; and resolution is all-or-nothing, so a missing slot with no resolver
+  beside one that has a resolver leaves the command incomplete.
 - **Diagnosing it**: a resolvable slot that never fires is almost always **a
-  pattern too short to clear the gate**, not a resolver that was asked and
-  declined. The [session
+  candidate held under the gate by something else in the utterance**, not a
+  resolver that was asked and declined. The [session
   log](Documentation~/editor-testing.md#what-is-recorded) carries the score the
   utterance actually earned — compare it against `minScore` before touching the
   resolver at all.
-- **Workaround**: an author has exactly **two levers on the score**, plus two
-  ways around the problem.
+- **Workaround**:
+  - **Make the introducing literal optional** (`?target`). The omitted optional
+    leaves the ratio, so the natural form becomes the slot-alone form:
+    `launch missiles ?target {track}` spoken as "launch missiles" scores `2 / 2`
+    = `1.00`. Read
+    [the cost of the swap](Documentation~/command-recognition.md#never-leave-a-required-function-word-between-a-bare-pattern-and-its-slot)
+    first.
   - **Pattern length.** `D` counts the required elements of the matched pattern,
-    so a longer required phrasing is the direct lever.
+    so a longer required phrasing absorbs a stray word.
   - **A lowered global `minScore`.** It is one `[SerializeField]` on
     `VoxrCommandRecogniser`; there is no per-command or per-slot threshold, and
     the same value is read by the sibling-tie reachability scan and the eager
-    gate. A majority of the `{track}` orders in the measured grammar needed
-    `minScore ≤ 0.25` — effectively no score gate — so pulling this lever far
-    enough to rescue a short aggressive order costs more than it buys.
-  - Marking the introducing literal optional (`?on`) turns the second formula
-    into the first on the same pattern. It raises the score but does not rescue
-    a short pattern: an omitted optional leaves the ratio entirely, so `D` falls
-    with it.
-  - Where the game can decide without being asked, authoring a **slot-less
-    sibling pattern** still works and needs no resolver — at the cost of a
-    second pattern, a per-handler fallback, and no record of what was filled or
-    why.
-- **Open question**: whether the scoring model should change here — for example
-  by exempting a resolver-fillable slot from the *denominator* rather than
-  crediting it as matched — is
-  [#161](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/161).
-  Every option on the table there amends a locked design, so it is not something
-  that can land as a fix to this feature.
+    gate.
+  - Where the game can decide without being asked, a **slot-less sibling
+    pattern** still works and needs no resolver — at the cost of a second
+    pattern, a per-handler fallback, and no record of what was filled or why.
 
-### `VoxrBatchTestRunner` reports `required slot unfilled` for utterances the runtime fires
+### A short order with resolver slots can fire on very few spoken words
+
+- **Symptom**: A bare verb or a two-word fragment fires a command, and the game
+  supplies everything else.
+- **Repro**: With the demo grammar — `launch_weapon` carries `["shoot",
+  "{weapon}"]` and `["fire", "{?quantity}", "{weapon}", "at", "{target}"]` —
+  register resolvers for `weapon` and `target` that fill them. Inject "shoot":
+  it scores `1 / 1` = `1.00` against `shoot {weapon}`, the `weapon` resolver is
+  asked, and `launch_weapon` fires. Inject "fire at": it scores `2 / 2` = `1.00`
+  against the second pattern, both resolvers are asked, and `launch_weapon` fires
+  with its weapon and its target both chosen by the game. With no resolvers
+  registered, "shoot" scores `(1 − 1) / 2` = `0` and is discarded, and "fire at"
+  produces no command.
+- **Where seen**: issue
+  [#161](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/161).
+- **Root cause**: a resolver slot the speaker left out
+  [costs nothing](Documentation~/scoring.md#a-missed-slot-the-game-can-fill-costs-nothing),
+  so a pattern whose unspoken elements are all resolver slots scores `1.00`
+  whatever its length. What still bounds it is a count, not a score: the
+  candidate must have matched at least as many required elements as it missed,
+  the exempt slots included, so "launch" alone against
+  `launch {?quantity} {weapon} target {target}` (one matched, three missed) is
+  not a candidate.
+- **Why this is recorded rather than fixed**: it is accepted. A bare verb
+  standing for a fuller order is the ellipsis a resolver exists to complete, and
+  it is bounded four ways: the
+  [bar](Documentation~/scoring.md#the-leading-required-miss-bar) means the
+  pattern's anchor was spoken, the confidence gate still applies, registering a
+  resolver is the author's opt-in, and the resolver can decline per intent. The
+  exposure is the same as a slot-less sibling pattern written by hand.
+- **Workaround**:
+  - Branch on `request.Intent` in the resolver and return
+    `VoxrSlotResolution.None` for any intent that must not fire on a thin
+    order — weapon release, say. A declined command goes pending under
+    `allowPartialMatch`, so the player is asked, or is refused.
+  - Give such a command its **own slot name**, with no resolver registered for
+    it.
+  - Set `requiresConfirmation` on it: a resolved command passes every
+    downstream gate unchanged, so the confirmation is still asked for.
+
+### A stray command word beside an elided order fires two commands
+
+- **Symptom**: One utterance fires two commands where the speaker meant one: a
+  stray word that is a complete command on its own, and an order the resolver
+  completes.
+- **Repro**: With the demo grammar, register a resolver for `target` that fills
+  it, and inject "disengage close distance safe range". `cease_fire` fires on
+  "disengage" at `1 / 1` = `1.00`; `set_distance_named` then matches "close
+  distance safe range" against `close distance {range} target {target}` at
+  `3 / 4` = `0.75` — the dropped `target` literal charged, the missed
+  `{target}` not — and the resolver fills the target, so it fires too. The
+  reverse, "close distance safe range disengage", fires the same two:
+  `set_distance_named` at `3 / (4 + 1)` = `0.60`, charged for "disengage"
+  because its own missed `target` failed there, then `cease_fire` at `1.00`.
+  With no `target` resolver, `set_distance_named` scores `(3 − 1) / 5` = `0.40`
+  and `(3 − 1) / (5 + 1)` = `0.33`, below the gate, and only `cease_fire` fires.
+- **Where seen**: issue
+  [#161](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/161).
+- **Root cause**: score arithmetic alone. Each command in an utterance is
+  [scored and gated independently](Documentation~/scoring.md#4-sequential-extraction),
+  the stray word was already a complete command, and the elided order now
+  clears the gate because its resolver slot costs nothing.
+- **Why this is recorded rather than fixed**: accepted with thin firing above,
+  from the same arithmetic; the elided order is exactly what the resolver exists
+  to complete.
+- **Workaround**: the resolver's per-intent decline, as above, for an order that
+  must not complete itself; `requiresConfirmation` on a one-word command that
+  must not fire on a stray word.
+
+### `VoxrBatchTestRunner` cannot tell whether a resolver-completed command fires
 
 - **Symptom**: A corpus case the game handles correctly at runtime FAILs in the
-  batch test runner, with the failure reason `required slot unfilled`.
+  batch test runner — with `would ask resolver for '…'` when the runner is given
+  the game's registered slot names, or with `required slot unfilled` when it is
+  given none.
 - **Repro**: Register a resolver for a required slot and speak the command
   without it. Through `VoxrCommandRecogniser` the slot is resolved and the
-  command fires; the same utterance as a batch test case fails with `required
-  slot unfilled`.
+  command fires. The same utterance as a batch case expecting that intent fails:
+  given
+  [`registeredSlotNames`](Documentation~/api/batch-test-runner.md#registeredslotnames)
+  naming the slot, with `would ask resolver for 'track'` at the score the runtime
+  computes; given none, the missed slot is charged as though no resolver existed,
+  so the case fails with `required slot unfilled` — or on the score gate first,
+  as "launch missiles" against `launch missiles target {track}` does at `0.25`.
 - **Where seen**: issue
-  [#148](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/148); the
-  divergence is named in place at `Runtime/Testing/VoxrBatchTestRunner.cs`.
-- **Root cause**: the harness calls `HasUnfilledRequiredSlot` against **its own**
-  parser. The resolver registry lives on `VoxrCommandRecogniser` and the harness
-  builds no recogniser, so it has nothing to consult and rules on the utterance
-  alone. Its completeness check exists to stop the *inverse* failure — reporting
-  PASS for an utterance the runtime refuses (#73) — and against a grammar whose
-  game registers a resolver it now over-reports in the other direction.
-- **Why this is recorded rather than fixed**: a resolver is game code and a
-  corpus run has no game behind it, so there is no registry for the harness to
-  read even in principle; threading one through is a separate piece of work, not
-  a correction to this one.
-- **Workaround**: read such a FAIL as **"incomplete as spoken"**, not as "will
-  not fire", and check whether the game resolves that slot before changing the
-  grammar to chase it. Pin the resolved path with a runtime test through
-  `InjectText`, where a resolver can actually be registered.
+  [#148](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/148);
+  issue [#161](https://github.com/jinwoo1601/VoXR-Speech-Recognition/issues/161)
+  added `registeredSlotNames`. The contract is stated in place at
+  `Runtime/Testing/VoxrBatchTestRunner.cs`.
+- **Root cause**: the runner builds its own parser and no recogniser, and it
+  never calls a resolver: a resolver is game code, a corpus run has no game
+  behind it, and whether the game would fill the slot or decline cannot be known
+  there. Given the names it scores as the runtime does and stops where the
+  runtime would ask, and it reports that as a **rejection** — so the cut is
+  one-way: a case that expects rejection passes on it, and a passing row carries
+  no `Reason` in the CSV, though at runtime the command fires if the game fills.
+  Given none, it rules on the utterance alone.
+- **Why this is recorded rather than fixed**: there is no game for the runner to
+  ask, even in principle. Reporting the case as fired would certify a fire that a
+  declining resolver never makes.
+- **Workaround**: pass the game's registered slot names — the Batch Test
+  window's **Registered Slots** field, or `registeredSlotNames` from code — so
+  batch scores match the runtime's. Read `would ask resolver for '…'` as "the
+  runtime would ask the game here", and without names read `required slot
+  unfilled` as **"incomplete as spoken"**, not "will not fire"; check whether
+  the game resolves that slot before changing the grammar to chase it. Pin the
+  resolved path with a runtime test through `InjectText`, where a resolver can
+  actually be registered.
 
 ### Default `bufferWindow` is too short for split commands on Quest 3
 

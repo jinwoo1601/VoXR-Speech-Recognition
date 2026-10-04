@@ -140,10 +140,16 @@ namespace VoXR.Commands
                         // here.
                         //
                         // The chosen alternative is not re-tested for completeness. Issue #73's
-                        // gate proved the WINNER complete before the flush could route here, and
-                        // a rival missing a required slot takes RequiredSlotMissPenalty and
-                        // could not have tied on score — so the shape is unreachable. Stated
-                        // because the property is asserted of one candidate and used on another.
+                        // gate proved the WINNER complete before the flush could route here, but
+                        // that does not carry to a rival. Since Amendment A5 a rival missing a
+                        // slot with a registered resolver (DR-8) takes no penalty and CAN equal
+                        // the winner's score; what parts them is that a tie (CandidateOrder.Tied,
+                        // flush and eager scans alike) also needs equal exempted-slot counts, so
+                        // DR-9 keeps exempted rivals off a complete winner with none exempted.
+                        // An equally exempted rival still ties and, chosen here, fires
+                        // incomplete — Resolver_IsNotOfferedToATiedRival_AndTheChosenRivalFiresUnresolved
+                        // pins that trade. Stated because the property is asserted of one
+                        // candidate and used on another.
                         //
                         // That unreachability argument is specific to COMPLETENESS and does not
                         // generalise to the neighbouring property. The leading-required-miss bar

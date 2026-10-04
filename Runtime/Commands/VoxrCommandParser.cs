@@ -1,7 +1,7 @@
 // ============================================================================
 // Purpose:  Pure C# pattern matcher: scores tokenized VOSK output against command patterns
 // Layer:    Runtime.Commands
-// Owns:     VoxrCommandParser (internal class), EagerCommitVerdict (internal enum), SiblingMember, SiblingSet (internal readonly structs), TiedSiblingRival, TiedSiblingRecord (internal structs)
+// Owns:     VoxrCommandParser (internal class), EagerCommitVerdict (internal enum), SiblingMember, SiblingSet (internal readonly structs), TiedSiblingRival, TiedSiblingRecord (internal structs), IRegisteredSlotNames (internal interface), RegisteredSlotNames (internal sealed class)
 // Depends:  VoxrSlotDefinition, VoxrCommandDefinition, VoxrSlotMatch, VoxrCommand, VoxrCommandResult, VoxrNumberParser, VoxrFollowUpVocabulary
 // ============================================================================
 using System;
@@ -134,6 +134,36 @@ namespace VoXR.Commands
         }
     }
 
+    // The read-only question "is a resolver registered for this slot name?", which the parser
+    // asks its source once per pass (SnapshotRegisteredSlots). Ordinal. DynamicSlotManager
+    // answers it over its live registry, so a registration needs no rebuild; RegisteredSlotNames
+    // answers it from a fixed set. Declared here rather than beside DynamicSlotManager because
+    // the A/B rig stages a fixed file list without DynamicSlotManager.cs.
+    internal interface IRegisteredSlotNames
+    {
+        bool Any { get; }
+        bool Contains(string slotName);
+    }
+
+    // A fixed, immutable IRegisteredSlotNames, copied at construction — for callers with no
+    // DynamicSlotManager (the batch runner, tests, the rigs). Null names means an empty set.
+    internal sealed class RegisteredSlotNames : IRegisteredSlotNames
+    {
+        readonly HashSet<string> _names;
+
+        public RegisteredSlotNames(IEnumerable<string> names)
+        {
+            _names =
+                names != null
+                    ? new HashSet<string>(names, StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal);
+        }
+
+        public bool Any => _names.Count > 0;
+
+        public bool Contains(string slotName) => _names.Contains(slotName);
+    }
+
     internal class VoxrCommandParser
     {
         internal const string UnkToken = "[unk]";
@@ -170,10 +200,14 @@ namespace VoXR.Commands
         //
         // RequiredSlotMissPenalty stays at -1.0: a missing required SLOT means the command's
         // argument is absent, which is materially different from a dropped function word.
+        // Since Amendment A5 (DR-8) that -1.0 is charged only for a slot with no registered
+        // resolver: a registered one costs 0 raw and 0 den, yet still counts as MISSED to
+        // everything else (the completeness flags, the latch, the DR-7 ledger).
         //
-        // That -1.0 is no longer the only thing holding such a candidate down. It used to be:
-        // the partial/pending branch is reached by scoring BELOW minScore and only for a command
-        // that opted into allowPartialMatch (off by default), so once a slot-missing candidate
+        // Where it is charged, that -1.0 is no longer the only thing holding such a candidate
+        // down. It used to be: the partial/pending branch is reached by scoring BELOW minScore
+        // and only for a command that opted into allowPartialMatch (off by default), so once a
+        // slot-missing candidate
         // cleared the gate it simply fired with the argument absent — true on main at five
         // elements, and this change lifted one further band (eight elements, one dropped literal
         // alongside the missed slot) over it. TryEagerCommit refused that shape (issue #66) but
@@ -232,6 +266,17 @@ namespace VoXR.Commands
         readonly Dictionary<string, int> _slotIndex;
 
         readonly string[] _slotNames;
+
+        // Where the parser asks which slots have a resolver registered; null when the caller
+        // gave no source, which is today's parser exactly. Held, not copied, so a registration
+        // reaches the next pass without a rebuild.
+        readonly IRegisteredSlotNames _registeredSlots;
+
+        // The source as one pass sees it, written by SnapshotRegisteredSlots and indexed like
+        // _slotNames. Allocated once here, and only when a source is given; not read while
+        // _anyExempt is false.
+        readonly bool[] _exemptSlot;
+        bool _anyExempt;
 
         // Cached stripped forms of optional literals (pattern element -> literal without '?')
         readonly Dictionary<string, string> _optionalLiteralCache;
@@ -463,12 +508,18 @@ namespace VoXR.Commands
         // assigned after the warning it governs had already been emitted — and it inherits
         // recordSiblingTies' sharper reason too, since a rebuild builds a new parser. It is not
         // applied to parsing in any form; _minScore sets out what reads it and what does not.
+        //
+        // registeredSlots is where the parser asks which slots have a resolver registered — the
+        // recogniser's DynamicSlotManager, or a fixed RegisteredSlotNames. A constructor
+        // parameter for recordSiblingTies' reason, and held rather than copied so a registration
+        // needs no rebuild. Null is today's parser.
         public VoxrCommandParser(VoxrSlotDefinition[] slots, VoxrCommandDefinition[] commands,
             float coverageWeight = DefaultCoverageWeight,
             string[] additionalGrammarWords = null,
             string[] effectiveCancelVocabulary = null,
             bool recordSiblingTies = false,
-            float minScore = DefaultMinScore
+            float minScore = DefaultMinScore,
+            IRegisteredSlotNames registeredSlots = null
         )
         {
             if (slots == null) throw new ArgumentNullException(nameof(slots));
@@ -505,6 +556,10 @@ namespace VoXR.Commands
                 _slotIndex[slots[i].Name] = i;
                 _slotNames[i] = slots[i].Name;
             }
+
+            _registeredSlots = registeredSlots;
+            if (registeredSlots != null)
+                _exemptSlot = new bool[slots.Length];
 
             // Build per-slot first-word lookup (canonical values + aliases)
             _slotLookups = new Dictionary<string, List<SlotValueEntry>>[slots.Length];
@@ -1223,8 +1278,9 @@ namespace VoXR.Commands
         // The other construction-time hazard two patterns can carry (issue #74): they are
         // identical but for one required literal, so when the recogniser drops that one word
         // the surviving evidence fits both EXACTLY equally — same start, same score, same
-        // consumed span, same literal count. Selection exhausts every key it has and falls
-        // through to its last, the order the patterns were registered in. The word that would
+        // exempted-slot count, same consumed span, same literal count. Selection exhausts every
+        // key it has and falls through to its last, the order the patterns were registered in.
+        // The word that would
         // have decided is precisely the word that went missing, so no scorer can recover the
         // intent; the evidence is not weak but absent.
         //
@@ -2386,8 +2442,9 @@ namespace VoXR.Commands
                 + $"patterns {JoinWith(patternTexts, "and")} {differ} "
                 + $"({JoinWith(values, "or")}). If that word is "
                 + "dropped, these patterns match the remainder equally — same score, same "
-                + "consumed span, same literal count — and selection falls through to "
-                + "registration order, so the wrong intent can fire. Make them differ in more "
+                + "exempted-slot count, same consumed span, same literal count — and selection "
+                + "falls through to registration order, so the wrong intent can fire. Make them "
+                + "differ in more "
                 + "than one element — the only fix that removes the tie rather than moving it "
                 + "— mark the more destructive one requiresConfirmation, or enable "
                 + "disambiguateSiblingTies on VoxrCommandRecogniser to ask the speaker which "
@@ -2502,6 +2559,7 @@ namespace VoXR.Commands
                 int bestConsumedEndIdx = 0;
                 int bestSlotCount = 0;
                 bool bestLeadingRequiredMissed = false;
+                int bestExemptedSlots = 0;
 
 #if UNITY_EDITOR
                 // The round's second-ranked candidate: what would have won had the winner not
@@ -2521,6 +2579,7 @@ namespace VoXR.Commands
                 int runnerUpStartIdx = int.MaxValue;
                 int runnerUpConsumedEndIdx = 0;
                 int runnerUpLiteralCount = -1;
+                int runnerUpExemptedSlots = 0;
 #endif
 
                 // Declared HERE, with the round's other best* locals, and not outside the loop:
@@ -2587,7 +2646,8 @@ namespace VoXR.Commands
                                 bestScore,
                                 bestStartIdx,
                                 bestConsumedEndIdx,
-                                bestLiteralCount
+                                bestLiteralCount,
+                                bestExemptedSlots
                             );
 
                             if (order == CandidateOrder.Better)
@@ -2603,6 +2663,7 @@ namespace VoXR.Commands
                                     runnerUpStartIdx = bestStartIdx;
                                     runnerUpConsumedEndIdx = bestConsumedEndIdx;
                                     runnerUpLiteralCount = bestLiteralCount;
+                                    runnerUpExemptedSlots = bestExemptedSlots;
                                 }
 #endif
                                 bestScore = matchResult.Score;
@@ -2614,6 +2675,7 @@ namespace VoXR.Commands
                                 bestConsumedEndIdx = matchResult.ConsumedEndIdx;
                                 bestSlotCount = matchResult.SlotCount;
                                 bestLeadingRequiredMissed = matchResult.LeadingRequiredMissed;
+                                bestExemptedSlots = matchResult.ExemptedSlots;
 
                                 // Clear-on-adopt: a new incumbent has its own rivals, and the
                                 // old one's are about a candidate that no longer wins. This rule
@@ -2763,7 +2825,8 @@ namespace VoXR.Commands
                                     runnerUpScore,
                                     runnerUpStartIdx,
                                     runnerUpConsumedEndIdx,
-                                    runnerUpLiteralCount
+                                    runnerUpLiteralCount,
+                                    runnerUpExemptedSlots
                                 );
                                 if (runnerUpOrder == CandidateOrder.Better)
                                 {
@@ -2772,6 +2835,7 @@ namespace VoXR.Commands
                                     runnerUpStartIdx = startIdx;
                                     runnerUpConsumedEndIdx = matchResult.ConsumedEndIdx;
                                     runnerUpLiteralCount = matchResult.LiteralCount;
+                                    runnerUpExemptedSlots = matchResult.ExemptedSlots;
                                 }
                             }
 #endif
@@ -3336,10 +3400,13 @@ namespace VoXR.Commands
             // routed anywhere from here — an earlier version of this comment claimed that and
             // was wrong (issue #73). It ignores it because Parse is the reporting layer and
             // applies no threshold of its own: dropping such candidates here would also delete
-            // the only input the allowPartialMatch/pending path has, since that path is fed
-            // precisely by slot-missing candidates scoring below minScore. The flush path's
-            // completeness condition therefore lives in the recogniser, which is where the
-            // gate it belongs beside lives.
+            // the only input the allowPartialMatch/pending path has, since that path is fed by
+            // slot-missing candidates — those scoring below minScore, and the incomplete ones
+            // above it (issue #73, VoxrCommandRecogniser's `cmd.Score < minScore || incomplete`
+            // branch), including those a resolver declined (issue #148; DR-8 leaves a
+            // registered slot's miss out of the score, so more of them arrive above it). The
+            // flush path's completeness condition therefore lives in the recogniser, which is
+            // where the gate it belongs beside lives. Set for an exempt miss too (DR-8).
             public bool MissedRequiredSlot;
 
             // Whether any REQUIRED element sits after the last element that actually
@@ -3380,14 +3447,20 @@ namespace VoXR.Commands
             // it after the trailing ints instead and it costs a byte plus three of new padding,
             // widening every per-candidate copy to 36. Measured, not assumed. This also matches
             // architecture §2.1's own wording, "beside the two completeness flags it already
-            // carries".
+            // carries". ExemptedSlots, below, now fills the last byte of that hole, so the next
+            // small field has no free padding left before EndIdx.
             //
             // The precondition, so a later edit knows when this reasoning lapses: it holds
             // because every field here is a primitive, which is what makes the struct
             // managed-sequential. Add one reference-type field and CoreCLR and Mono are free to
-            // reorder, at which point declaration order stops meaning anything and nothing in
-            // the repo would notice — there is no size pin anywhere to catch it.
+            // reorder, at which point declaration order stops meaning anything — and the size
+            // test (MatchResult_Size_IsThirtyTwoBytes) pins it, so that is what would notice.
             public bool LeadingRequiredMissed;
+
+            // How many of this candidate's missed REQUIRED slots were exempt — a resolver was
+            // registered for them — and so left out of the score. A byte, bound 255 per
+            // pattern, so it sits in the padding byte before EndIdx; see the layout note above.
+            internal byte ExemptedSlots;
 
             // Where the match stopped, including any [unk] skipped ahead of a trailing
             // element that matched nothing. Drives searchStart and the eager whole-buffer gate.
@@ -3433,8 +3506,8 @@ namespace VoXR.Commands
 
         // Candidate ordering, shared by ParseInternal and TryEagerCommit so the eager verdict
         // never names a pattern the flush would not fire. Earliest start wins, then highest
-        // score, then the longer consumed span, then literal count, with registration order as
-        // the final deterministic fallback.
+        // score, then fewer exempted slots (DR-9), then the longer consumed span, then literal
+        // count, with registration order as the final deterministic fallback.
         //
         // That invariant read "the eager verdict always names the pattern the subsequent flush
         // will fire" until issue #74's DR-5 had TryEagerCommit REFUSE on a sibling tie. The old
@@ -3460,7 +3533,8 @@ namespace VoXR.Commands
             float bestScore,
             int bestStartIdx,
             int bestConsumedEndIdx,
-            int bestLiteralCount
+            int bestLiteralCount,
+            int bestExemptedSlots
         )
         {
             if (candidate.Score <= 0f)
@@ -3510,6 +3584,10 @@ namespace VoXR.Commands
                 return startIdx < bestStartIdx ? CandidateOrder.Better : CandidateOrder.Worse;
             if (candidate.Score != bestScore)
                 return candidate.Score > bestScore ? CandidateOrder.Better : CandidateOrder.Worse;
+            if (candidate.ExemptedSlots != bestExemptedSlots)
+                return candidate.ExemptedSlots < bestExemptedSlots
+                    ? CandidateOrder.Better
+                    : CandidateOrder.Worse;
             if (candidate.ConsumedEndIdx != bestConsumedEndIdx)
                 return candidate.ConsumedEndIdx > bestConsumedEndIdx
                     ? CandidateOrder.Better
@@ -3644,6 +3722,9 @@ namespace VoXR.Commands
             // of a convention: this reads the counters that DEFINE "required".
             bool leadingRequiredMissed = false;
             bool missedRequiredSlot = false;
+            // Missed required slots with a registered resolver, which DR-8 leaves out of the
+            // score; the DR-9 key reads it (MatchResult.ExemptedSlots).
+            byte exemptedSlots = 0;
             // Required elements that have missed since the last one that actually matched.
             // Reset by every match, so a non-zero value at the end means the pattern's TAIL
             // is what went unmatched (issue #70) — a medial miss is followed by a match and
@@ -3701,8 +3782,18 @@ namespace VoXR.Commands
                     }
                     else if (!isOptional)
                     {
-                        rawScore += RequiredSlotMissPenalty;
-                        denominator += MatchScore;
+                        // DR-8 (Amendment A5): a slot with a registered resolver costs 0 raw and
+                        // 0 den — the arithmetic only. _anyExempt first: the mask is null with no
+                        // source and stale while nothing is registered. Everything below stays
+                        // unconditional (adr-0003), so an exempt slot is still MISSED to the
+                        // latch, the DR-7 ledger, the completeness flags and the orphan table.
+                        if (!(_anyExempt && _exemptSlot[slotIdx]))
+                        {
+                            rawScore += RequiredSlotMissPenalty;
+                            denominator += MatchScore;
+                        }
+                        else
+                            exemptedSlots++;
                         // Before the increment, or the guard can never hold (issue #124, DR-1).
                         // Uniform over element type by DR-2: the first required element is the
                         // pattern's ANCHOR, and a pattern that matched nothing of its anchor has
@@ -3811,6 +3902,7 @@ namespace VoXR.Commands
                 MissedRequiredSlot = missedRequiredSlot,
                 HasUnmatchedRequiredTail = requiredAfterLastMatch > 0,
                 LeadingRequiredMissed = leadingRequiredMissed,
+                ExemptedSlots = exemptedSlots,
                 EndIdx = tokenIdx,
                 ConsumedEndIdx = consumedEndIdx,
                 MatchedRequired = matchedRequired,
@@ -4073,15 +4165,43 @@ namespace VoXR.Commands
             return count;
         }
 
+        // Copies the registered-slot source into _exemptSlot, so one pass reads one set even if
+        // a registration lands mid-utterance. The first statement of BuildCoverageTables (so the
+        // start probe and selection agree) and of ScoreFollowUp. Only the grammar's own slot
+        // names are looked up, so a resolver for a name the grammar lacks changes nothing.
+        void SnapshotRegisteredSlots()
+        {
+            if (_registeredSlots == null)
+                return;
+            if (!_registeredSlots.Any)
+            {
+                _anyExempt = false;
+                return;
+            }
+
+            bool anyExempt = false;
+            for (int i = 0; i < _slotNames.Length; i++)
+            {
+                bool exempt = _registeredSlots.Contains(_slotNames[i]);
+                _exemptSlot[i] = exempt;
+                anyExempt |= exempt;
+            }
+            _anyExempt = anyExempt;
+        }
+
         // -------- Coverage tables (issue #65 §5.2) --------
 
         // Rebuilds the per-utterance coverage tables. Every path that reaches TryMatchScored
         // — ParseInternal's extraction loop and TryEagerCommit's scan — calls this first, over
         // the token array it is about to score, and the tables then stay valid for that whole
         // parse: the leading term re-bases per round through the searchStart subtraction, and
-        // the trailing term is searchStart-independent by construction.
+        // the trailing term is searchStart-independent by construction. Running it first also
+        // snapshots the registered-slot set the DR-8 exemption reads, so the start probe and
+        // selection score against one set.
         internal void BuildCoverageTables(string[] tokens)
         {
+            SnapshotRegisteredSlots();
+
             int n = tokens.Length;
             if (_recognisedPrefix == null || _recognisedPrefix.Length < n + 1)
             {
@@ -4494,6 +4614,8 @@ namespace VoXR.Commands
         internal float ScoreFollowUp(string intent, int patternIdx,
             IReadOnlyList<VoxrSlotMatch> filledSlots)
         {
+            SnapshotRegisteredSlots();
+
             // Find the command by intent
             string[] pattern = null;
             for (int ci = 0; ci < _commands.Length; ci++)
@@ -4538,8 +4660,19 @@ namespace VoXR.Commands
                     }
                     else if (!IsOptionalSlot(element))
                     {
-                        rawScore += RequiredSlotMissPenalty;
-                        denominator += MatchScore;
+                        // DR-8 by the same mask as TryMatchScored (M5): a slot with a
+                        // registered resolver is left out of both sides.
+                        if (
+                            !(
+                                _anyExempt
+                                && _slotIndex.TryGetValue(slotName, out int idx)
+                                && _exemptSlot[idx]
+                            )
+                        )
+                        {
+                            rawScore += RequiredSlotMissPenalty;
+                            denominator += MatchScore;
+                        }
                     }
                     // Unfilled optional slots contribute 0 to both numerator and denominator.
                 }
@@ -4619,6 +4752,7 @@ namespace VoXR.Commands
             bool bestMissedRequiredSlot = false;
             bool bestHasUnmatchedRequiredTail = false;
             bool bestLeadingRequiredMissed = false;
+            int bestExemptedSlots = 0;
 
             // The first sibling rival found tying the current incumbent, or -1. Cleared
             // whenever a new incumbent is adopted: Tied means the whole key tuple compared
@@ -4657,7 +4791,8 @@ namespace VoXR.Commands
                             bestScore,
                             bestStartIdx,
                             bestConsumedEndIdx,
-                            bestLiteralCount
+                            bestLiteralCount,
+                            bestExemptedSlots
                         );
 
                         if (order == CandidateOrder.Better)
@@ -4672,6 +4807,7 @@ namespace VoXR.Commands
                             bestMissedRequiredSlot = matchResult.MissedRequiredSlot;
                             bestHasUnmatchedRequiredTail = matchResult.HasUnmatchedRequiredTail;
                             bestLeadingRequiredMissed = matchResult.LeadingRequiredMissed;
+                            bestExemptedSlots = matchResult.ExemptedSlots;
                             bestTiedSiblingCommandIdx = -1;
                             bestTiedSiblingPatternIdx = -1;
                         }
@@ -4744,6 +4880,12 @@ namespace VoXR.Commands
             // Required LITERALS are not covered by this condition — a dropped function word
             // still leaves every argument present. They are covered by the tail condition
             // below instead, which is the case that actually matters for them.
+            //
+            // Since Amendment A5 an exempt miss — a slot with a registered resolver (DR-8) —
+            // costs no score at all, so the arithmetic no longer sinks it even by coincidence.
+            // This guard alone refuses a medial one; a trailing one the tail condition below
+            // refuses too (M2). Either way an exempt miss never commits here and waits for the
+            // flush, where the resolver is asked.
             if (bestMissedRequiredSlot)
                 return EagerCommitVerdict.None;
 

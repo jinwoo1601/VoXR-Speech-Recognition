@@ -1876,21 +1876,26 @@ namespace VoXR.Tests.Runtime
 
         // ======== Slot resolver x pending machinery (issue #148, Phase 2) ========
 
-        // The resolver rows need an incomplete candidate that CLEARS minScore, which this
-        // fixture's own MakeCommands cannot give: a resolver is offered only a candidate that
-        // already passed the score gate (F7, made explicit by D-5), and `launch {weapon} target
-        // {target}` with its trailing slot stranded scores 0.50 against a 0.60 gate. A resolver
-        // test built on that shape asserts the SCORE gate's silence and calls it the resolver's.
+        // The resolver rows need an incomplete candidate that CLEARS minScore whether or not a
+        // resolver is registered: a resolver is offered only a candidate that already passed the
+        // score gate (F7, made explicit by D-5), and this fixture's own `launch {weapon} target
+        // {target}` with its trailing slot stranded scores 0.50 against a 0.60 gate with no
+        // resolver. A resolver test built on that shape asserts the SCORE gate's silence and
+        // calls it the resolver's.
         //
-        // Eight elements, seven matched and {track} stranded: (7 x 1 - 1) / 8 = 0.75 — the same
-        // arithmetic PartialMatch_AboveGateButIncomplete_EntersPendingInsteadOfFiring derives,
-        // and above the gate by a margin rather than on it.
+        // Eight elements, seven matched and {track} stranded. With a {track} resolver registered
+        // the stranded slot costs nothing (Amendment A5, DR-8): 7/7 = 1.0. With none it is
+        // (7 x 1 - 1) / 8 = 0.75 — the same arithmetic
+        // PartialMatch_AboveGateButIncomplete_EntersPendingInsteadOfFiring derives. Either way
+        // above the gate by a margin rather than on it.
         const string BareLaunch = "launch all missiles from tube three at";
 
-        // The same grammar two slots short instead of one: {tube} and {track} both stranded, for
-        // (6 x 1 - 2) / 8 = 0.50. BELOW the gate, so it is the ordinary allowPartialMatch pending
-        // and no resolution is offered to it — which is what makes it a clean way to get a live
-        // pending underneath a later utterance.
+        // The same grammar two slots short instead of one: {tube} and {track} both stranded. With
+        // no resolver that is (6 x 1 - 2) / 8 = 0.50, BELOW the gate; with a {track} resolver
+        // registered it is 5/7 = 0.714 (DR-8), over it. Either way it is the ordinary
+        // allowPartialMatch pending and no resolver is asked: {tube} has none, and resolution is
+        // all-or-nothing, walked in pattern order — which is what makes it a clean way to get a
+        // live pending underneath a later utterance.
         const string PartialLaunch = "launch all missiles from tube at";
 
         void ConfigureResolvableSync(bool allowPartial = true, bool requiresConfirm = false)
@@ -2009,13 +2014,15 @@ namespace VoXR.Tests.Runtime
             // pending asks the speaker one fewer question than it should, and the slot the game
             // silently filled is never spoken about again.
             //
-            // Twelve elements, ten matched and {tube} and {track} both stranded:
-            // (10 x 1 - 2) / 12 = 0.667, clear of the 0.60 gate, so D-5 does not decline this
-            // candidate before all-or-nothing gets to. The eight-element pattern above cannot be
-            // used: two slots short it scores 0.50 and the score gate would answer for the rule
-            // under test. No token of the utterance is a {tube} or {quantity} value except the
-            // one meant for it, so there is nothing later in the sentence for a stranded slot to
-            // reach forward and claim.
+            // Twelve elements, ten matched and {tube} and {track} both stranded. {track} has a
+            // resolver, so Amendment A5 (DR-8) leaves its miss out of the score:
+            // (10 x 1 - 1) / 11 = 0.818, clear of the 0.60 gate, so D-5 does not decline this
+            // candidate before all-or-nothing gets to. Written when the eight-element pattern
+            // above could not be used — two slots short it scored 0.50 and the score gate would
+            // have answered for the rule under test; under DR-8 it scores 5/7 = 0.714, but this
+            // grammar clears the gate whether or not {track} is registered. No token of the
+            // utterance is a {tube} or {quantity} value except the one meant for it, so there is
+            // nothing later in the sentence for a stranded slot to reach forward and claim.
             _recogniser.Configure(
                 new[]
                 {
@@ -2153,14 +2160,19 @@ namespace VoXR.Tests.Runtime
             // moving a command across a gate other than completeness, which F13 forbids and the
             // one rule of architecture section 2 forbids in general.
             //
-            // Reuses the fixture's own four-element grammar precisely because it scores 0.50:
-            // "launch missiles target" is below the 0.60 gate with {target} stranded, which is
-            // the shape the guard is about.
-            ConfigureSync(allowPartial: true);
+            // Re-pinned for Amendment A5. It used to reuse the fixture's own four-element grammar
+            // with a {target} resolver, because "launch missiles target" scored 0.50 there; under
+            // DR-8 the registered {target} costs nothing, the candidate scores 3/3 = 1.0 and the
+            // premise is gone. A candidate held under the gate by what else went UNSPOKEN keeps
+            // it: on the eight-element grammar, "launch all missiles three" drops "from", "tube"
+            // and "at" and strands {track}, which is registered — (3 + 1) / (4 + 3) = 4/7 =
+            // 0.571, below the 0.60 gate with {track} stranded, which is the shape the guard is
+            // about.
+            ConfigureResolvableSync(allowPartial: true);
 
             _recogniser.RegisterSlotResolver(
-                "target",
-                _ => new VoxrSlotResolution("hotel one", "main target")
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
             );
 
             VoxrCommand? pending = null;
@@ -2170,16 +2182,22 @@ namespace VoXR.Tests.Runtime
             string unrecognised = null;
             _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
 
-            _recogniser.InjectText("launch missiles target");
+            _recogniser.InjectText("launch all missiles three");
 
             Assert.IsTrue(pending.HasValue, "the below-gate incomplete command still pends");
+            Assert.AreEqual(
+                4f / 7f,
+                pending.Value.Score,
+                1e-5f,
+                "4/7, the registered slot uncharged"
+            );
             Assert.Less(
                 pending.Value.Score,
                 _recogniser.MinScore,
                 "and it is genuinely below the gate, or this guards nothing"
             );
             Assert.IsFalse(
-                pending.Value.HasSlot("target"),
+                pending.Value.HasSlot("track"),
                 "with its slot unfilled: a resolver may not reach a candidate the gate refused"
             );
             Assert.IsFalse(recognised.HasValue);
@@ -2258,8 +2276,10 @@ namespace VoXR.Tests.Runtime
             var withoutPending = recognised.Value;
             Assert.IsFalse(_recogniser.HasPendingCommand);
 
-            // Now put a pending underneath it. This one is below the gate and two slots short, so
-            // no resolution reaches it and it is the ordinary allowPartialMatch pending.
+            // Now put a pending underneath it. This one is two slots short: with the {track}
+            // resolver registered it scores 5/7 = 0.714, over the gate (Amendment A5, DR-8), but
+            // {tube} has no resolver, so all-or-nothing resolution stops there and it is the
+            // ordinary allowPartialMatch pending.
             recognised = null;
             pending = null;
             _recogniser.InjectText(PartialLaunch);
@@ -2582,8 +2602,10 @@ namespace VoXR.Tests.Runtime
             //
             // Reuses the #113 duplicate-intent divergence, which is what puts a non-positive
             // re-score in hand at all: ScoreFollowUp takes the FIRST definition (nine elements)
-            // while IsIncomplete reads the LAST (five), so the fill re-scores -1/9 while still
-            // being called incomplete.
+            // while IsIncomplete reads the LAST (five), so the fill re-scores non-positive while
+            // still being called incomplete. With the {fuse} resolver registered below, Amendment
+            // A5 (DR-8) leaves {fuse} out of that re-score: 0/8 rather than -1/9, still
+            // non-positive.
             ConfigurePartialFillDuplicateIntent();
 
             int calls = 0;
@@ -2603,14 +2625,15 @@ namespace VoXR.Tests.Runtime
             string unrecognised = null;
             _recogniser.OnUnrecognisedSpeech += text => unrecognised = text;
 
-            // 0.20 against the short definition — below minScore, so Step 3b's own floor keeps
-            // the resolver away from it and this pending is the pre-feature one.
+            // 2/4 = 0.50 against the short definition ({fuse} exempt under DR-8; 0.20 without
+            // the resolver) — below minScore, so Step 3b's own floor keeps the resolver away
+            // from it and this pending is the pre-feature one.
             _recogniser.InjectText("launch missiles target");
             Assert.IsTrue(_recogniser.HasPendingCommand, "precondition: a pending two slots short");
             Assert.AreEqual(1, pendingEvents.Count);
             Assert.AreEqual(0, calls, "precondition: nothing was resolved on the way in");
 
-            // Fills {target}, stops at {fuse}, and re-scores -1/9.
+            // Fills {target}, stops at {fuse}, and re-scores 0/8 (DR-8; -1/9 unregistered).
             _recogniser.InjectText("hotel one");
 
             Assert.AreEqual(
@@ -2635,6 +2658,44 @@ namespace VoXR.Tests.Runtime
                 stored.Value.UnfilledSlots,
                 "and only {fuse} is outstanding, so the exchange can still be finished by voice"
             );
+        }
+
+        [Test]
+        public void Resolver_FollowUpReScore_LeavesARegisteredSlotUncharged()
+        {
+            // F6 (M5): ScoreFollowUp is a scoring site, so it applies DR-8 by the same mask as
+            // the parse. The pending opens with NO resolver, so it is the pre-feature one; the
+            // {track} resolver is registered only afterwards, and the follow-up re-score is the
+            // first pass that sees it. "three" fills {tube}, leaving {track} unfilled and
+            // registered: 7/7 = 1.0 — it was (7 x 1 - 1) / 8 = 0.75 before Amendment A5 — and
+            // Step 5's resolution then fills {track} and fires with that score unchanged.
+            ConfigureResolvableSync(allowPartial: true);
+
+            VoxrCommand? pending = null;
+            _recogniser.OnCommandPending += cmd => pending = cmd;
+            VoxrCommand? recognised = null;
+            _recogniser.OnCommandRecognised += cmd => recognised = cmd;
+
+            _recogniser.InjectText(PartialLaunch);
+            Assert.IsTrue(pending.HasValue, "precondition: a pending two slots short");
+
+            _recogniser.RegisterSlotResolver(
+                "track",
+                _ => new VoxrSlotResolution("alpha", "main target")
+            );
+
+            _recogniser.InjectText("three");
+
+            Assert.IsTrue(recognised.HasValue, "the follow-up completes and fires");
+            Assert.AreEqual("three", recognised.Value.GetSlot("tube"), "the spoken fill");
+            Assert.AreEqual("alpha", recognised.Value.GetSlot("track"), "and the resolved one");
+            Assert.AreEqual(
+                1f,
+                recognised.Value.Score,
+                1e-5f,
+                "7/7: the re-score leaves the registered {track} out, as the parse does (DR-8)"
+            );
+            Assert.IsFalse(_recogniser.HasPendingCommand);
         }
 
         // -------- Helpers --------

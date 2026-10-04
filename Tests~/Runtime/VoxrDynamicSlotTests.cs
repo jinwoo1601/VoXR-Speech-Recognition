@@ -428,17 +428,19 @@ namespace VoXR.Tests.Runtime
 
         // ======== Resolver behaviour (issue #148, Phase 2) ========
 
-        // These need something this fixture's own MakeCommands cannot give them: an incomplete
-        // candidate that CLEARS minScore. A resolver is offered only a candidate that already
-        // passed the score gate (F7, made explicit by D-5), and `launch {weapon} target {target}`
-        // with its trailing slot stranded scores 0.50 against a 0.60 gate — a resolver test built
-        // on that shape would be asserting the SCORE gate's silence and calling it the resolver's.
+        // These need an incomplete candidate that CLEARS minScore whether or not a resolver is
+        // registered. A resolver is offered only a candidate that already passed the score gate
+        // (F7, made explicit by D-5), and this fixture's own `launch {weapon} target {target}`
+        // with its trailing slot stranded scores 0.50 against a 0.60 gate with no resolver — a
+        // test built on that shape would be asserting the SCORE gate's silence and calling it the
+        // resolver's.
         //
-        // Eight elements, seven matched and {track} stranded: (7 x 1 - 1) / 8 = 0.75. That is the
-        // same arithmetic VoxrPendingCommandTests.PartialMatch_AboveGateButIncomplete_Enters-
-        // PendingInsteadOfFiring derives for its own above-gate candidate, and it is above the
-        // gate by a margin rather than on it, so a scoring change cannot quietly turn these into
-        // score-gate tests.
+        // Eight elements, seven matched and {track} stranded. With a {track} resolver registered
+        // the stranded slot costs nothing (Amendment A5, DR-8): 7/7 = 1.0. With none it is
+        // (7 x 1 - 1) / 8 = 0.75, the same arithmetic VoxrPendingCommandTests.PartialMatch_Above-
+        // GateButIncomplete_EntersPendingInsteadOfFiring derives for its own above-gate
+        // candidate. Either way above the gate by a margin rather than on it, so a scoring change
+        // cannot quietly turn these into score-gate tests.
         const string BareLaunch = "launch all missiles from tube three at";
 
         void ConfigureResolvableSync(bool allowPartial = true)

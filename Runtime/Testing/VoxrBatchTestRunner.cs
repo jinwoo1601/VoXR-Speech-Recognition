@@ -2,7 +2,7 @@
 // Purpose:  Feeds test cases through VoxrCommandParser with threshold filtering, produces results matrix
 // Layer:    Runtime.Testing
 // Owns:     VoxrBatchTestRunner (public class)
-// Depends:  VoxrCommandParser, VoxrSlotDefinition, VoxrCommandDefinition, VoxrCommandSet, VoxrTestCase, VoxrTestResult, VoxrSpeechRecogniser
+// Depends:  VoxrCommandParser, VoxrSlotDefinition, VoxrCommandDefinition, VoxrCommandSet, VoxrTestCase, VoxrTestResult, VoxrSpeechRecogniser, IRegisteredSlotNames, RegisteredSlotNames
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -17,19 +17,29 @@ namespace VoXR.Testing
         readonly Dictionary<string, VoxrCommandDefinition> _defsByIntent;
         readonly float _minScore;
         readonly float _minConfidence;
+        readonly IRegisteredSlotNames _registeredSlots;
 
         public VoxrBatchTestRunner(VoxrSlotDefinition[] slots, VoxrCommandDefinition[] commands,
             float minScore = 0.6f, float minConfidence = 0.4f,
-            float coverageWeight = VoxrCommandParser.DefaultCoverageWeight)
+            float coverageWeight = VoxrCommandParser.DefaultCoverageWeight,
+            string[] registeredSlotNames = null
+        )
         {
             if (slots == null) throw new ArgumentNullException(nameof(slots));
             if (commands == null) throw new ArgumentNullException(nameof(commands));
+            _registeredSlots = ToRegisteredSlots(registeredSlotNames);
 
             // The caller's threshold goes to the parser as well as to the gate below (issue
             // #140): the parser's construction-time sibling scan predicts what a gate will do
             // with this grammar, and the gate it should predict is this harness's own. Named,
             // because the parameters between it and coverageWeight keep their defaults.
-            _parser = new VoxrCommandParser(slots, commands, coverageWeight, minScore: minScore);
+            _parser = new VoxrCommandParser(
+                slots,
+                commands,
+                coverageWeight,
+                minScore: minScore,
+                registeredSlots: _registeredSlots
+            );
             _defsByIntent = IndexByIntent(commands);
             _minScore = minScore;
             _minConfidence = minConfidence;
@@ -37,11 +47,14 @@ namespace VoXR.Testing
 
         public VoxrBatchTestRunner(VoxrSlotDefinition[] slots, VoxrCommandSet[] sets,
             string[] activeSetNames, float minScore = 0.6f, float minConfidence = 0.4f,
-            float coverageWeight = VoxrCommandParser.DefaultCoverageWeight)
+            float coverageWeight = VoxrCommandParser.DefaultCoverageWeight,
+            string[] registeredSlotNames = null
+        )
         {
             if (slots == null) throw new ArgumentNullException(nameof(slots));
             if (sets == null) throw new ArgumentNullException(nameof(sets));
             if (activeSetNames == null) throw new ArgumentNullException(nameof(activeSetNames));
+            _registeredSlots = ToRegisteredSlots(registeredSlotNames);
 
             var setLookup = new Dictionary<string, VoxrCommandSet>(sets.Length, StringComparer.Ordinal);
             foreach (var set in sets)
@@ -64,10 +77,29 @@ namespace VoXR.Testing
                 offset += c.Length;
             }
 
-            _parser = new VoxrCommandParser(slots, commands, coverageWeight, minScore: minScore);
+            _parser = new VoxrCommandParser(
+                slots,
+                commands,
+                coverageWeight,
+                minScore: minScore,
+                registeredSlots: _registeredSlots
+            );
             _defsByIntent = IndexByIntent(commands);
             _minScore = minScore;
             _minConfidence = minConfidence;
+        }
+
+        // The game's registered slot names as the parser's fixed source (F7). Null or empty is no
+        // source — today's runner. A null name is refused, as RegisterSlotResolver(null, …) is,
+        // because RegisteredSlotNames would accept one.
+        static IRegisteredSlotNames ToRegisteredSlots(string[] registeredSlotNames)
+        {
+            if (registeredSlotNames == null || registeredSlotNames.Length == 0)
+                return null;
+            foreach (var name in registeredSlotNames)
+                if (name == null)
+                    throw new ArgumentNullException(nameof(registeredSlotNames));
+            return new RegisteredSlotNames(registeredSlotNames);
         }
 
         // Mirrors CommandSetManager.BuildLookup — ordinal, last definition wins on a repeated
@@ -202,35 +234,70 @@ namespace VoXR.Testing
             // PASS for an utterance the runtime refuses — certifying a grammar against behaviour
             // the user will never see, on exactly the case the runtime fix exists to catch.
             //
-            // It is no longer fully in step, and cannot be brought back into step here (#148).
             // A registered slot resolver lets the runtime fill a required slot the speaker
-            // omitted, from game state, and that registry lives on VoxrCommandRecogniser: this
-            // harness builds its own parser with no recogniser behind it, so it has nothing to
-            // consult and rules on the utterance alone. Against a grammar whose game registers a
-            // resolver for a slot, the verdict below is the exact inverse of the failure the
-            // paragraph above describes — "required slot unfilled" for an utterance the runtime
-            // fires. Read a FAIL carrying that reason as "incomplete as spoken", not as "will not
-            // fire", and check whether the game resolves that slot before changing the grammar.
+            // omitted, from game state (#148). Given the game's registered slot names (F7), this
+            // harness scores as the runtime does — its parser reads the same snapshot and applies
+            // the same arithmetic — and where every unfilled required slot is a registered one it
+            // reports "would ask resolver for '…'", the point at which the runtime would consult
+            // a resolver. It never calls one: a resolver is game code, a corpus run has no game
+            // running, and whether the game fills the slot or declines it cannot be known here.
+            // So that verdict is a rejection, and the cut is one-way: a case expecting rejection
+            // passes on it, and a passing row carries no CSV reason, though the runtime may fire
+            // the command if the game fills.
             //
-            // Not fixed here deliberately: a resolver is game code, a corpus run has no game
-            // running, and wiring a registry through is a feature of its own rather than a line
-            // in this method.
+            // That verdict is given only where the registered slots are the utterance's only gap:
+            // a candidate the runtime would skip on confidence before asking any resolver (Step
+            // 3b) reports its confidence instead.
+            //
+            // With no names it rules on the utterance alone, as before, and "required slot
+            // unfilled" may name a slot the game resolves. Read a FAIL carrying that reason as
+            // "incomplete as spoken", not as "will not fire", and check whether the game resolves
+            // that slot before changing the grammar.
             if (
                 _defsByIntent.TryGetValue(cmd.Intent, out var def)
                 && VoxrCommandParser.HasUnfilledRequiredSlot(cmd, def)
             )
             {
                 rejectReason = "required slot unfilled";
+                if (_registeredSlots != null)
+                {
+                    // Pattern order; the walk yields a repeated slot twice, so name each once.
+                    var names = new List<string>();
+                    bool allRegistered = true;
+                    foreach (
+                        string slotName in new VoxrCommandParser.UnfilledRequiredSlots(cmd, def)
+                    )
+                    {
+                        if (!_registeredSlots.Contains(slotName))
+                        {
+                            allRegistered = false;
+                            break;
+                        }
+                        if (!names.Contains(slotName))
+                            names.Add(slotName);
+                    }
+                    if (allRegistered)
+                        rejectReason =
+                            cmd.Confidence >= 0f && cmd.Confidence < _minConfidence
+                                ? ConfidenceReason(cmd)
+                                : "would ask resolver for '" + string.Join("', '", names) + "'";
+                }
                 return false;
             }
             if (cmd.Confidence >= 0f && cmd.Confidence < _minConfidence)
             {
-                rejectReason = FormattableString.Invariant(
-                    $"confidence {cmd.Confidence:F2} < minConfidence {_minConfidence:F2}");
+                rejectReason = ConfidenceReason(cmd);
                 return false;
             }
             rejectReason = null;
             return true;
+        }
+
+        string ConfidenceReason(VoxrCommand cmd)
+        {
+            return FormattableString.Invariant(
+                $"confidence {cmd.Confidence:F2} < minConfidence {_minConfidence:F2}"
+            );
         }
 
         static string CheckSlots(ExpectedSlot[] expected, VoxrSlotMatch[] actual)
