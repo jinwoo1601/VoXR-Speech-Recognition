@@ -2,8 +2,8 @@
 type: requirements
 feature: resolver-slot-exemption
 topic: resolver-slot-scoring
-status: draft
-updated: 2026-10-02
+status: accepted   # G2 ruled in-conversation 2026-10-03: accepted; product docs = wider set; F11 manual check passed 2026-10-04
+updated: 2026-10-04
 sources:
   - Planning~/design-docs/resolver-slot-scoring.md
   - Planning~/design-docs/scoring-model.md (§0E, Amendment A5: DR-8, DR-9)
@@ -112,13 +112,15 @@ The G0 **Out** list in §2, plus:
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] Every Must row's check (F1–F9) passes, with evidence.
-- [ ] The EditMode and PlayMode suites are green, per the `verification` binding.
-- [ ] DocCheck passes 66/66.
-- [ ] F10's rig report, or a recorded reason it was not run.
-- [ ] F11 built, or recorded as not built.
-- [ ] A full review pass.
+- [x] Every Must row's check (F1–F9) passes, with evidence. (the Phase 0–3 gates and the review fix gate; `memory/2026-10-02.md`, `memory/2026-10-03.md`)
+- [x] The EditMode and PlayMode suites are green, per the `verification` binding. (EditMode 203/203, PlayMode 704/704 at the review fix, `a658a53`)
+- [x] DocCheck passes 66/66. (Phase 1 gate, re-run in Phase 2)
+- [x] F10's rig report, or a recorded reason it was not run. (rig report, Phase 2 — every A4L figure reproduced)
+- [x] F11 built, or recorded as not built. (built in Phase 4; the maintainer's manual Editor check passed 2026-10-04)
+- [x] A full review pass. (review-cycle, full profile, 11 angles, 2026-10-03; 3 CONFIRMED fixed in `a658a53`, 1 REFUTED)
 - [ ] After G2: the product docs named in §2 **In** item 6, and #161 closed.
+
+**Ruled at G2 on 2026-10-03** by the maintainer, in conversation: accepted at head `342e5d5`; the product docs are the wider set (§2 In item 6's four, plus `api/batch-test-runner.md`, `editor-testing.md`, `api/command-recogniser.md`); F11's manual Editor check, run by the maintainer, passed 2026-10-04.
 
 ## 10. Open questions
 
