@@ -1,6 +1,6 @@
 # unity-plugin-installed — the check's definition
 
-The preflight check this pack declares under `provides.preflight-checks`, run by the gate's preflight audit as one of its items. It asserts that the `unity` Claude Code plugin is installed, which is what this pack defers its Unity CLI control to: **the pack ships no second implementation of that control**, so the plugin's presence is the whole of the pack's answer to driving the editor from a session.
+The preflight check this pack declares under `provides.preflight-checks`, run by the gate's preflight audit as one of its items. It asserts that the `unity` Claude Code plugin is installed, which is what this pack defers its Unity CLI control to: **no pack skill or agent duplicates the plugin, and the pack's contract reference, which agents read (`.claude/references/unity/unity-cli-contract.md`), is not one**, so the plugin's presence is the whole of the pack's answer to driving the editor from a session.
 
 ## What it scans
 

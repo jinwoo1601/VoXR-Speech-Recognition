@@ -35,10 +35,17 @@
 - Project bindings: `<the lines of .claude/bindings/<pack>.md — or, before scaffold, of the project CLAUDE.md Bindings — that bind style, layout, verification>`
 - The `verification` binding's *Shell*, *Working-dir read* and *Path form* lines, verbatim: `<the three lines>`; a `verification` binding that is a single `none` has none of them — the platform slots are then not read, and the brief says the working directory is read by `pwd` and written by the path it prints
 - `.claude/references/core/coding-conventions.md`
+- `<for each name in .claude/harness.json's packs, in the manifest's order, .claude/references/<pack>/writer-rules.md where that file exists, one line each by that repo-relative path; with no manifest or no such file, this bullet is left out>`
 
 ## Verification command
 
 `<the verification binding's Targeted command with this phase's targets, verbatim — or: not run — the gate runs the suite — or: none bound — or: not run — not tree-safe>` — expected green: `<pattern, or n/a>`
+
+Or, where the binding carries a Fallback — a line whose label begins `Fallback` and whose answer is not `none` — and the targeted run covers a Command that line names as replaced, the routed form below, judged at BRIEF from the binding's words; on the split path, `Tree-safe` `no` still gives `not run — not tree-safe` first:
+
+- Selector: `<the selector the binding's Fallback line names, verbatim>`
+- On `<the result that line names for the Commands>`: `<the Targeted command on this phase's targets>` — expected green: `<…>`
+- On any other result, unreadable output included: `<the Fallback narrowed as the Targeted slot says>` — expected green: `<…>` — or `not run — the gate runs the suite` where it cannot narrow
 
 ## Declared out of scope
 
@@ -48,7 +55,7 @@
 
 - One phase per dispatch. Exactly the files above. No redesign, no scope expansion, no secrets.
 - Write only by the path the *Working-dir read* quoted under Conventions prints for the working directory, in the *Path form* quoted there, joined with a repo-relative path from this brief — never by a shell form that *Path form* says is never written by.
-- Bash runs the quoted *Working-dir read* once, before the first write, and the verification command only.
+- Bash runs the quoted *Working-dir read* once, before the first write; the verification command — a routed one as the Verification command states; and the commands granted under `## Granted commands` by each writer-rules reference named under Conventions, within the limits each bullet states — and nothing else.
 
 ## Stop-and-report rule
 

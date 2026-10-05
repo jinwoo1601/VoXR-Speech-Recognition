@@ -32,6 +32,9 @@
       "Bash(printf:*)",
       "Bash(sleep:*)",
       "Bash(true:*)",
+      "Bash(unity status:*)",
+      "Bash(unity command:*)",
+      "Bash(unity test:*)",
       "Bash(git worktree add:*)",
       "Bash(git worktree remove:*)",
       "Bash(git status:*)",
@@ -58,14 +61,16 @@
       "Read(./secrets/**)",
       "Bash(shred:*)",
       "Bash(dd:*)",
+      "Bash(unity command eval)",
+      "Bash(unity command eval *)",
+      "Bash(unity command * eval)",
+      "Bash(unity command * eval *)",
       "Bash(git commit --no-verify*)",
       "Bash(git commit * --no-verify*)",
       "Bash(git push --no-verify*)",
       "Bash(git push * --no-verify*)"
     ],
     "ask": [
-      "Bash(rm:*)",
-      "Bash(rmdir:*)",
       "Bash(find * -delete*)",
       "Bash(find * -exec*)",
       "Bash(sed -i*)",
@@ -110,6 +115,44 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/handoff-guard-hook.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*rm*)",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(*rM*)",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(*Rm*)",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(*RM*)",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
           }
         ]
       },

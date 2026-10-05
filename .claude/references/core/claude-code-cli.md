@@ -15,6 +15,8 @@ The behaviour of the Claude Code CLI that the `session-launch` binding's command
 ## List
 
 - `claude agents --json` prints one object per running session on the machine, interactive and background alike, each with its `cwd`. A background session's object carries an `id`; an interactive session's carries none, and it is not stopped from the command line.
+- Each object also carries `name`, the `-n` name the session was launched or opened under, and `status`: `idle` for a session waiting on nothing, otherwise another value, such as `busy` or `waiting`.
+- Every object carries `sessionId`, the session's full id, the value its own `CLAUDE_CODE_SESSION_ID` holds, a background session's `id` its first 8 characters, and `startedAt`, the session's start in integer milliseconds since the epoch; both as observed on Claude Code 2.1.288, not in the CLI's own documentation.
 
 ## Stop
 

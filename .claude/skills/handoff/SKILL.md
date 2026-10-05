@@ -33,7 +33,7 @@ Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bi
 - `process-docs` (required) — where the design and feature docs live, so Context and Key files point at them. Absent → stop and say so before writing; a handoff that cannot point at the process docs is written from `memory/` only on the human's word, not by default.
 - `vc` (required where `trees` is filled) — the current-branch read and the check-in procedure of the hub operation that writes the brief and the note; and, wherever it is bound, the *Branch procedure*, whose forms `## Sections` item 2 reads the lane from. Where `trees` is not filled it is not otherwise consulted, and this skill runs as written. Absent where `trees` is filled → stop before writing and say so.
 - `trees` (optional) — the Hub path, under which the brief and the note are written; the Hub slot's idiom and the Clean read of the hub operation that writes them; and the List read, which gives the path of the tree the next session opens in. Absent → today's path. Filled → the brief and the note go to the hub, as `## Where it goes` and `## The dated note` say.
-- `session-launch` (optional) — the Launch command, the Hub session name, the List command and the Confirm window, which `references/launch.md` runs, and the Hub session name, which the brief's Reporting section writes out, and the *Context bound* and the *Context read*, which `## When to hand off` reads; what the CLI behind those commands does is `.claude/references/core/claude-code-cli.md`'s. Absent → no Reporting section and no launch: `## What you show me` gives the paste line. The Hub session name missing or `none` → no Reporting section, and the paste line naming the slot; the Launch command, the List command or the Confirm window missing or `none` → the paste line naming the slot. The *Context bound* or the *Context read* missing or `none` → handoffs at phase boundaries only, as `## When to hand off` says.
+- `session-launch` (optional) — the Launch command, the List command and the Confirm window, which `references/launch.md` runs, and the *Context bound* and the *Context read*, which `## When to hand off` reads, all this session's own; what the CLI behind those commands does is `.claude/references/core/claude-code-cli.md`'s. The Hub session name, which `references/launch.md` condition 2 reads and the brief's Reporting section writes out, is the target's: read from the target tree's own bindings by the contract's lookup rooted at that tree — the `.claude/bindings/<pack>.md` there whose `## session-launch` section answers it, that tree's `CLAUDE.md` *Bindings* section as the fallback — as the contract reads `session-launch`. This session's binding absent → no launch: `## What you show me` gives the paste line. The target's binding absent, or its Hub session name missing or `none` → no Reporting section and no launch, and the paste line naming the slot; the Launch command, the List command or the Confirm window missing or `none` → the paste line naming the slot. The *Context bound* or the *Context read* missing or `none` → handoffs at phase boundaries only, as `## When to hand off` says.
 - `verification` (optional) — the *Path form*, which RUN writes the target's path in. Absent, `none` or missing the slot → no launch: the paste line naming the slot, as `references/launch.md` condition 2 says, never a stop.
 - No agent: this skill dispatches nothing.
 
@@ -56,7 +56,7 @@ A launch brief takes no dated note: the brief `g0-open` or `tackle-issue` has th
 
 ## Sections
 
-Use these; drop any that are genuinely empty rather than padding them — except Lane, which every brief carries, and Reporting, which is present exactly where the `session-launch` binding reads filled with its Hub session name and the brief's target is not the hub:
+Use these; drop any that are genuinely empty rather than padding them — except Lane, which every brief carries, and Reporting, which is present exactly where the target's `session-launch` binding reads filled with its Hub session name and the brief's target is not the hub:
 
 1. **Objective** — the one task, in a sentence or two. Concrete and verifiable.
 2. **Lane** — `design`, `feature`, `light` or `lab`: the lane of the task handed off — the work's own, or else the one its branch gives, matched against the forms the `vc` binding's *Branch procedure* names (a `<…>` placeholder matches any text): its design, feature, light-lane or lab form, the lab form `lab-<topic>` where the binding names none. A light lane's value is one ASCII line, `light, class <c>`, or for a batch `light, class <c>, batch <id>, <id>...`: the class the work declared, slim where none was.
@@ -66,7 +66,7 @@ Use these; drop any that are genuinely empty rather than padding them — except
 6. **Constraints & decisions** — locked choices, conventions, and gotchas that must be respected; things NOT to change.
 7. **Next steps** — an ordered, concrete starting sequence. **State, not process:** if the next task is a workflow step, this section names the skill to invoke plus the state it needs — it never re-transcribes that skill's own steps.
 8. **Open questions** — anything unresolved that needs the human's input, so the new session asks instead of guessing.
-9. **Reporting** — only where the `session-launch` binding reads filled with its Hub session name, as the contract reads it, and the brief's target is not the hub — the target is the hub where `trees` reads filled and the next session opens at the Hub path: the text `references/launch.md` `## Reporting` gives, written into the brief as it says.
+9. **Reporting** — only where the target's `session-launch` binding reads filled with its Hub session name, as `## Bindings` reads it, and the brief's target is not the hub — the target is the hub where `trees` reads filled and the next session opens at the Hub path: the text `references/launch.md` `## Reporting` gives, written into the brief as it says. Where the target is this session's own project root, this session reads `CLAUDE_CODE_SESSION_ID` in the shell (`echo "$CLAUDE_CODE_SESSION_ID"`) as it writes the brief and writes the value, whole, into that text's STARTED clause as `## Reporting` says; unset or empty → no predecessor, and `## What you show me` says so.
 
 Keep it tight and skimmable. Prefer precise paths and names over prose. Don't invent facts to fill a section — if something is unknown, say so.
 
@@ -76,9 +76,9 @@ After the brief is written, where the `session-launch` binding reads filled, as 
 
 ## What you show me
 
-After writing the file, where `references/launch.md` ran and CONFIRM saw the new session, output one sentence naming the objective and the file path, then CONFIRM's one line, and nothing else of substance.
+After writing the file, where `references/launch.md` ran and CONFIRM saw the new session, output one sentence naming the objective and the file path, then CONFIRM's one line, and nothing else of substance but the `CLAUDE_CODE_SESSION_ID` line below, where it applies.
 
-Otherwise — `references/launch.md`'s conditions not all met, or its BEFORE or CONFIRM ending in its one line, which comes first — output exactly two things and nothing else of substance:
+Otherwise — `references/launch.md`'s conditions not all met, or its BEFORE or CONFIRM ending in its one line, which comes first — output exactly two things, and the `CLAUDE_CODE_SESSION_ID` line below where it applies, and nothing else of substance:
 
 1. One sentence naming the objective and the file path, so the human knows what was written. Where the next session opens in a tree other than this session's project root, the sentence also names that tree's path and tells the human to open a plain `claude` session there, never `claude -w`.
 2. A single fenced line to copy-paste as the first message of a fresh session, built at run time from the file's **absolute** path:
@@ -86,5 +86,7 @@ Otherwise — `references/launch.md`'s conditions not all met, or its BEFORE or 
 ```
 Read the handoff brief at <the file's absolute path> and pick up from there.
 ```
+
+Where item 9's read found `CLAUDE_CODE_SESSION_ID` unset or empty, either output above, the launched one or the paste-line one, ends with one line more, its one addition: `CLAUDE_CODE_SESSION_ID` was unset or empty, so the brief names no predecessor and the hub will not stop this session; close it yourself once the next session starts.
 
 Do not reproduce the brief's contents in the conversation.

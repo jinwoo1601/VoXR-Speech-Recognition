@@ -2,7 +2,7 @@
 name: feature-requirement-doc
 description: "Author or revise a feature's requirements doc, its testable contract, after G1 and before the architecture doc. Use when a feature is picked off the locked design, or when asked what belongs in requirements or acceptance criteria."
 kind: orchestration
-agents: [doc-writer]
+agents: [doc-writer, architect-reconcile]
 stops: [the agreement at SETTLE before the drafting brief is filed, the call on each open fork and deferred non-goal]
 status: active
 bindings: [process-docs, vc, board]
@@ -28,7 +28,7 @@ Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bi
 - `process-docs` (required) — where feature docs live and what they are called, and therefore where this feature's directory and its requirements doc sit. Absent → stop and say so before any brief is filed.
 - `vc` (required) — the branch procedure (the feature branch this work runs on, never the main branch) and the check-in procedure for the file drafted here. Absent → stop and say so.
 - `board` (optional) — where cross-session state lives beyond `memory/STATUS.md`, and therefore where this feature's row is updated. Absent → `memory/STATUS.md` is the state; orient from what the project binds.
-- Agents — `doc-writer` missing → stop after SETTLE and say so.
+- Agents — `doc-writer` missing → stop after SETTLE and say so. `architect-reconcile` missing → on a return the record pass is reported as not done and the two sites stand, which misroutes nothing (`.claude/references/core/feature-lite.md` `## The mark`).
 
 ## When it applies — and prerequisites
 
@@ -58,7 +58,7 @@ Read those parents **fully** before drafting. A requirement with no parent in lo
 4. **DRAFT** — file `.scratch/doc-writer-<feature>-requirements-brief.md` from `.claude/references/core/decision-brief.md`: the settled content and its open items as the decision record, the parents and their citations, `assets/requirements-template.md` as the skeleton, and the target directory and file name per the `process-docs` binding. Dispatch `doc-writer` through the Agent tool without a `name`.
 5. **BAR** — judge the returned draft against `## The quality bar` below. For the hard parts — cashing a "feel" target out into an observable proxy, keeping *how* out of *what* — `references/quality-bar.md` carries the worked examples and the *Operationalizing "feel"* table. A miss is a second brief to `doc-writer`, never a PM edit; where the miss is a gap in the settled content rather than in the writing, the fix is upstream — settle it with the human first, then re-brief.
 6. **FORKS** — the second hard stop: where scope, priority, a deferred non-goal or a requirement's value is genuinely open, lay the tradeoff out in prose and let the human rule. Do not force a picker, do not silently pick. What stays unresolved is parked in `## 10. Open questions`, and the architecture doc inherits it.
-7. **FILE** — the doc and its bookkeeping per `## Filing and bookkeeping`.
+7. **FILE** — the doc and its bookkeeping per `## Filing and bookkeeping`. On a return, once the doc is filed, file `.scratch/architect-reconcile-<feature>-return-brief.md` — the architecture doc and the new requirements doc by path, and the two corrections `.claude/references/core/feature-lite.md` `## The return to full` names — and dispatch `architect-reconcile` in its record mode through the Agent tool without a `name`.
 
 ## The quality bar
 

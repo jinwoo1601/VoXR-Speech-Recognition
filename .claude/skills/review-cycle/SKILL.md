@@ -5,7 +5,7 @@ kind: orchestration
 agents: [review-angle, finding-verifier, compile-check]
 stops: [the ruling on a disputed finding, the ruling on a deferral, the ruling on a scope change, the ruling on a canon fork]
 status: active
-bindings: [vc, verification, review]
+bindings: [vc, verification, review, session-launch]
 ---
 
 # review-cycle
@@ -25,6 +25,7 @@ Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bi
 - `vc` (required) — the base-revision reads the brief quotes under `## Scope` (the changed-file list, a file at a revision, a diff between two revisions), and the check-in procedure COMMIT follows. Absent → stop and say so before any brief is filed.
 - `verification` (required) — the commands CHECK runs through `compile-check`. `none` → CHECK is recorded as `nothing to run`. Absent → stop and say so.
 - `review` (optional) — the angles each profile runs and the hot paths, `core`'s `## review` section. Absent, empty or `TODO` → the defaults in `## Depth profiles`, and no hot paths declared, so EFF does not run; never a stop. A slot reading `default` means the table's default.
+- `session-launch` (optional) — the *Context bound* and the *Context read*, which the rhythm reads at each step's end, as `handoff` `## When to hand off` says. Absent, either slot missing or `none`, or the read failed → the phase-boundary handoff only, the slot named once; never a stop.
 - Agents — `review-angle`, `finding-verifier`, or `compile-check` missing → stop before any dispatch and say so.
 
 ## Prerequisites
@@ -69,3 +70,5 @@ The floor does not apply to the full profile, where a coverage gap can be exactl
 6. **FIX** — a fix goes to its owner, from a brief filed under `.scratch/`: `code-writer` through `implement` for code and pack files, `doc-writer` for prose docs and bindings, `architect` for the architecture doc; the reviewed code's shape is canon, and the review is not a license to refactor. The main thread applies nothing (the PM's write scope is `memory/` and CHANGELOG lines); agents find and verify, and a writing agent edits from the finding, or from the ruling where one was asked.
 7. **CHECK** — dispatch `compile-check` on the `verification` binding. On prose, it runs once, at the head after the last fix; a fix round does not re-run it.
 8. **COMMIT** — per the `vc` binding's check-in procedure: inline on the main thread, or the agent the binding names; the findings summary is the message. This skill never commits by itself.
+
+**The rhythm.** At the end of each step above the session applies `handoff` `## When to hand off`: it runs the *Context read*, and past the *Context bound* it invokes `handoff`, its objective the next step, instead of taking that step. A handoff taken after FAN OUT and before RULE files the findings the cycle holds, with any verdicts, as the collation `.scratch/review-<slug>-collation.md`, and its brief names that file and the review brief by path. After the last step there is no next step, and the objective is what follows — the invoking skill's next step where `tackle-issue` or `g2-lite` REVIEW invoked this cycle, otherwise the branch's gate skill — as `handoff` `## When to hand off` says of a skill's last step.
