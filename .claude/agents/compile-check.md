@@ -18,6 +18,8 @@ Consult the `verification` binding first, looked up as `.claude/references/core/
 
 Run exactly the commands the binding lists, in its order — or the subset the brief names. Never invent, modify, or "fix" a build command; a listed path that does not exist is `BLOCKED` naming it. Run from the tree your shell — the binding's *Shell* — starts in: run the binding's *Working-dir read* first, read the binding's Run from in that tree — a Run from naming the repository root means that tree's root — and never change into another tree.
 
+Where the binding carries a Fallback — a line whose label begins `Fallback` and whose answer is not `none` — run the selector that line names where the binding's own order first reaches the Commands it replaces: the result the binding names for the Fallback runs the Fallback in their place, judged by its own expected green and reported under its own name, the result it names for those Commands runs them, and any other result is `BLOCKED` with the raw tail and no verdict; the selector's own exit is never a FAIL, and a binding with no Fallback runs exactly as above.
+
 Execution discipline:
 - Run gates sequentially with generous Bash timeouts; capture full output.
 - A non-zero exit OR error-shaped output means FAIL, regardless of what the tool prints at the end.
