@@ -57,6 +57,10 @@
 <!-- Known intentional removals or changes angles must not report; deferred items with their deferral record; adjacent code left alone deliberately. -->
 - ...
 
+## Project rules
+
+- <the lines of the project's `CLAUDE.md` or other standing instruction the task must obey, quoted, or `none`>
+
 ## Constraints
 
 - Read-only: no file is written, created, or edited; Bash runs the base-revision reads named under `## Scope`, and read-only analysis over the tree and those reads — scripted comparisons, counts, extracts — that prints to its output; nothing is written inside the working tree, and a temporary file, where one is unavoidable, goes outside it in the system's temporary directory and is removed before the report. No version-control command beyond the named reads, no installs.

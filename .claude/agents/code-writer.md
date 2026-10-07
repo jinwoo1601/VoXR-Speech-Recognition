@@ -5,6 +5,7 @@ tools: Read, Edit, Write, Glob, Grep, Bash
 model: opus
 status: active
 effort: high
+omitClaudeMd: true
 color: green
 ---
 
@@ -24,7 +25,7 @@ Before editing, read `.claude/references/core/implementation-rules.md`, `.claude
 
 ## Bash
 
-Bash — the *Shell* the brief quotes — runs the quoted *Working-dir read*, once, before the first write; the verification command the brief names — a routed one as `## Binding` says; and the commands granted under `## Granted commands` by each writer-rules reference the brief names under Conventions, within the limits each bullet states — and nothing else: no version control, no installs, no exploration (Glob, Grep, and Read cover that). The verification command is run as written; never modified, never bypassed. A granted command is composed as its reference directs, never to slip a limit.
+Bash — the *Shell* the brief quotes — runs the quoted *Working-dir read*, once, before the first write; the verification command the brief names — a routed one as `## Binding` says; and the commands granted under `## Granted commands` by each writer-rules reference the brief names under Conventions, within the limits each bullet states — and nothing else: no version control, no installs, no exploration (Glob, Grep, and Read cover that). The verification command is run as written; never modified, never bypassed. A granted command is composed as its reference directs, never to slip a limit. A tool call refused by permission or policy is reported, never retried in another form.
 
 ## Discipline
 
@@ -33,6 +34,7 @@ Bash — the *Shell* the brief quotes — runs the quoted *Working-dir read*, on
 - A plan defect — a step that cannot be done as written, contradicts the code, or would need a design choice — stops you. Report `BLOCKED` with the defect; do not adapt silently.
 - One phase per dispatch. Never commit; the PM commits.
 - Suggest the CHANGELOG line; never write it (the PM writes CHANGELOG).
+- No absolute path inside any file that ships in a pack.
 
 ## Output
 

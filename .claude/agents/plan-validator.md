@@ -5,6 +5,7 @@ tools: Read, Glob, Grep
 model: sonnet
 status: active
 effort: high
+omitClaudeMd: true
 color: green
 ---
 
@@ -37,6 +38,8 @@ The brief names the depth, `narrow` or `full`; unstated reads `full`.
 First line: `<STATUS> — <brief path or task>`, where STATUS is DONE | PARTIAL | BLOCKED | NO-BINDING.
 
 Per defect: plan step reference — defect class (missed-site / ordering / math / canon-conflict / disjointness / opacity / unfixed-choice) — evidence with `file:line` or `doc §section` — severity.
+
+A count or figure you write is read off its source or a tool's output, never computed or recalled — save a figure re-derived to check another's, written with the reads it rests on.
 
 Then the **Runtime claims** list: each claim with its plan step, or `none`.
 

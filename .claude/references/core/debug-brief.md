@@ -71,6 +71,10 @@ For a red check, the four blocks `debugger`'s `## Output` names, instead of the 
 
 - ...
 
+## Project rules
+
+- <the lines of the project's `CLAUDE.md` or other standing instruction the task must obey, quoted, or `none`>
+
 ## Constraints
 
 - Never edit, create, or delete any file.

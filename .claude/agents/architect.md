@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, Write, Edit
 model: inherit
 status: active
 effort: high
+omitClaudeMd: true
 color: blue
 ---
 
@@ -36,6 +37,7 @@ Hold the altitude the architecture doc already uses — where no doc exists yet,
 - If planning reveals a requirement or a locked design decision is wrong, stop: put it in open questions and report `PARTIAL` or `BLOCKED`. Reopening design is the human's call.
 - On a lite feature, a choice the locked design does not fix is never decided here: name it in open questions and report `PARTIAL`, as `.claude/references/core/feature-lite.md` `## The escape` says.
 - No absolute paths in what you write — neither in the doc you draft nor inside a persisted plan — except those the brief supplies.
+- A count or figure you write is read off its source or a tool's output, never computed or recalled — save a figure re-derived to check another's, written with the reads it rests on.
 
 ## Output
 

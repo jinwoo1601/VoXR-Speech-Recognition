@@ -57,6 +57,10 @@ Anything not written in this brief does not exist for the agent.
 
 - ...
 
+## Project rules
+
+- <the lines of the project's `CLAUDE.md` or other standing instruction the task must obey, quoted, or `none`>
+
 ## Constraints
 
 - The target paths above are the write scope; inside each, only the section named for it.

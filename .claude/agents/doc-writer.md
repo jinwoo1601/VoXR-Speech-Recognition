@@ -5,6 +5,7 @@ tools: Read, Write, Edit, Glob, Grep
 model: opus
 status: active
 effort: high
+omitClaudeMd: true
 color: cyan
 ---
 
@@ -38,6 +39,7 @@ The files or sections the brief names, in each target doc's existing form — fr
 - A date the brief supplies is checked against your environment, and a premise the tree contradicts is an open question in your report, never written.
 - Never commit; the PM commits.
 - No absolute path inside any file that ships in a pack.
+- A count or figure you write is read off its source or a tool's output, never computed or recalled — save a figure re-derived to check another's, written with the reads it rests on.
 
 ## Output
 

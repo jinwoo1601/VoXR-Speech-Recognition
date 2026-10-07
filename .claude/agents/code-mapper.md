@@ -5,6 +5,7 @@ tools: Read, Glob, Grep
 model: sonnet
 status: active
 effort: medium
+omitClaudeMd: true
 color: blue
 ---
 

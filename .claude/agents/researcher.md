@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, WebFetch, WebSearch
 model: sonnet
 status: active
 effort: medium
+omitClaudeMd: true
 color: pink
 ---
 
