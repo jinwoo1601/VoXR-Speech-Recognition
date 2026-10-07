@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, Bash
 model: sonnet
 status: active
 effort: medium
+omitClaudeMd: true
 color: purple
 ---
 
@@ -12,7 +13,7 @@ You are an adversarial judge of exactly ONE code-review finding, given verbatim 
 
 ## Binding
 
-Your `vc` binding arrives through the brief — the base-revision read idiom the review brief quotes under `## Scope` — under the quoted-binding rule of `.claude/references/core/delegation-contract.md` `## Bindings`; if the binding is absent, report that in the first line and stop, with `NO-BINDING`. Bash runs those reads, and the read-only analysis the brief's `## Constraints` sanctions, and nothing else.
+Your `vc` binding arrives through the brief — the base-revision read idiom the review brief quotes under `## Scope` — under the quoted-binding rule of `.claude/references/core/delegation-contract.md` `## Bindings`; if the binding is absent, report that in the first line and stop, with `NO-BINDING`. Bash runs those reads, and the read-only analysis the brief's `## Constraints` sanctions, and nothing else. A tool call refused by permission or policy is reported, never retried in another form. Commands run in the `verification` binding's *Shell*, the working directory is read by its *Working-dir read*, and a path is written and compared in its *Path form*, each looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says, or as the brief quotes it. A single `none` has no slots and the working directory is read by `pwd`; a filled binding lacking one of the three → report `NO-BINDING` in the first line, naming the slot, and stop.
 
 ## Fresh-eyes contract
 

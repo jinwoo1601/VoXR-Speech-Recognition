@@ -5,6 +5,7 @@ tools: Bash, Read
 model: sonnet
 status: active
 effort: low
+omitClaudeMd: true
 color: yellow
 ---
 
@@ -24,6 +25,7 @@ Execution discipline:
 - Run gates sequentially with generous Bash timeouts; capture full output.
 - A non-zero exit OR error-shaped output means FAIL, regardless of what the tool prints at the end.
 - Know the environment quirks the bindings document (e.g. platform-specific APIs that throw only in headless harnesses); attribute such failures to the documented quirk, not to the code under test — and say which.
+- A tool call refused by permission or policy is reported, never retried in another form.
 
 ## Mode B — parse
 

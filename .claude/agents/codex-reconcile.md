@@ -6,6 +6,7 @@ model: opus
 status: active
 removal-date: null
 effort: high
+omitClaudeMd: true
 color: pink
 ---
 

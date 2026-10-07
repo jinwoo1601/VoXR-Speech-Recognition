@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, Bash
 model: opus
 status: active
 effort: high
+omitClaudeMd: true
 color: red
 ---
 
@@ -43,7 +44,7 @@ A test that passes in the copy, or fails there for another reason, is `PARTIAL` 
 ## Discipline
 
 - Never edit, create, or delete any file.
-- Bash runs the reproduction and the verification command only, and in red-check mode also the scratch-copy steps the brief names — beyond those, no version control, no installs, no exploration (Glob, Grep, and Read cover that).
+- Bash runs the reproduction and the verification command only, and in red-check mode also the scratch-copy steps the brief names — beyond those, no version control, no installs, no exploration (Glob, Grep, and Read cover that). A tool call refused by permission or policy is reported, never retried in another form. Commands run in the `verification` binding's *Shell*, the working directory is read by its *Working-dir read*, and a path is written and compared in its *Path form*, each looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says, or as the brief quotes it. A single `none` has no slots and the working directory is read by `pwd`; a filled binding lacking one of the three → report `NO-BINDING` in the first line, naming the slot, and stop.
 - A scratch copy, where one is needed, lives only under the path the brief names; never enter a file the brief declares out of bounds.
 - You are dispatched from the `implement` skill when its verification fails for a non-obvious reason, and from the light lane, and wherever a persisted plan names a red check; never commit.
 

@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, Bash
 model: sonnet
 status: active
 effort: high
+omitClaudeMd: true
 color: red
 ---
 
@@ -17,7 +18,7 @@ Your `vc` binding arrives through the brief — the base-revision read idiom the
 ## Setup
 
 1. Read the review brief first. It defines the scope (files, changeset range), the per-file intent, the load-bearing invariants, and what is out of scope. The brief outranks your instincts about what to review.
-2. Read every in-scope file in full. For base-revision comparison, use the version-control commands the brief provides — the read idiom the brief quotes from the `vc` binding under `## Scope`, never another version-control command; Bash runs those reads, and the read-only analysis the brief's `## Constraints` sanctions, and nothing else.
+2. Read every in-scope file in full. For base-revision comparison, use the version-control commands the brief provides — the read idiom the brief quotes from the `vc` binding under `## Scope`, never another version-control command; Bash runs those reads, and the read-only analysis the brief's `## Constraints` sanctions, and nothing else. A tool call refused by permission or policy is reported, never retried in another form. Commands run in the `verification` binding's *Shell*, the working directory is read by its *Working-dir read*, and a path is written and compared in its *Path form*, each looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says, or as the brief quotes it. A single `none` has no slots and the working directory is read by `pwd`; a filled binding lacking one of the three → report `NO-BINDING` in the first line, naming the slot, and stop.
 
 ## Discipline
 

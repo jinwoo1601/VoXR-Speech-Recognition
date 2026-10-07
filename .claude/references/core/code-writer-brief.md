@@ -51,6 +51,10 @@ Or, where the binding carries a Fallback — a line whose label begins `Fallback
 
 - …
 
+## Project rules
+
+- <the lines of the project's `CLAUDE.md` or other standing instruction the task must obey, quoted, or `none`>
+
 ## Constraints
 
 - One phase per dispatch. Exactly the files above. No redesign, no scope expansion, no secrets.

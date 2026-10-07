@@ -20,6 +20,7 @@ Filed under the scratch area — `.scratch/` at the project root, one untracked 
 - acceptance criteria;
 - declared out-of-scope;
 - constraints;
+- project rules — the lines of the project's `CLAUDE.md` or other standing instruction the task must obey, quoted, or `none`;
 - the verification command, or `none bound`;
 - the stop-and-report rule.
 

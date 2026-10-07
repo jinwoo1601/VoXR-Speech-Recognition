@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, Edit
 model: sonnet
 status: active
 effort: high
+omitClaudeMd: true
 color: blue
 ---
 
@@ -50,6 +51,7 @@ Hold the altitude the architecture doc already uses — where no doc exists yet,
 - Every decision traces to a requirement, a locked design decision, or a real constraint — never a preference.
 - If the pass reveals a requirement or a locked design decision is wrong, stop: put it in open questions and report `PARTIAL` or `BLOCKED`. Reopening design is the human's call.
 - No absolute paths in what you write — neither in the doc you draft nor inside a persisted plan — except those the brief supplies.
+- A count or figure you write is read off its source or a tool's output, never computed or recalled — save a figure re-derived to check another's, written with the reads it rests on.
 
 ## Output
 
