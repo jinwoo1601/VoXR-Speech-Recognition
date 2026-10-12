@@ -1,10 +1,11 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-10-07
+updated: 2026-10-13
 
 ## Current
 
-- **`main` at the PR #170 merge (`light-harness-upgrade`, G2-lite 2026-10-07); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161; next: `release` (RSE-1 first).
+- **`light-harness-upgrade-2` (light, slim) in flight: core 0.57.0, unity 0.13.0 and peers, applied by voxr-hub 2026-10-13; next: review-cycle, PR, G2-lite.** Then `release` (RSE-1 first).
+- **`main` at the PR #170 merge; release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
 - **Plan of action** (2026-09-06 rulings, `Planning~/research/2026-09-05-next-level/05-rulings.md`): Phase A complete (#143–#148, #150, #153, #154 merged).
 - Phase B free probes, none run: classify the 73 field false triggers; NCE/ECE of grammar `conf`; recorded coughs through the WebRTC VAD; Quest adb audio-effects session.
