@@ -30,6 +30,10 @@
 - Ruling: `<what was ruled, by whom, when>`
 - Consequences: `<what the ruling changes elsewhere>`
 
+<!-- A binding interview's brief only, every other brief leaving out the two lines below: after the four lines, one group per key, its Interview key line, then one line per slot with its label and the human's answer. A default the PM proposed is written with the human's words that ruled it; a slot answered under a question other than its key's adds the asked-under field naming that question, left out otherwise; a slot the human did not answer reads `no answer`. A brief dictating a bindings value under another ruling keeps the four lines and says under Ruling which ruling it is; the PM's own ruling of a slot is no such ruling. -->
+- Interview key `<key>` — asked: `<the key's question, as put to the human>`
+  - `<slot label>`: `<the human's answer, in the human's words | the default the PM proposed, then the human's words that ruled it | no answer>` — asked under: `<the question it was answered under>`
+
 ## Inputs
 
 <!-- Absolute paths only: the sources to transcribe or cite, and the form-to-match docs. -->
@@ -52,6 +56,7 @@ Anything not written in this brief does not exist for the agent.
 - No decision beyond the record above.
 - No heading the target's form does not have.
 - No value for a slot the record leaves empty — report `PARTIAL` with the open question instead.
+- No value for a binding slot but from a slot line carrying the human's answer, or as dictated under a ruling the record names that is not the PM's own ruling of the slot — report `PARTIAL` naming any other slot.
 
 ## Declared out of scope
 

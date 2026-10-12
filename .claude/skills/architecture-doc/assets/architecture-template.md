@@ -2,7 +2,7 @@
 type: architecture
 feature: <kebab-name>
 topic: <the design topic this feature belongs to>
-status: draft
+status: draft   # draft while building; accepted at G2 by g2-accept RECORD, and still living after
 updated: <YYYY-MM-DD>
 sources:
   - <the feature's requirements doc — for a lite feature, the design's backlog>

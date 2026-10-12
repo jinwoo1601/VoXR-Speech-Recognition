@@ -12,14 +12,14 @@ bindings: [vc, trees, session-launch]
 
 The hub's half of a branch's close: the tree a finished branch was built in is removed from the hub once its checks pass, or kept with one line naming the check that failed. A report line is a trigger, never proof — a tree's close reads the `vc` binding's log read, the session list and the tree, never the report's detail, and `## A handed-off session`, which stops a handed-off session and removes nothing, takes from its line only the branch and the predecessor's session id. The removal rides on the gate ruling that authorised the merge — the G1, G2 or G2-lite ruling — and takes no ruling of its own (`adr-0024`).
 
-> At a tree's close, nothing is stopped before the branch is merged, nothing is read clean while a session is at the tree, nothing is removed before the release wait, and a half-removal is told, never retried.
+> At a tree's close, nothing is stopped before the branch is merged, nothing is read clean while a session is at the tree, nothing is removed before the release wait, and a half-removal or a refused step is told, never retried.
 
 ## When it runs
 
 - A `FINISHED - <branch>; lane: <lane>; <detail>` line arriving in this session → `## Workflow` for `<branch>`; the detail is never read.
 - A `STARTED - <branch>; lane: <lane>; <skill>; predecessor <session id>` line arriving in this session → `## A handed-off session` for `<branch>` and `<session id>`; `## Workflow` does not run.
 - The human's word on a tree `orient`'s TREES states merged and awaiting removal, proposed by its PROPOSE, or the human's word that the branch finished on a tree TREES states as "in progress, or finished with its report lost", for which PROPOSE offers this skill → `## Workflow` for that tree's branch.
-- The human's word to close the tree again after a held line for `<branch>` → `## Workflow` for `<branch>`.
+- The human's word to close the tree again after a held or refused line for `<branch>` → `## Workflow` for `<branch>`.
 - A `HANDOFF` or `BLOCKED` line, or a `STARTED` line naming no predecessor → nothing runs, and the line is the human's to read.
 
 This skill never answers a report, never gives a session work, and writes nothing to `memory/`.
@@ -45,6 +45,8 @@ Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bi
 6. **REMOVE** — the Remove procedure for the tree's path, run in the hub by the trees contract's hub clause.
 7. **READ BACK** — the List read, run in the hub, and the tree's path: still listed, unlisted with its directory gone, or unlisted with its directory present, as `## Outcomes` tells them apart. Still listed, where REMOVE's output carries the held result the `trees` binding's Remove procedure names → held: the held line, `<source>` `REMOVE` and `<what the read showed>` the procedure's message; still listed otherwise → the removal refused.
 
+**A refused step.** A tool call of any step refused by permission or policy — TREE's or READ BACK's List read, MERGED's log read, STOPPED's List command, Stop command or a holder probe, the Clean read, RELEASE's wait, or a command of the Remove procedure — stops the close at that step: nothing after it runs, the refused call is never retried in another form, and the human hears the refused line. A refusal is no read's result: never a failed check, never held or unreadable, and never one of READ BACK's cases.
+
 ## Outcomes
 
 | Outcome | The tree | Its sessions | The human hears |
@@ -56,11 +58,14 @@ Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bi
 | not clean | kept | stopped, conversations kept | R3's line |
 | the removal refused — still listed | kept | stopped | R3's line, with the procedure's message |
 | half-removed — unlisted, its directory present | unregistered; its directory left, empty or still holding files, as the Remove procedure leaves it | stopped | R3's line naming the directory; `orient` names it as a leftover until the human removes it |
+| refused — a step's tool call refused by permission or policy | kept, or as the last read showed it where REMOVE or READ BACK was refused | as the steps before the refusal left them | the refused line |
 | removed — unlisted, its directory gone | gone; the branch kept | stopped | nothing |
 
 R3's line is `<branch>: tree kept at <path> - <the check> failed: <what the read showed>`, one plain-ASCII line to the human: `<path>` the tree's path; `<the check>` the step that failed — MERGED, STOPPED, CLEAN, RELEASE or REMOVE; and `<what the read showed>` the read's own words — for MERGED, the branches read and the commits each listed, the sessions without an `<id>` or still listed, the Clean read's lines, the procedure's message, or the directory left in place; where STOPPED or RELEASE could not run, the binding or slot missing.
 
 The held line is one plain-ASCII line to the human, in one of two forms, each opening as R3's line does. Held: `<branch>: tree kept at <path> - held by <source>: <what the read showed>; to remove it, save and close the holder, then say to close the tree again` — `<source>` the pack whose probe read held, or `REMOVE` where READ BACK found the Remove procedure's held result; `<what the read showed>` the holder as that pack's reference names it from the probe's output, or the procedure's own message. Unreadable: `<branch>: tree kept at <path> - <pack> holder probe unreadable: exit <code>: <output>; to remove it, close any holder of the tree, then say to close the tree again` — `<pack>` the pack whose probe could not be read, `<code>` and `<output>` its exit code and raw output, the output's line breaks folded to spaces, and both `none` where no command could be read.
+
+The refused line is one line to the human, its template plain ASCII: `<branch>: tree at <path> <state> - <step> refused by permission or policy: <the refusal message>; nothing was retried; to close it, clear the refusal, then say to close the tree again` — `<path>` the tree's path as TREE read it, or `unread` where TREE's own read was refused; `<step>` the step whose tool call was refused, TREE to READ BACK; `<state>` `kept` where the refusal came before REMOVE, and `listed before REMOVE, unread since` where REMOVE or READ BACK was refused; `<the refusal message>` the refusal's own words, its line breaks folded to spaces.
 
 ## A handed-off session
 

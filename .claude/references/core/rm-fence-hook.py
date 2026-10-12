@@ -24,8 +24,8 @@ never trusted: a delete found in it has one unpinned target. Paths are read in
 Windows form through `ntpath`; a spelling the reader cannot normalize is None.
 
 The fence roots are the project root named by argv[1], its `.scratch`, the trees
-roots read from the first bindings file holding a `trees` section, and the `TMP`
-and `TEMP` folders; each is real-path resolved and a drive root dropped. A target
+roots read from the bindings file the manifest's `bindings` filler names for
+`trees`, `core`'s by default, and the `TMP` and `TEMP` folders; each is real-path resolved and a drive root dropped. A target
 is real-path resolved, a glob tested match by match, and is inside only when it
 lies strictly beneath a root. No target outside is silence; outside targets ask,
 every one listed, when every segment of the call is a delete, and deny otherwise.
@@ -202,8 +202,10 @@ def restore(word, pieces):
 def prescan(command):
     """(outer, pieces, mktemp, unbalanced): the command with nested text lifted out,
     each piece as (written, inner), the mktemp assignments as piece index to name,
-    and whether the nesting or the quoting is unbalanced. A command that already
-    holds a sentinel character is returned whole and unbalanced."""
+    and whether the nesting or the quoting is unbalanced. A comment, outside quotes
+    at a word start and not inside an open `${`, `$[`, `$((` or `[[`, is dropped up
+    to its newline. A command that already holds a
+    sentinel character is returned whole and unbalanced."""
     if "\x01" in command or "\x02" in command:
         return command, [], {}, True
     outer, pieces, mktemp, pending = [], [], {}, []
@@ -251,6 +253,12 @@ def prescan(command):
             quote = character if quote is None else None
             outer.append(character)
             index += 1
+            continue
+        if quote is None and character == "#" and (
+                not outer or outer[-1] in (" ", "\t", "\n", ";", "&", "|", "(", ")")) and (
+                not any(opener in "".join(outer) for opener in ("${", "$[", "[["))):
+            while index < length and command[index] != "\n":
+                index += 1
             continue
         if quote is None and character in "0123456789" and (
                 not outer or outer[-1][-1] in " \t\n;&|()"):
@@ -460,6 +468,10 @@ def walk(command, cwd, variables):
                 segments[-1].append(token)
         breaks.append("")
         stack, looped, loop_start, body, pending = [], False, 0, None, None
+        heads, ends = 0, 0
+        pairable = not (re.search(r"""['"#]|=\(|[@!+?*]\(|\(\(|\[\[""", outer)
+                        or re.search(r"\\[\s;&|()<>]", outer)
+                        or any("case" in segment for segment in segments))
 
         def blank(segment):
             """True for a segment empty or made only of redirections, each with the
@@ -490,15 +502,26 @@ def walk(command, cwd, variables):
             return re.sub(r"[(){}\n]", "", text)
 
         def backgrounded(p):
-            """True when the and-or list from segment p ends at `&`."""
+            """True when the and-or list from segment p ends at `&`, followed into
+            each group or parenthesis it opens, whose separators do not end it."""
+            depth, joined = 0, False
             while True:
                 text, following = after(p)
-                if re.search(r"[(){}]", text):
+                for mark in re.findall(r"&&|\|\||\|&|[(){};&|\n]", text):
+                    if mark in ("(", "{"):
+                        depth += 1
+                    elif mark in (")", "}"):
+                        depth -= 1
+                        if depth < 0:
+                            return False
+                    elif depth == 0 and mark == "&":
+                        return True
+                    elif depth == 0 and (mark == ";" or (mark == "\n" and not joined)):
+                        return False
+                    joined = mark in ("&&", "||", "|", "|&") or (joined and mark == "\n")
+                if following >= len(segments):
                     return False
-                if run(text) in ("&&", "||", "|", "|&") and following < len(segments):
-                    p = following
-                else:
-                    return run(text) == "&"
+                p, joined = following, False
 
         def definition(p):
             """The location (position, offset) of the `{` or `(` opening the body of
@@ -583,6 +606,7 @@ def walk(command, cwd, variables):
                 index += command_start(segment[index:])
             if not looped and any(word in ("do", "while", "until") for word in segment[:index]):
                 looped, loop_start = True, len(deletes)
+            heads += sum(word in ("for", "select", "while", "until") for word in segment)
             name = command_name(segment[index]) if index < len(segment) else ""
             arguments = segment[index + 1:]
             for token in segment:
@@ -654,6 +678,11 @@ def walk(command, cwd, variables):
                     named = re.match(r"([A-Za-z_]\w*)(\+?=|$)", word)
                     if named:
                         forget(named.group(1))
+            if (looped and pairable and segment[0] == "done" and blank(segment[1:])
+                    and not re.search(r"[()]", before(position) + after(position)[0])):
+                ends += 1
+                if ends >= heads:
+                    looped, heads, ends = False, 0, 0
             if name not in ("rm", "rmdir"):
                 chained = True
         close(True)
@@ -707,42 +736,70 @@ def absent_form(lines):
     return len(content) == 1 and content[0].removeprefix("- ").replace("`", "") == "none"
 
 
+def trees_file(root, fallback):
+    """The path of the bindings file beneath `root` the manifest's `bindings` filler
+    names for `trees`, as compose reads it: `core`'s with no manifest, no `bindings`
+    object or no `trees` key. A manifest that cannot be read, is not an object, or
+    names no bare stem resolves to `fallback` instead: None for None, else that
+    stem's file."""
+    name = fallback
+    try:
+        with open(ntpath.join(root, ".claude", "harness.json"), encoding="utf-8") as handle:
+            document = json.load(handle)
+    except FileNotFoundError:
+        document = {}
+    except (OSError, ValueError):
+        document = None
+    if isinstance(document, dict):
+        filler = document.get("bindings")
+        if not isinstance(filler, dict):
+            filler = {}
+        named = filler.get("trees", "core")
+        if (isinstance(named, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", named)
+                and ".." not in named):
+            name = named
+    if name is None:
+        return None
+    return ntpath.join(root, ".claude", "bindings", name + ".md")
+
+
 def trees_roots(root):
-    """The trees roots from the first bindings file beneath `root` holding a `trees`
-    section, in sorted order: on its first `- Location:` line, each backticked
-    drive-absolute token cut before its first component holding `<`, each prefix
-    once. An absent section, an unreadable file or no root gives none."""
+    """The trees roots from the bindings file the manifest's `bindings` filler names
+    for `trees`, `core`'s by default, and from no other: on its section's first
+    `- Location:` line, each backticked drive-absolute token cut before its first
+    component holding `<`, each prefix once. No root, a manifest that cannot be read
+    or names no bare stem, an unreadable or missing file, and an absent section give
+    none."""
     if root is None:
         return []
-    for path in sorted(glob.glob(ntpath.join(glob.escape(root), ".claude", "bindings", "*.md"))):
-        try:
-            with open(path, encoding="utf-8") as handle:
-                text = handle.read()
-        except (OSError, ValueError):
-            return []
-        lines = trees_section(text)
-        if lines is None:
+    path = trees_file(root, None)
+    if path is None:
+        return []
+    try:
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+    except (OSError, ValueError):
+        return []
+    lines = trees_section(text)
+    if lines is None or absent_form(lines):
+        return []
+    roots = []
+    for line in lines:
+        if not line.strip().startswith("- Location:"):
             continue
-        if absent_form(lines):
-            return []
-        roots = []
-        for line in lines:
-            if not line.strip().startswith("- Location:"):
+        for token in re.findall(r"`([^`]+)`", line):
+            if not re.match(r"^[A-Za-z]:[\\/]", token):
                 continue
-            for token in re.findall(r"`([^`]+)`", line):
-                if not re.match(r"^[A-Za-z]:[\\/]", token):
-                    continue
-                kept = []
-                for component in re.split(r"[\\/]", token):
-                    if "<" in component:
-                        break
-                    kept.append(component)
-                prefix = ntpath.normpath("\\".join(kept) + "\\")
-                if prefix not in roots:
-                    roots.append(prefix)
-            break
-        return roots
-    return []
+            kept = []
+            for component in re.split(r"[\\/]", token):
+                if "<" in component:
+                    break
+                kept.append(component)
+            prefix = ntpath.normpath("\\".join(kept) + "\\")
+            if prefix not in roots:
+                roots.append(prefix)
+        break
+    return roots
 
 
 def fence_roots(root, environ):

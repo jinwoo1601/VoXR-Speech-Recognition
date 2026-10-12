@@ -85,7 +85,7 @@ Every architecture doc must clear these. (Expanded, with good/bad examples and w
   type: architecture
   feature: <kebab-name>
   topic: <the design topic this feature belongs to>
-  status: draft         # draft while building; reconciled to as-built before G2
+  status: draft         # draft while building; accepted at G2 by g2-accept RECORD, and still living after
   updated: YYYY-MM-DD   # absolute date, never "today"
   sources:
     - <the feature's requirements doc — for a lite feature, the design's backlog>

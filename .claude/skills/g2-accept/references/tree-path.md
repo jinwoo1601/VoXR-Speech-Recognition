@@ -5,7 +5,7 @@ The order `g2-accept`'s `## Workflow` steps run in where `trees` is filled, and 
 ## Bindings
 
 - `verification` (required) — on the tree path, also the commands CATCH-UP's `compile-check` runs in the branch's tree, where `none` has CATCH-UP record `nothing to run`.
-- `trees` (optional) — the Hub path ROOT compares with this session's root; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ, MERGE and each `memory/` write run in the hub.
+- `trees` (optional) — the Hub path ROOT compares with this session's root and the `scripts/hub.py lock` commands take as `--root`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ and MERGE run in the hub.
 - `session-launch` (optional) — the Hub session name, to which the tree path's REMOVE sends `FINISHED`.
 
 ## The tree path
@@ -19,6 +19,6 @@ Where `trees` is filled, as the contract reads it, the steps run in this order; 
 5. **SHOW** — the relay of `## Workflow`'s MERGE: what was authored after the ruling — RECORD's edit and any product-doc changes — shown as a diff the human can read. Show, do not ask again. It comes before HUB READ, so that the read is the last act before the merge.
 6. **HUB READ** — `.claude/references/core/gate-close.md` `### HUB READ`.
 7. **MERGE** — `.claude/references/core/gate-close.md` `### MERGE`. The G2 ruling is itself the word to merge.
-8. **CLOSE OUT** — `## Workflow`'s CLOSE OUT, as written, in the hub's `memory/`: the `memory/STATUS.md` line and the session's dated note, each write one hub operation, as the trees contract (`.claude/references/core/trees-contract.md`) defines it.
-9. **HANDOFF** — `## Workflow`'s HANDOFF, as written; `handoff` writes in the hub by its own `## Bindings`, and names the hub as the tree the next session opens in, since this tree is removed after REMOVE.
+8. **CLOSE OUT** — `## Workflow`'s CLOSE OUT, in the hub's `memory/`: the record `.claude/references/core/gate-close.md` `## The record` says, drafted and not written, since HANDOFF's call carries it.
+9. **HANDOFF** — `## Workflow`'s HANDOFF, as written, CLOSE OUT's drafts named to `handoff`, whose one call carries them before its own note and brief, as its `## The dated note` says; `handoff` names the hub as the tree the next session opens in, since this tree is removed after REMOVE.
 10. **REMOVE** — `.claude/references/core/gate-close.md` `### REMOVE`, with `<lane>` `feature`.
