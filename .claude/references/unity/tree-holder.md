@@ -8,7 +8,7 @@ The probe run on a tree before it is removed, to learn whether a Unity Editor ho
 unity status --project-path "<tree>" --json
 ```
 
-`<tree>` is the tree's path as the version-control binding's `trees` List read prints it, in double quotes. The probe carries no caller label: `unity status` exits 2 on one (`unity-cli-contract.md`, fact 1), which would read every tree unreadable. `--json` is what prints the error code `## Reading` reads; without it, `unity status` prints no code (`unity-cli-contract.md`, fact 9).
+`<tree>` is the tree's path as the version-control binding's `trees` List read prints it, taken by `unity-cli-contract.md` M1's form rule: converted to the Editor's own path form by the conversion the `verification` binding's `Path form` names, `<root>` there that path, run as its own call from the same root just before the probe, its output double-quoted into `--project-path`; or taken as printed, in double quotes, where the `Path form` says the `Working-dir read` already prints that form. `unity status` matches its value raw and separator-sensitive (`unity-cli-contract.md`, fact 11), so a path in another form lists no Editor, and a held tree would read not held. A conversion that fails or prints no path, or a `verification` binding that is absent, a single `none`, or whose `Path form` names neither, is unreadable. The probe carries no caller label: `unity status` exits 2 on one (`unity-cli-contract.md`, fact 1), which would read every tree unreadable. `--json` is what prints the error code `## Reading` reads; without it, `unity status` prints no code (`unity-cli-contract.md`, fact 9).
 
 ## Reading
 

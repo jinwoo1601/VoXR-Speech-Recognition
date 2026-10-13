@@ -3,7 +3,7 @@ name: orient
 description: "Say where things stand in three lines, from the status file, the latest session note and the branch, and name the next skill. Use at the start of a session, on 'where are we', 'what's the state', or after a context reset."
 kind: execution
 status: active
-bindings: [vc, board, trees, session-launch]
+bindings: [vc, board, verification, trees, session-launch]
 ---
 
 # orient
@@ -20,6 +20,7 @@ Each key is looked up as `.claude/references/core/delegation-contract.md` `## Bi
 
 - `vc` (required) — the base-revision reads that give the current branch, and the *Branch procedure*, whose forms STATE reads the lane from. Absent → after MEMORY, stop and say so, proposing the binding interview or, before the project is scaffolded, the project `CLAUDE.md` *Bindings* section.
 - `board` (optional) — where cross-session state lives beyond `memory/STATUS.md`. Absent → `memory/STATUS.md` is the state.
+- `verification` (optional) — the *Path form*, whose conversion a pack's `## The probe` may name for `<tree>`, which PROPOSE's holder probes run as `close-tree` STOPPED forms it, read by `references/trees.md`. Absent → as that `## The probe` says; never a stop for that reason alone.
 - `trees` (optional) — the Hub path, whose `memory/` MEMORY reads and whose branch BRANCH states; the List read and the Location slot, which TREES reads; the Hub slot's idiom by which those reads run in the hub; and the Remove procedure PROPOSE names. Absent → today's path; TREES is then skipped. Filled → MEMORY, BRANCH and PROPOSE also read the hub, and TREES runs.
 - `session-launch` (optional) — the List command, read by `references/trees.md`, and the *Context bound* and the *Context read*, which STATE reads. Absent, or the List command missing or `none` → TREES and PROPOSE as today; the *Context bound* or the *Context read* missing or `none` → STATE without the read.
 - No agent: this skill dispatches nothing.
