@@ -5,7 +5,7 @@ updated: 2026-10-13
 ## Current
 
 - **`main` at the PR #173 merge (`design-joined-rig`, G1 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`design-windows-native-toolchain` (design): G0 2026-10-13; next: recon, then `system-design-doc`.** Subsumes WSL-1; amends `automated-verification.md` Tier C.
+- **Next: `feat-windows-native-harness` at G0 once the `design-windows-native-toolchain` PR merges** (G1 LOCKED 2026-10-13; backlog: harness, then dotnet-fixtures).
 - **`feat-joined-rig-parser` held** behind `design-windows-native-toolchain` (human 2026-10-13: WSL removal first); its host choice (adr-0006) is settled there.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
