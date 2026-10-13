@@ -5,7 +5,7 @@ updated: 2026-10-13
 ## Current
 
 - **`main` at the PR #172 merge (`light-harness-upgrade-3`, G2-lite 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`design-joined-rig` (design) in flight: R1, join the push-audio harness to the parser rig; G0 2026-10-13; next: design work toward G1.**
+- **Next: `feat-joined-rig-parser` at G0 once the `design-joined-rig` PR merges** (`joined-rig` G1 LOCKED 2026-10-13; backlog: parser, then recogniser).
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
