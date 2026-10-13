@@ -4,8 +4,9 @@ updated: 2026-10-13
 
 ## Current
 
-- **`main` at the PR #172 merge (`light-harness-upgrade-3`, G2-lite 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **Next: `feat-joined-rig-parser` at G0 once the `design-joined-rig` PR merges** (`joined-rig` G1 LOCKED 2026-10-13; backlog: parser, then recogniser).
+- **`main` at the PR #173 merge (`design-joined-rig`, G1 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
+- **Next: `feat-windows-native-harness` at G0 once the `design-windows-native-toolchain` PR merges** (G1 LOCKED 2026-10-13; backlog: harness, then dotnet-fixtures).
+- **`feat-joined-rig-parser` held** behind `design-windows-native-toolchain` (human 2026-10-13: WSL removal first); its host choice (adr-0006) is settled there.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
