@@ -14,4 +14,5 @@
 
 ## trees
 <!-- Interview: Does this project run branches in their own working trees — where the main checkout and the trees live and how trees are named, how a branch and its tree are cut, listed, read clean, caught up with the main branch and removed, how writer branches are named, and whether writer trees are pooled — or a single `none` where every branch runs in the one checkout? -->
-- none — every branch runs in the one checkout: the host project `VoXR TestGround` consumes this checkout by `file:` path, so a branch in another tree would never be the one tested
+- none
+<!-- none: every branch runs in the one checkout — the host project `VoXR TestGround` consumes this checkout by `file:` path, so a branch in another tree would never be the one tested -->

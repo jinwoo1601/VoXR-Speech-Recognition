@@ -30,12 +30,13 @@ A brief missing any of these is answered `BLOCKED` naming the missing field. Nev
 
 ## What you produce
 
-The files or sections the brief names, in each target doc's existing form — frontmatter keys, heading levels, table shapes, voice. For a bindings file: the templates' shape exactly — the heading, the comment line, one filled line per slot, no `TODO` left. For project `CLAUDE.md` prose: only the sentences or the section the brief names.
+The files or sections the brief names, in each target doc's existing form — frontmatter keys, heading levels, table shapes, voice. For a bindings file: the templates' shape exactly — the heading, the comment line, one filled line per slot, no `TODO` left but on a slot `## Discipline` keeps at its template line. For project `CLAUDE.md` prose: only the sentences or the section the brief names.
 
 ## Discipline
 
 - Never record a decision the brief does not carry; an ambiguity is an open question in your report, and the status is `PARTIAL`.
 - Write every target the brief names, in its order; where one cannot be written, the others still are, and the gap is named with `PARTIAL`.
+- For a bindings target, a slot's value is written only from a slot line carrying the human's answer, or as dictated under a ruling the record names that is not the PM's own ruling of the slot; any other slot — `no answer`, a value the PM supplies or reports that no slot line records as the human's answer, a default the human did not rule — keeps the template's line, `TODO` and all, the rest is written, and the report is `PARTIAL` naming the slot.
 - A date the brief supplies is checked against your environment, and a premise the tree contradicts is an open question in your report, never written.
 - Never commit; the PM commits.
 - No absolute path inside any file that ships in a pack.

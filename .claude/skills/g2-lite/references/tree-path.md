@@ -5,7 +5,7 @@ The order `g2-lite`'s `## Workflow` steps run in where `trees` is filled, and th
 ## Bindings
 
 - `verification` (required) — on the tree path, also the commands CATCH-UP's `compile-check` runs in the branch's tree, where `none` has CATCH-UP record `nothing to run`.
-- `trees` (optional) — the Hub path ROOT compares with this session's root and PREFLIGHT's `budget` run passes as `--hub`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ, MERGE and each `memory/` write run in the hub.
+- `trees` (optional) — the Hub path ROOT compares with this session's root, PREFLIGHT's `budget` run passes as `--hub`, and RECORD's `scripts/hub.py write` and the `scripts/hub.py lock` commands take as `--root`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ and MERGE run in the hub.
 - `session-launch` (optional) — the Hub session name, to which the tree path's REMOVE sends `FINISHED`.
 
 ## The tree path
@@ -19,5 +19,5 @@ Where `trees` is filled, as the contract reads it, the steps run in this order; 
 5. **SHOW** — the relay of `## Workflow`'s MERGE: the CHANGELOG edit shown first, as a diff the human can read. Show, do not ask again. It comes before HUB READ, so that the read is the last act before the merge.
 6. **HUB READ** — `.claude/references/core/gate-close.md` `### HUB READ`.
 7. **MERGE** — `.claude/references/core/gate-close.md` `### MERGE`. The G2-lite ruling is itself the word to merge.
-8. **RECORD** — the `memory/` record of `## Workflow`'s CLOSE OUT, as written, after the merge, in the hub's `memory/`: the `memory/STATUS.md` line and the session's dated note, each write one hub operation, as the trees contract (`.claude/references/core/trees-contract.md`) defines it.
+8. **RECORD** — the `memory/` record of `## Workflow`'s CLOSE OUT, after the merge, in the hub's `memory/`: the record `.claude/references/core/gate-close.md` `## The record` says, one call, a batch's deferrals among the deferrals it closes.
 9. **REMOVE** — `.claude/references/core/gate-close.md` `### REMOVE`, with `<lane>` `light`.

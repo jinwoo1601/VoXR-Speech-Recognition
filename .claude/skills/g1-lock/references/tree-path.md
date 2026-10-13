@@ -5,7 +5,7 @@ The order `g1-lock`'s `## Workflow` steps run in where `trees` is filled, and th
 ## Bindings
 
 - `verification` (required only where CATCH-UP brings the target in) — the commands CATCH-UP's `compile-check` runs in the branch's tree; `none` is a filled value, and CATCH-UP records `nothing to run`. It is consulted nowhere else. Absent there → stop before the merge and say so.
-- `trees` (optional) — the Hub path ROOT compares with this session's root and PREFLIGHT's `budget` run takes as `--hub`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ, MERGE and each `memory/` write run in the hub.
+- `trees` (optional) — the Hub path ROOT compares with this session's root, PREFLIGHT's `budget` run takes as `--hub`, and STATUS's `scripts/hub.py write` and the `scripts/hub.py lock` commands take as `--root`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ and MERGE run in the hub.
 - `session-launch` (optional) — the Hub session name, to which the tree path's REMOVE sends `FINISHED`.
 
 ## The tree path
@@ -19,7 +19,7 @@ Where `trees` is filled, as the contract reads it, the steps run in this order; 
 5. **SHOW** — the relay of `## Workflow`'s MERGE: what was authored after the ruling — LOCK's and BACKLOG's edits and anything CATCH-UP brought in — shown as a diff the human can read. Show, do not ask again. It comes before HUB READ, so that the read is the last act before the merge.
 6. **HUB READ** — `.claude/references/core/gate-close.md` `### HUB READ`.
 7. **MERGE** — `.claude/references/core/gate-close.md` `### MERGE`. The G1 ruling is itself the word to merge.
-8. **STATUS** — `## Workflow`'s STATUS, as written, in the hub's `memory/`: the `memory/STATUS.md` line and the session's dated note, each write one hub operation, as the trees contract (`.claude/references/core/trees-contract.md`) defines it.
+8. **STATUS** — `## Workflow`'s STATUS, in the hub's `memory/`: the record `.claude/references/core/gate-close.md` `## The record` says, one call.
 9. **REMOVE** — `.claude/references/core/gate-close.md` `### REMOVE`, with `<lane>` `design`.
 
 ## The re-lock path

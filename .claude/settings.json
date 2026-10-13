@@ -50,10 +50,13 @@
       "Bash(python3 scripts/harness.py upgrade --dry-run:*)",
       "Bash(python3 scripts/hub.py sessions-at:*)",
       "Bash(python3 scripts/hub.py predecessor:*)",
+      "Bash(python3 scripts/hub.py write:*)",
       "Bash(claude agents:*)",
       "Bash(claude stop:*)",
       "Bash(claude --bg:*)",
       "Bash(CLAUDE_CODE_FORCE_SESSION_PERSISTENCE=1 claude --bg:*)",
+      "Bash(claude --background:*)",
+      "Bash(CLAUDE_CODE_FORCE_SESSION_PERSISTENCE=1 claude --background:*)",
       "Bash(unity status:*)",
       "Bash(unity command:*)",
       "Bash(unity test:*)",
@@ -80,7 +83,20 @@
       "Bash(python3 .claude/references/vc-git/pre-commit-check.py --range:*)",
       "Bash(git add:*)",
       "Bash(git switch:*)",
-      "Bash(git branch:*)",
+      "Bash(git branch)",
+      "Bash(git branch --list:*)",
+      "Bash(git branch -l:*)",
+      "Bash(git branch -a:*)",
+      "Bash(git branch -r:*)",
+      "Bash(git branch -v:*)",
+      "Bash(git branch -vv:*)",
+      "Bash(git branch --all:*)",
+      "Bash(git branch --remotes:*)",
+      "Bash(git branch --contains:*)",
+      "Bash(git branch --no-contains:*)",
+      "Bash(git branch --merged:*)",
+      "Bash(git branch --no-merged:*)",
+      "Bash(git branch --points-at:*)",
       "Bash(git check-ignore:*)",
       "Bash(git show-ref:*)",
       "Bash(git stash create:*)",
@@ -93,7 +109,8 @@
       "Bash(python3 ../harness/scripts/harness.py bounds:*)",
       "Bash(python3 ../harness/scripts/harness.py upgrade --dry-run:*)",
       "Bash(python3 ../harness/scripts/hub.py sessions-at:*)",
-      "Bash(python3 ../harness/scripts/hub.py predecessor:*)"
+      "Bash(python3 ../harness/scripts/hub.py predecessor:*)",
+      "Bash(python3 ../harness/scripts/hub.py write:*)"
     ],
     "deny": [
       "Bash(curl:*)",
@@ -119,15 +136,15 @@
       "Bash(sed -n --in-place*)",
       "Bash(sed -n * --in-place*)",
       "Bash(claude --settings*)",
-      "Bash(claude * --settings*)",
+      "Bash(claude *--settings*)",
       "Bash(claude --setting-sources*)",
-      "Bash(claude * --setting-sources*)",
+      "Bash(claude *--setting-sources*)",
       "Bash(claude --allowedTools*)",
-      "Bash(claude * --allowedTools*)",
+      "Bash(claude *--allowedTools*)",
       "Bash(claude --add-dir*)",
-      "Bash(claude * --add-dir*)",
+      "Bash(claude *--add-dir*)",
       "Bash(claude --allowed-tools*)",
-      "Bash(claude * --allowed-tools*)",
+      "Bash(claude *--allowed-tools*)",
       "Bash(git worktree remove --force:*)",
       "Bash(git worktree remove -f:*)",
       "Bash(git push --force*)",
@@ -193,7 +210,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/handoff-guard-hook.py\""
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/handoff-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/hub-memory-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
           }
         ]
       },
@@ -227,6 +254,16 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*--b*)",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/handoff-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+          }
+        ]
+      },
+      {
         "matcher": "Edit|Write",
         "hooks": [
           {
@@ -241,7 +278,7 @@
           {
             "type": "command",
             "if": "Bash(*git*)",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       }
