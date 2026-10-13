@@ -59,4 +59,4 @@ One record for four forks, rules 9, 10 and 11 of the model and rule 2, the fourt
 
 ## Status
 
-Accepted on 2026-10-13 by the human's ruling in conversation. The fourth sub-fork, the kill check under a decoder-side A/B, was added at the quality-bar pass on 2026-10-13, also by the human's ruling; the human ruled the recommended option. The design doc (`Planning~/design-docs/joined-rig.md`) is in design and not locked.
+Accepted on 2026-10-13 by the human's ruling in conversation. The fourth sub-fork, the kill check under a decoder-side A/B, was added at the quality-bar pass on 2026-10-13, also by the human's ruling; the human ruled the recommended option. The design doc (`Planning~/design-docs/joined-rig.md`) was locked at G1 on 2026-10-13 and re-locked the same day with Amendment A1 (adr-0006).

@@ -20,7 +20,7 @@ The scope agreed at G0 (`Planning~/design-docs/joined-rig.md` §0, In 1) asks fo
 
 ## The decision
 
-**Option (a): the harness dumps every decoder result as JSON lines, and the dotnet rig reads and scores the dump.** It commits the design to two processes joined by one file contract, to measuring the native (Quest) pipeline, and to running from WSL with no Unity (`Planning~/design-docs/joined-rig.md` §1, rules 1, 6 and 7). The dump schema is the architecture doc's.
+**Option (a): the harness dumps every decoder result as JSON lines, and the dotnet rig reads and scores the dump.** It commits the design to two processes joined by one file contract, to measuring the native (Quest) pipeline, and to running with no Unity, on a host the architecture doc picks (adr-0006) (`Planning~/design-docs/joined-rig.md` §1, rules 1, 6 and 7). The dump schema is the architecture doc's.
 
 ## Why the rejected branches lost
 
@@ -34,9 +34,9 @@ The scope agreed at G0 (`Planning~/design-docs/joined-rig.md` §0, In 1) asks fo
 - A dump is replayable through any parser ref without decoding again.
 - The kill check (rule 2) reads the transcript layer — the final texts in the dump — against the committed `expectations.json` byte for byte; if they differ, the run reports no command-level numbers.
 - The pipeline measured is the native (Quest) pipeline; the C# Editor pipeline and its AGC divergence are out of scope and handed off.
-- Claude can run it from WSL with no Unity, which restates `automated-verification.md` goal 2.
+- Claude can run it from its own shell with no Unity and no device, carrying the intent of `automated-verification.md` goal 2; the host is the architecture doc's (adr-0006).
 - Left open, for the architecture doc: the dump schema, the run script, and where the joined rig lives (today it sits under one feature's `Planning~/` directory, and an older copy exists in `fidelity-miss-cost/ab-rig`).
 
 ## Status
 
-Accepted on 2026-10-13 by the human's ruling in conversation. The design doc (`Planning~/design-docs/joined-rig.md`) is in design and not locked.
+Accepted on 2026-10-13 by the human's ruling in conversation. The design doc (`Planning~/design-docs/joined-rig.md`) was locked at G1 on 2026-10-13 and re-locked the same day with Amendment A1 (adr-0006).

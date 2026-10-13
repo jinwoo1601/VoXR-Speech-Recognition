@@ -36,4 +36,4 @@ The scope agreed at G0 (`Planning~/design-docs/joined-rig.md` §0, In 2) asks fo
 
 ## Status
 
-Accepted on 2026-10-13 by the human's ruling in conversation. The design doc (`Planning~/design-docs/joined-rig.md`) is in design and not locked.
+Accepted on 2026-10-13 by the human's ruling in conversation. The design doc (`Planning~/design-docs/joined-rig.md`) was locked at G1 on 2026-10-13 and re-locked the same day with Amendment A1 (adr-0006).
