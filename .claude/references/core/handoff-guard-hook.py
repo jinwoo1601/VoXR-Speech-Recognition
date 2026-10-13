@@ -152,7 +152,9 @@ def absent_form(lines):
     """True where the `trees` section's lines read absent by the worktree hook's
     rules - empty, `TODO` or `none`, checked in that order - else False.
 
-    A content line is one that, stripped, is neither blank nor a comment.
+    A content line is one that, stripped, is neither blank nor a comment. The
+    `none` form is a lone content line reading `none` in lowercase, bare or
+    followed by whitespace or an em dash and a reason.
     """
     stripped = [line.strip() for line in lines]
     content = [line for line in stripped
@@ -161,7 +163,8 @@ def absent_form(lines):
         return True
     if any("TODO" in line for line in lines):
         return True
-    return len(content) == 1 and content[0].removeprefix("- ").replace("`", "") == "none"
+    return len(content) == 1 and re.match(
+        r"none(\s|\u2014|$)", content[0].removeprefix("- ").replace("`", "")) is not None
 
 
 # Copied verbatim from the rm fence (rm-fence-hook.py).

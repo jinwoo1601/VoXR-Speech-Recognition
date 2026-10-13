@@ -110,7 +110,9 @@ def absent_form(root):
     """`(form, None)` where `trees` reads absent - `missing`, `empty`, `TODO` or
     `none`, checked in that order - else `(None, lines)`, the filled section's lines.
 
-    A content line is one that, stripped, is neither blank nor a comment.
+    A content line is one that, stripped, is neither blank nor a comment. The
+    `none` form is a lone content line reading `none` in lowercase, bare or
+    followed by whitespace or an em dash and a reason.
     """
     path = root / BINDINGS_REL
     if not path.is_file():
@@ -125,7 +127,8 @@ def absent_form(root):
         return "empty", None
     if any("TODO" in line for line in lines):
         return "TODO", None
-    if len(content) == 1 and content[0].removeprefix("- ").replace("`", "") == "none":
+    if len(content) == 1 and re.match(
+            r"none(\s|\u2014|$)", content[0].removeprefix("- ").replace("`", "")) is not None:
         return "none", None
     return None, lines
 

@@ -4,7 +4,8 @@ updated: 2026-10-13
 
 ## Current
 
-- **`main` at the PR #171 merge (`light-harness-upgrade-2`, G2-lite 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161; next: `release` (RSE-1 first).
+- **`main` at the PR #172 merge (`light-harness-upgrade-3`, G2-lite 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
+- **Next: `release`** (RSE-1 first; version the human's, `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
 - **Plan of action** (2026-09-06 rulings, `Planning~/research/2026-09-05-next-level/05-rulings.md`): Phase A complete (#143–#148, #150, #153, #154 merged).
 - Phase B free probes, none run: classify the 73 field false triggers; NCE/ECE of grammar `conf`; recorded coughs through the WebRTC VAD; Quest adb audio-effects session.

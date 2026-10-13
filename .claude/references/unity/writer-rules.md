@@ -4,7 +4,7 @@ The rules `code-writer` follows in a project composing this pack, and the comman
 
 ## Granted commands
 
-- `unity status` — the contract's `## M1` read before scene, asset or prefab work, run as the contract writes it — `<root>` converted first by the conversion the quoted `Path form` names, which this bullet grants for that read alone — with no caller label (the contract's fact 1).
+- `unity status` — the contract's `## M1` read before scene, asset or prefab work, run as the contract writes it — `<root>` converted first by the conversion the quoted `Path form` names, which this bullet grants for that read alone, or taken as printed where that `Path form` says the `Working-dir read` already prints the Editor's own path form — with no caller label (the contract's fact 1).
 - `unity command` — that work and the catalog read (`unity command --format json`), against this tree's Editor only, with the caller label of the contract's `## The caller label`; every catalog command but `eval`, which is not granted and denied by the settings; compiles and test runs only as the brief's Verification command says.
 
 ## Scene, asset and prefab work
