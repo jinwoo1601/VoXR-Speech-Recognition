@@ -127,6 +127,7 @@ Ordered lowest-risk-first within the dependencies. No route prototype precedes t
 - **Assets the build needs that code cannot author:** the pinned `vosk-win64-0.3.45.zip` (one-time network; a copy already sits at `.scratch/vosk-win64-probe/`); the model `vendor/vosk-model-small-en-us-0.15/` (present); Visual Studio 2022 Community with the x64 C++ tools and Windows SDK 10.0.26100.0; Unity 6000.3.7f1's Android SDK (cmake for both halves, ninja for the arm64 half) and NDK (arm64 half, `llvm-nm`).
 - Phase 1 — persisted plan (2026-10-14): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-10-14): [plan-2.md](plan-2.md)
+- Phase 3 — persisted plan (2026-10-14): [plan-3.md](plan-3.md)
 
 ## Risks, tradeoffs & open questions
 
