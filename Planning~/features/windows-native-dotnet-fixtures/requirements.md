@@ -2,7 +2,7 @@
 type: requirements
 feature: windows-native-dotnet-fixtures
 topic: windows-native-toolchain
-status: draft
+status: accepted   # G2 ruled in-conversation 2026-10-14: accepted at fe2e984
 updated: 2026-10-14
 sources:
   - Planning~/design-docs/windows-native-toolchain.md
@@ -109,18 +109,20 @@ The G0 **Out** list in §2, plus:
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] F1: Command 4 runs verbatim from the binding in Git Bash on native dotnet — `Build succeeded`, `0 Error(s)`, only the CS0618 warning; the mutation goes red and back to green; the sanity count prints 7.
-- [ ] F2: the DocCheck procedure in `Planning~/verification-recipe.md`, followed verbatim, exits 0 with every check passing.
-- [ ] F3: `generate.sh --only <one fixture>` from an empty cache bootstraps the venv, fetches the voice and writes a 48 kHz, 16-bit mono WAV with peak within 0.04–0.4; the committed WAVs under `Tests~/Fixtures/audio/` unchanged afterwards.
-- [ ] F4: `generate.sh` keeps a working Linux host layout, by review.
-- [ ] F5: the binding's Prerequisites, Shell and Path-form lines drop WSL and name what Commands 3–4 need; F7 passes.
-- [ ] F6: the recipe's remaining WSL text is gone and its adb path resolves with `ls`; F7 passes.
-- [ ] F7: `git grep -n -I -i -E 'wsl|/mnt/'` over the live areas prints nothing.
-- [ ] F8: `NativeBridge~/include/vosk_api.h:3` names `libvosk.so` on Android and `libvosk.dll` on the Windows desktop build.
-- [ ] F9: `git diff main -- Runtime/ Samples~/ Tests~/Fixtures/audio/` is empty; Commands 1–2 green.
-- [ ] Path-conversion neutrality: every bound command and the DocCheck procedure give the same result with `MSYS_NO_PATHCONV` set and unset.
-- [ ] Degraded dependency: a missing prerequisite fails loudly naming it, with no WSL fallback — by review, plus the negative runs the architecture doc names.
-- [ ] Human-only verification: none — the human runs the `generate.sh` download step; agents judge its result.
+- [x] F1: Command 4 runs verbatim from the binding in Git Bash on native dotnet — `Build succeeded`, `0 Error(s)`, only the CS0618 warning; the mutation goes red and back to green; the sanity count prints 7. (Phase 1 gate: canary red `CS0103` at `TacticalSceneController.cs:56`, green after revert; review-fix CHECK: subshell form green twice, sanity count 7)
+- [x] F2: the DocCheck procedure in `Planning~/verification-recipe.md`, followed verbatim, exits 0 with every check passing. (66/66, exit 0, at the Phase 1 gate and the review-fix CHECK)
+- [x] F3: `generate.sh --only <one fixture>` from an empty cache bootstraps the venv, fetches the voice and writes a 48 kHz, 16-bit mono WAV with peak within 0.04–0.4; the committed WAVs under `Tests~/Fixtures/audio/` unchanged afterwards. (the maintainer's `--only cease_fire` run: `py -3` 3.12.10, peak 0.050; header `48000 2 1`; WAV restored)
+- [x] F4: `generate.sh` keeps a working Linux host layout, by review. (Phase 2 read-through: paths and command words equal the old script's)
+- [x] F5: the binding's Prerequisites, Shell and Path-form lines drop WSL and name what Commands 3–4 need; F7 passes. (Phase 1; F7 empty)
+- [x] F6: the recipe's remaining WSL text is gone and its adb path resolves with `ls`; F7 passes. (Phase 1 gate: adb `ls` exit 0; F7 empty)
+- [x] F7: `git grep -n -I -i -E 'wsl|/mnt/'` over the live areas prints nothing. (empty, exit 1, at Phase 2 gate C, the review-fix CHECK and both preflights)
+- [x] F8: `NativeBridge~/include/vosk_api.h:3` names `libvosk.so` on Android and `libvosk.dll` on the Windows desktop build. (Phase 1; closes WNH-1)
+- [x] F9: `git diff main -- Runtime/ Samples~/ Tests~/Fixtures/audio/` is empty; Commands 1–2 green. (diff empty every gate; EditMode 203/203, PlayMode 704/704 both ways)
+- [x] Path-conversion neutrality: every bound command and the DocCheck procedure give the same result with `MSYS_NO_PATHCONV` set and unset. (Commands 1–4 and DocCheck each run set and unset, same results)
+- [x] Degraded dependency: a missing prerequisite fails loudly naming it, with no WSL fallback — by review, plus the negative runs the architecture doc names. (negative runs: Command 4 `HostAsm` exit 1 naming `UnityEngine.UI.dll`; `generate.sh` `VOXR_PYTHON=no-such-python` exit 1 naming it, no venv)
+- [x] Human-only verification: none — the human runs the `generate.sh` download step; agents judge its result. (the maintainer's `generate.sh` run, Phase 2)
+
+**Ruled at G2 on 2026-10-14** by the maintainer, in conversation: accepted at head `fe2e984`, with preflight 2 in view — STATUS, five `memory/handoffs` `.meta` and the architecture doc's budget trim remediated preflight 1 before the ruling; WNH-1 and WSL-1 closed.
 
 ## 10. Open questions
 
