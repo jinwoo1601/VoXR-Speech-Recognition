@@ -161,6 +161,24 @@ namespace AbRig
                 return 0;
             }
 
+            // --joined: the joined-rig mode (feat-joined-rig-parser), dispatched here for the
+            // same reason as --sweep. Handed the default replay's parser (below) and the grammar
+            // --grammar prints, which its guard compares with the pin before anything is scored.
+            if (Array.IndexOf(args, "--joined") >= 0)
+            {
+                var joinedParser = new VoxrCommandParser(
+                    Slots(),
+                    Commands(),
+                    VoxrCommandParser.DefaultCoverageWeight,
+                    FollowUpWords()
+                );
+                return Joined.Run(
+                    args,
+                    joinedParser,
+                    VoxrCommandParser.GenerateGrammarJson(Slots(), Commands(), FollowUpWords())
+                );
+            }
+
             if (Array.IndexOf(args, "--check") >= 0)
             {
                 Check.Run();

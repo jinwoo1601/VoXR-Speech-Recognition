@@ -39,7 +39,8 @@ for src in "${SOURCES[@]}"; do
 done
 
 cp "$HERE/UnityStub.cs" "$HERE/Program.cs" "$HERE/Check.cs" "$HERE/DocCheck.cs" \
-   "$HERE/PlayerCheck.cs" "$HERE/Sweep.cs" "$HERE/Rig.csproj" "$OUT/"
+   "$HERE/PlayerCheck.cs" "$HERE/Sweep.cs" "$HERE/Rig.csproj" \
+   "$HERE/JoinedInput.cs" "$HERE/Joined.cs" "$OUT/"
 
 # Pin what was staged, so a report can never be attributed to the wrong revision.
 if [ "$REF" = "WORKTREE" ]; then

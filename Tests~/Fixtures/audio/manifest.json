@@ -1,5 +1,6 @@
 {
     "voice": "en_US-lessac-medium",
+    "provenance": "Synthetic TTS corpus: voice en_US-lessac-medium, synthesized with piper-tts by Tests~/Fixtures/generate.py. Synthetic TTS evidence cannot rank decoders (C12).",
     "cases": [
         {
             "file": "audio/tts/launch_one_missiles_target_hotel_one.wav",
@@ -165,6 +166,7 @@
         {
             "file": "audio/tts/split_close_distance_safe_range_target_hotel_one.wav",
             "category": "split",
+            "layer": "recogniser",
             "segments": [
                 "close distance safe range",
                 "target hotel one"
