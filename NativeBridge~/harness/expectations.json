@@ -233,5 +233,5 @@
         "yes",
         "zero"
     ],
-    "libvosk": "0.3.45 (Alphacephei vosk-linux-x86_64 prebuilt)"
+    "libvosk": "0.3.45 (Alphacephei vosk-win64 prebuilt)"
 }
