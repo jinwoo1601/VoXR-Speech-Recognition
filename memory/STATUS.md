@@ -5,7 +5,7 @@ updated: 2026-10-14
 ## Current
 
 - **`main` at the PR #174 merge (`design-windows-native-toolchain`, G1 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`feat-windows-native-harness` (feature, Full): Phase 1 built + gated 2026-10-14 (arm64 symbols unchanged); next: Phase 2 `phase-pickup`.** Row 2 `windows-native-dotnet-fixtures` follows it.
+- **`feat-windows-native-harness` (feature, Full): Phases 1-3 built + gated 2026-10-14 (Phase 3 `84ac534`: Command 3 bound verbatim, 16/16; README from empty vendor/ green); next: `review-cycle`, then G2.** Row 2 `windows-native-dotnet-fixtures` follows it.
 - **`feat-joined-rig-parser` held** behind `design-windows-native-toolchain` (human 2026-10-13: WSL removal first); its host choice (adr-0006) is settled there.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
