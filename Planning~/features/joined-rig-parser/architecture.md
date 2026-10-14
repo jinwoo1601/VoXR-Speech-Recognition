@@ -120,10 +120,10 @@ Every number the rig uses, each **provisional → the tuning pass** (Phase 4), w
 
 | Number | Value | Evidence |
 |---|---|---|
-| `MinScore` | 0.6 | Mirrors `VoxrCommandRecogniser` `minScore` default (:31) and `VoxrCommandParser.DefaultMinScore` (:181); `report.py`/`ablate.py` use 0.6. Tuning pass: pending. |
-| `MinConfidence` | 0.4 | Mirrors `VoxrCommandRecogniser` `minConfidence` default (:27). Tuning pass: pending. |
+| `MinScore` | 0.6 | Mirrors `VoxrCommandRecogniser` `minScore` default (:31) and `VoxrCommandParser.DefaultMinScore` (:181); `report.py`/`ablate.py` use 0.6. Tuning pass (Phase 4; stays 0.6): citations re-verified at HEAD (:31; `DefaultMinScore` :181; `report.py` :23; `ablate.py` :28). 16-fixture counts at the gate (`main` vs `main`): correct 15 (of which correct no-fire 1), wrong-slots 0, wrong-intent 0, missed 0, false-fire 0, extra fires 0, not scored at this layer 1, sealed-skipped 0. Probe (side a, one notch, staged copy): 0.5 moves no class; 0.7 none. Provisional (TTS-only, C12). |
+| `MinConfidence` | 0.4 | Mirrors `VoxrCommandRecogniser` `minConfidence` default (:27). Tuning pass (Phase 4; stays 0.4): citation re-verified at HEAD (:27); counts as above. Probe (same): 0.3 moves no class; 0.5 none. Provisional (TTS-only, C12). |
 
-No class weight; slot credit is the bare fraction; the kill check has no tolerance; no combined score is offered.
+No class weight; slot credit is the bare fraction; the kill check has no tolerance; no combined score is offered. The parser runs at its own defaults (e.g. `VoxrCommandParser.DefaultCoverageWeight`, `ab-rig/Program.cs` :317), staged with each ref — parser configuration, not a rig number.
 
 ## Non-functional realization
 
