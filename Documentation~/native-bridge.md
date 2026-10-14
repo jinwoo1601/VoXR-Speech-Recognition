@@ -56,15 +56,27 @@ The capture backend is selected at configure time by the CMake option `VOSK_BRID
 
 ---
 
-## Desktop Build & WSL Harness
+## Desktop Build & Windows Harness
 
-`NativeBridge~/CMakePresets.json` defines a `desktop-linux` preset (Linux x86_64, stub backend, Release) that builds the bridge against a locally provisioned Linux `libvosk.so` — no NDK, no JNI — plus a CLI harness (`NativeBridge~/harness/`) that replays the committed fixture corpus (`Tests~/Fixtures/audio/`) through the real bridge in push mode and compares final transcripts against a committed baseline (`harness/expectations.json`, which pins the grammar, AGC gain, and libvosk version it was decoded under). This makes bridge-logic changes verifiable from WSL in seconds; it deliberately cannot validate the arm64 binary, JNI capture, or Quest audio routing (the on-device tier owns those). Provisioning, build, run, and re-baselining are documented in `NativeBridge~/harness/README.md`. Desktop-only: the Windows editor keeps its own managed pipeline and never loads `libvosk-bridge`.
+`NativeBridge~/CMakePresets.json` defines one preset, `windows-x64` (CMake's "Visual Studio 17 2022" generator, x64, stub backend, Release, output in `NativeBridge~/build-windows/`). It builds the bridge with MSVC from Visual Studio 2022 Community — no NDK, no JNI — against Alphacephei's pinned Windows prebuilt `libvosk` 0.3.45 (`libvosk.dll` and its import library `libvosk.lib`, provisioned under `NativeBridge~/vendor/vosk-win64-0.3.45/`), the same `libvosk.dll` the Editor ships in `Runtime/Plugins/x86_64/`. With it comes a CLI harness (`NativeBridge~/harness/`) that replays the committed fixture corpus (`Tests~/Fixtures/audio/tts/`) through the real bridge in push mode and compares final transcripts against a committed baseline (`harness/expectations.json`, which pins the grammar, AGC gain, and libvosk version it was decoded under). Configure, build, and run are one command in Git Bash on the Windows host, driven by the cmake 3.22.1 that Unity 6000.3.7f1's Android SDK ships, so bridge-logic changes are verifiable in seconds; it deliberately cannot validate the arm64 binary, JNI capture, or Quest audio routing (the on-device tier owns those). Provisioning, the build-and-run command, and re-baselining are documented in `NativeBridge~/harness/README.md`. Desktop-only: the Windows build exists for the harness, `Runtime/Plugins/x86_64/` ships no bridge DLL, and the Windows Editor keeps its own managed pipeline over `libvosk.dll` and never loads `libvosk-bridge`.
+
+How the Windows build holds together, and why:
+
+- **The Visual Studio generator, not Ninja.** The generator locates the Visual Studio 2022 installation itself and drives MSBuild, so no compiler-environment script (`vcvars64.bat`) runs and the whole command stays plain Git Bash. The command pins the installation with `CMAKE_GENERATOR_INSTANCE`, and the "Visual Studio 17 2022" generator selects only a Visual Studio 2022 instance, so a missing installation fails instead of falling back to another. The MSVC toolset is the generator's default, not pinned: a Visual Studio update can move it, and the baseline judges any effect.
+- **Release lives in the build preset**, because `cmake --build` on a Visual Studio tree builds Debug when no configuration is given.
+- **No argument Git Bash would rewrite.** Nothing passed to a Windows program starts with `/` (paths are `C:/…` or relative, and `/utf-8` reaches the compiler through `CMakeLists.txt`), so the command behaves the same with or without `MSYS_NO_PATHCONV`.
+- **The vendor is checked at configure time.** On Windows, configure fails naming the first missing file among `libvosk.lib`, `libvosk.dll`, and the three MinGW runtime DLLs (`libstdc++-6.dll`, `libgcc_s_seh-1.dll`, `libwinpthread-1.dll`) in `VOSK_LIB_DIR`; nothing else is searched, so no other `libvosk` can be linked in its place.
+- **One run directory.** `vosk-bridge.dll` and `vosk-bridge-harness.exe` land together in `build-windows/bin/`, and configure copies the four vendor DLLs beside them, so the loader takes them from the executable's directory before any `PATH` entry — Git for Windows puts its own `libgcc_s_seh-1.dll` on Git Bash's `PATH`.
+- **`/utf-8` under MSVC**, so the sources' UTF-8 punctuation compiles the same whatever the host's code page.
+- **The GNU link flags** (`-Wl,--no-undefined -Wl,--strip-all`) apply only off MSVC, which rejects them.
+- **The pinned zip is hash-checked and extracted as-is.** The README checks `vosk-win64-0.3.45.zip`'s SHA-256 before extracting and stops on a mismatch; the version in the directory name makes a re-pin a visible preset edit.
+- **The baseline is not re-pinned for a Windows divergence.** Re-baselining follows a corpus regeneration or a libvosk bump; a transcript mismatch on the Windows build (exit 1) stops for a ruling instead.
 
 ---
 
 ## ABI Exports
 
-The complete C ABI is declared in `NativeBridge~/src/vosk_bridge.h`. All symbols are `extern "C"` with default visibility. The lifecycle and grammar calls return a `VoskBridgeError` (`0` = OK); the push, status, and result calls return values of their own, as each row notes.
+The complete C ABI is declared in `NativeBridge~/src/vosk_bridge.h`. All symbols are `extern "C"` and marked `VOSK_BRIDGE_EXPORT`: default visibility on every non-Windows target (the Android build), `__declspec(dllexport)` when MSVC compiles the bridge DLL itself (CMake defines `vosk_bridge_EXPORTS` for the `vosk-bridge` target), and `__declspec(dllimport)` for a consumer such as the harness — MSVC emits no import library for a DLL with no exports, so the harness could not link without it. The target's visibility presets are `hidden`, so nothing but the C ABI is exported. The lifecycle and grammar calls return a `VoskBridgeError` (`0` = OK); the push, status, and result calls return values of their own, as each row notes.
 
 | Symbol | Purpose |
 |--------|---------|

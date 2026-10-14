@@ -1,5 +1,5 @@
 # ============================================================================
-# Purpose:  Build the WSL WAV->transcript harness CLI (Tier C)
+# Purpose:  Build the desktop WAV->transcript harness CLI (Tier C)
 # Layer:    NativeBridge.Harness
 # Owns:     vosk-bridge-harness (executable target)
 # Depends:  vosk-bridge (shared library target), nlohmann/json (vendored)

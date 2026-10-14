@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  WSL WAV->transcript harness — replays the fixture corpus through
+// Purpose:  Desktop WAV->transcript harness — replays the fixture corpus through
 //           the desktop bridge in push mode and compares final transcripts
 //           against the committed expectation baseline (Tier C)
 // Layer:    NativeBridge.Harness

@@ -2,17 +2,27 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "desktop-linux",
-      "displayName": "Desktop Linux x86_64 (stub capture, WSL harness)",
-      "description": "Tier C build: stub capture backend, libvosk from vendor/, harness enabled. See harness/README.md for provisioning.",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build-desktop",
+      "name": "windows-x64",
+      "displayName": "Windows x64 (MSVC (VS 2022), stub capture, harness)",
+      "description": "Windows x64 build with MSVC (VS 2022): stub capture backend, libvosk from vendor/vosk-win64-0.3.45, harness enabled. See harness/README.md for provisioning.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "binaryDir": "${sourceDir}/build-windows",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
         "VOSK_BRIDGE_CAPTURE": "stub",
         "VOSK_BRIDGE_BUILD_HARNESS": "ON",
-        "VOSK_LIB_DIR": "${sourceDir}/vendor"
+        "VOSK_LIB_DIR": "${sourceDir}/vendor/vosk-win64-0.3.45"
       }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-x64",
+      "configurePreset": "windows-x64",
+      "configuration": "Release"
     }
   ]
 }
