@@ -103,7 +103,7 @@ if(NOT MSVC)
 endif()
 
 # LTO via -flto=thin (NDK uses lld, not gold, so CMake's IPO property won't
-# work). clang/lld-specific — Android only; GCC on desktop would reject it.
+# work). clang/lld-specific — Android only.
 if(ANDROID)
     target_compile_options(vosk-bridge PRIVATE $<$<CONFIG:Release>:-flto=thin>)
     target_link_options(vosk-bridge PRIVATE $<$<CONFIG:Release>:-flto=thin>)

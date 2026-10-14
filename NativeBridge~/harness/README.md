@@ -6,22 +6,24 @@ What it verifies: bridge *logic* against a real Windows libvosk 0.3.45, the same
 
 ## One-time provisioning
 
-Everything lands in `NativeBridge~/vendor/` (gitignored, never committed).
+Everything lands in `NativeBridge~/vendor/` (gitignored, never committed). Run each code block below from the project root in Git Bash; each block returns there when it ends.
 
 1. **Toolchain**: Visual Studio 2022 Community with the x64 C++ tools (the "Desktop development with C++" workload), at its default path `C:/Program Files/Microsoft Visual Studio/2022/Community`; Unity 6000.3.7f1 with Android Build Support, whose SDK ships the cmake 3.22.1 the build command uses by absolute path. The shell is Git Bash.
 2. **libvosk** — Alphacephei's Windows prebuilt, pinned **0.3.45** (must match `expectations.json`'s `libvosk` pin; a different version is a conscious re-baseline). Download, check the zip's SHA-256, then extract:
    ```bash
-   cd NativeBridge~/vendor
+   mkdir -p NativeBridge~/vendor && cd NativeBridge~/vendor
    curl -LO https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-win64-0.3.45.zip
    echo "f1dcc9cca460630f81ea8f71794f69c80bed6556d2a4e6237b5785e1d2dff34b  vosk-win64-0.3.45.zip" | sha256sum -c -
    unzip vosk-win64-0.3.45.zip
+   cd ../..
    ```
    The check must print `vosk-win64-0.3.45.zip: OK`. On a mismatch, stop: do not extract, and raise it (adr-0004). The result is `vendor/vosk-win64-0.3.45/` holding its six files exactly as unzipped (`libvosk.dll`, `libvosk.lib`, `vosk_api.h`, `libstdc++-6.dll`, `libgcc_s_seh-1.dll`, `libwinpthread-1.dll`); nothing is copied up a level.
 3. **Model** — the same small English model the package uses on-device, `vosk-model-small-en-us-0.15`. Either unzip the copy already in the host test project (`VoXR TestGround/Assets/StreamingAssets/vosk-model-small-en-us-0.15.zip`) into `vendor/`, or download it from <https://alphacephei.com/vosk/models>:
    ```bash
-   cd NativeBridge~/vendor
+   mkdir -p NativeBridge~/vendor && cd NativeBridge~/vendor
    curl -LO https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
    unzip vosk-model-small-en-us-0.15.zip
+   cd ../..
    ```
 4. **Linux leftovers** — `vendor/libvosk.so`, `vendor/vosk-linux.zip` and `vendor/vosk-linux-x86_64-0.3.45/`, from before the Windows-native build, are unused: delete them.
 
