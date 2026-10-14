@@ -1,7 +1,7 @@
 // ============================================================================
 // Purpose:  Strict readers for the joined mode's inputs (harness dump, corpus manifest, pin) and their case joins
 // Layer:    Planning.AbRig
-// Owns:     JoinedInput (internal static class), JoinedInput.Stop (internal sealed class), JoinedInput.Dump (internal sealed class), JoinedInput.DumpCase (internal sealed class), JoinedInput.Manifest (internal sealed class), JoinedInput.ManifestCase (internal sealed class), JoinedInput.Pin (internal sealed class)
+// Owns:     JoinedInput (internal static class), JoinedInput.Stop (internal sealed class), JoinedInput.Word (internal sealed class), JoinedInput.Dump (internal sealed class), JoinedInput.DumpCase (internal sealed class), JoinedInput.Manifest (internal sealed class), JoinedInput.ManifestCase (internal sealed class), JoinedInput.Pin (internal sealed class)
 // Depends:  (none)
 // ============================================================================
 // Every reader finishes before the guard, the kill check or any scoring looks at its
@@ -33,12 +33,25 @@ namespace AbRig
             }
         }
 
+        // One `payload.result` entry of a non-empty final: Vosk's `word`, `conf`, `start`, `end`,
+        // each number read straight to a float as VoxrJsonParser.ParseWordsFromJson reads it.
+        internal sealed class Word
+        {
+            internal string Text;
+            internal float Conf;
+            internal float Start;
+            internal float End;
+        }
+
         internal sealed class DumpCase
         {
             internal string Name;
 
             // Ordered `text`s of the case's `final:true` records, empty ones dropped.
             internal readonly List<string> Finals = new List<string>();
+
+            // Each of Finals' `payload.result` words, parallel to Finals.
+            internal readonly List<Word[]> Words = new List<Word[]>();
 
             // Why the case is a failed decode (`raw`, an `error` payload, non-empty `errors`);
             // empty = decoded.
@@ -61,6 +74,8 @@ namespace AbRig
             internal string Name; // the join key: `file` after its last '/'
             internal bool Sealed;
             internal string Layer; // "parser" or "recogniser"; absent = parser
+            internal string ExpectedIntent; // "" = a negative
+            internal KeyValuePair<string, string>[] ExpectedSlots; // ordered {name, value}
         }
 
         internal sealed class Manifest
@@ -220,7 +235,10 @@ namespace AbRig
                         {
                             string finalText = Str(payload, "text", where);
                             if (finalText.Length > 0)
+                            {
                                 open.Finals.Add(finalText);
+                                open.Words.Add(ReadWords(payload, where));
+                            }
                         }
                         else
                             Str(payload, "partial", where);
@@ -291,6 +309,29 @@ namespace AbRig
             if (!ended)
                 throw new Stop(2, path + ":" + count + ": no `end` record");
             return dump;
+        }
+
+        // A non-empty final's `payload.result`: required, each entry an object with a string
+        // `word` and numeric `conf`, `start`, `end` (only empty-text finals may lack it).
+        static Word[] ReadWords(JsonElement payload, string where)
+        {
+            JsonElement result = Arr(payload, "result", where);
+            var words = new Word[result.GetArrayLength()];
+            int i = 0;
+            foreach (JsonElement e in result.EnumerateArray())
+            {
+                string at = where + ": `result`[" + i + "]";
+                if (e.ValueKind != JsonValueKind.Object)
+                    throw new Stop(2, at + ": not an object");
+                words[i++] = new Word
+                {
+                    Text = Str(e, "word", at),
+                    Conf = Float(e, "conf", at),
+                    Start = Float(e, "start", at),
+                    End = Float(e, "end", at),
+                };
+            }
+            return words;
         }
 
         // --- corpus manifest --------------------------------------------------------------
@@ -371,7 +412,20 @@ namespace AbRig
                             );
                         mc.Layer = layer;
                     }
+                    else if (p.Name == "expectedIntent")
+                    {
+                        if (p.Value.ValueKind != JsonValueKind.String)
+                            throw new Stop(2, named + ": key `expectedIntent` is not a string");
+                        mc.ExpectedIntent = p.Value.GetString();
+                    }
+                    else if (p.Name == "expectedSlots")
+                        mc.ExpectedSlots = ReadExpectedSlots(p.Value, named);
                 }
+                // The scorer's inputs are required: an absent one is never a silent negative.
+                if (mc.ExpectedIntent == null)
+                    throw new Stop(2, named + ": no key `expectedIntent`");
+                if (mc.ExpectedSlots == null)
+                    throw new Stop(2, named + ": no key `expectedSlots`");
 
                 mc.Name = mc.File.Substring(mc.File.LastIndexOf('/') + 1);
                 if (!byName.Add(mc.Name))
@@ -382,6 +436,38 @@ namespace AbRig
                 manifest.Cases.Add(mc);
             }
             return manifest;
+        }
+
+        // `expectedSlots`: an array of objects, each exactly a string `name` and a string `value`.
+        static KeyValuePair<string, string>[] ReadExpectedSlots(JsonElement value, string named)
+        {
+            string bad =
+                named + ": key `expectedSlots` is not an array of {name, value} string pairs";
+            if (value.ValueKind != JsonValueKind.Array)
+                throw new Stop(2, bad);
+            var slots = new KeyValuePair<string, string>[value.GetArrayLength()];
+            int i = 0;
+            foreach (JsonElement e in value.EnumerateArray())
+            {
+                int keys = 0;
+                string name = null,
+                    slotValue = null;
+                if (e.ValueKind == JsonValueKind.Object)
+                    foreach (JsonProperty p in e.EnumerateObject())
+                    {
+                        keys++;
+                        if (p.Value.ValueKind != JsonValueKind.String)
+                            continue;
+                        if (p.Name == "name")
+                            name = p.Value.GetString();
+                        else if (p.Name == "value")
+                            slotValue = p.Value.GetString();
+                    }
+                if (keys != 2 || name == null || slotValue == null)
+                    throw new Stop(2, bad + " (entry " + i + ")");
+                slots[i++] = new KeyValuePair<string, string>(name, slotValue);
+            }
+            return slots;
         }
 
         // --- pin (expectations.json) ------------------------------------------------------
@@ -520,6 +606,13 @@ namespace AbRig
 
         static double Num(JsonElement obj, string key, string where) =>
             Field(obj, key, JsonValueKind.Number, where).GetDouble();
+
+        static float Float(JsonElement obj, string key, string where)
+        {
+            if (!Field(obj, key, JsonValueKind.Number, where).TryGetSingle(out float v))
+                throw new Stop(2, where + ": missing or mistyped field `" + key + "`");
+            return v;
+        }
 
         static JsonElement Obj(JsonElement obj, string key, string where) =>
             Field(obj, key, JsonValueKind.Object, where);

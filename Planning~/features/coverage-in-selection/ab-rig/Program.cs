@@ -175,7 +175,8 @@ namespace AbRig
                 return Joined.Run(
                     args,
                     joinedParser,
-                    VoxrCommandParser.GenerateGrammarJson(Slots(), Commands(), FollowUpWords())
+                    VoxrCommandParser.GenerateGrammarJson(Slots(), Commands(), FollowUpWords()),
+                    Commands()
                 );
             }
 

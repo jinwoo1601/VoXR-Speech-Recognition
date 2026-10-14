@@ -1,16 +1,18 @@
 // ============================================================================
-// Purpose:  The rig's --joined mode: option parsing, grammar-pin guard, kill check, scored-record writer
+// Purpose:  The rig's --joined mode: sub-verb dispatch, option parsing, grammar-pin guard, kill check, scored-record writer
 // Layer:    Planning.AbRig
 // Owns:     Joined (internal static class)
-// Depends:  JoinedInput, VoxrCommandParser
+// Depends:  JoinedInput, JoinedScorer, JoinedReport, VoxrCommandParser, VoxrCommandDefinition, VoxrSlotMatch
 // ============================================================================
-// feat-joined-rig-parser Phase 2. One run scores one side (one dump through one staged ref):
+// feat-joined-rig-parser Phases 2-3. A `score` run scores one side (one dump through one
+// staged ref); `report` compares the two sides' scored files (JoinedReport):
 //
-//   --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned]
+//   --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]
+//   --joined report --a A --b B --out R
 //
-// Exit 0 scored; 2 an input stop or the grammar-pin guard; 3 the kill check (the pinned
-// dump does not reproduce the pin). Every stop is named on stderr, prefixed `joined: `, and
-// leaves no scored file. Scoring itself (JoinedScorer) and `report` are Phase 3's.
+// Exit 0 scored (or reported); 2 an input stop or the grammar-pin guard; 3 the kill check (the
+// pinned dump does not reproduce the pin). Every stop is named on stderr, prefixed `joined: `,
+// and leaves no scored file. Each scored case's outcome is JoinedScorer's.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -42,13 +44,29 @@ namespace AbRig
         // The input being read, so an unexpected failure still names its file.
         static string reading;
 
-        // `parser` is the default replay's (Program.cs), for Phase 3's scorer; `grammarJson` is
-        // what --grammar prints for the staged ref, which the guard compares with the pin.
-        internal static int Run(string[] args, VoxrCommandParser parser, string grammarJson)
+        const string ScoreUsage =
+            "usage: --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]";
+        const string ReportUsage = "usage: --joined report --a A --b B --out R";
+
+        // `parser` is the default replay's (Program.cs), for the scorer; `grammarJson` is what
+        // --grammar prints for the staged ref, which the guard compares with the pin; `commands`
+        // are the parser's definitions, which the scorer's fire gate reads.
+        internal static int Run(
+            string[] args,
+            VoxrCommandParser parser,
+            string grammarJson,
+            VoxrCommandDefinition[] commands
+        )
         {
             try
             {
-                return Score(args, grammarJson);
+                int at = Array.IndexOf(args, "--joined");
+                string verb = at + 1 < args.Length ? args[at + 1] : null;
+                if (verb == "score")
+                    return Score(args, parser, grammarJson, commands);
+                if (verb == "report")
+                    return JoinedReport.Run(args);
+                throw new JoinedInput.Stop(2, ScoreUsage, ReportUsage);
             }
             catch (JoinedInput.Stop stop)
             {
@@ -75,10 +93,16 @@ namespace AbRig
             }
         }
 
-        static int Score(string[] args, string grammarJson)
+        static int Score(
+            string[] args,
+            VoxrCommandParser parser,
+            string grammarJson,
+            VoxrCommandDefinition[] commands
+        )
         {
-            bool pinned;
-            Dictionary<string, string> o = ParseOptions(args, out pinned);
+            bool pinned,
+                evaluate;
+            Dictionary<string, string> o = ParseOptions(args, out pinned, out evaluate);
             string outPath = o["--out"];
 
             // 1. No stale scored file survives a stop; then every reader finishes first.
@@ -185,13 +209,16 @@ namespace AbRig
             }
 
             // 5. The scored record: a header, then one line per manifest case.
-            var finalsByCase = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            var dumpByCase = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
             foreach (JoinedInput.DumpCase c in dump.Cases)
-                finalsByCase.Add(c.Name, c.Finals);
+                dumpByCase.Add(c.Name, c);
 
             int scored = 0,
                 recogniserLayer = 0,
                 sealedCount = 0;
+            var classCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (string cls in JoinedScorer.Classes)
+                classCounts.Add(cls, 0);
             var buffer = new MemoryStream();
             using (var w = new Utf8JsonWriter(buffer, WriterOptions))
             {
@@ -212,14 +239,20 @@ namespace AbRig
                 w.WriteString("manifest", manifest.Path);
                 w.WriteString("provenance", manifest.Provenance);
                 w.WriteBoolean("pinned", pinned);
+                w.WriteStartObject("gate");
+                w.WriteNumber("minScore", JoinedScorer.MinScore);
+                w.WriteNumber("minConfidence", JoinedScorer.MinConfidence);
+                w.WriteEndObject();
+                w.WriteBoolean("evaluate", evaluate);
                 w.WriteEndObject();
             }
             buffer.WriteByte((byte)'\n');
 
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
             {
+                // Under --evaluate a sealed case goes as unsealed (F7).
                 string disposition;
-                if (c.Sealed)
+                if (c.Sealed && !evaluate)
                 {
                     disposition = "sealed";
                     sealedCount++;
@@ -235,18 +268,55 @@ namespace AbRig
                     scored++;
                 }
 
+                JoinedInput.DumpCase dumped = dumpByCase[c.Name];
+                JoinedScorer.Outcome s =
+                    disposition == "scored"
+                        ? JoinedScorer.Score(parser, commands, c, dumped)
+                        : null;
+                if (s != null)
+                    classCounts[s.Class]++;
+
                 using (var w = new Utf8JsonWriter(buffer, WriterOptions))
                 {
                     w.WriteStartObject();
                     w.WriteString("kind", "case");
                     w.WriteString("case", c.Name);
                     w.WriteString("disposition", disposition);
-                    if (!c.Sealed)
+                    if (disposition != "sealed")
                     {
                         w.WriteStartArray("finals");
-                        foreach (string f in finalsByCase[c.Name])
+                        foreach (string f in dumped.Finals)
                             w.WriteStringValue(f);
                         w.WriteEndArray();
+                    }
+                    // *Scored record*: the primary fire's intent, slots and score, or null / [].
+                    if (s != null)
+                    {
+                        w.WriteString("class", s.Class);
+                        if (s.HasPrimary)
+                            w.WriteString("intent", s.Primary.Intent);
+                        else
+                            w.WriteNull("intent");
+                        w.WriteStartArray("slots");
+                        if (s.HasPrimary)
+                            foreach (VoxrSlotMatch slot in s.Primary.Slots)
+                            {
+                                w.WriteStartObject();
+                                w.WriteString("name", slot.Name);
+                                w.WriteString("value", slot.Value);
+                                w.WriteEndObject();
+                            }
+                        w.WriteEndArray();
+                        if (s.HasPrimary)
+                            w.WriteNumber("score", s.Primary.Score);
+                        else
+                            w.WriteNull("score");
+                        if (s.SlotCredit.HasValue)
+                            w.WriteNumber("slotCredit", s.SlotCredit.Value);
+                        else
+                            w.WriteString("slotCredit", "n/a");
+                        w.WriteNumber("extraFires", s.ExtraFires);
+                        w.WriteNumber("finalCount", s.FinalCount);
                     }
                     w.WriteEndObject();
                 }
@@ -257,24 +327,30 @@ namespace AbRig
             File.WriteAllBytes(outPath, buffer.ToArray());
             reading = null;
 
-            // 6. The counts.
+            // 6. The counts: dispositions, then the report's classes (correct = both correct-*).
             Console.Out.WriteLine("scored " + scored);
             Console.Out.WriteLine("recogniser-layer " + recogniserLayer);
             Console.Out.WriteLine("sealed " + sealedCount);
+            Console.Out.WriteLine(
+                "correct " + (classCounts["correct-fire"] + classCounts["correct-no-fire"])
+            );
+            Console.Out.WriteLine("wrong-slots " + classCounts["wrong-slots"]);
+            Console.Out.WriteLine("wrong-intent " + classCounts["wrong-intent"]);
+            Console.Out.WriteLine("missed " + classCounts["missed"]);
+            Console.Out.WriteLine("false-fire " + classCounts["false-fire"]);
             return 0;
         }
 
-        static Dictionary<string, string> ParseOptions(string[] args, out bool pinned)
+        static Dictionary<string, string> ParseOptions(
+            string[] args,
+            out bool pinned,
+            out bool evaluate
+        )
         {
             int at = Array.IndexOf(args, "--joined");
-            if (at + 1 >= args.Length || args[at + 1] != "score")
-                throw new JoinedInput.Stop(
-                    2,
-                    "usage: --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned]"
-                );
-
             var options = new Dictionary<string, string>(StringComparer.Ordinal);
             pinned = false;
+            evaluate = false;
             for (int i = 0; i < args.Length; i++)
             {
                 if (i == at || i == at + 1)
@@ -285,6 +361,13 @@ namespace AbRig
                     if (pinned)
                         throw new JoinedInput.Stop(2, "--pinned given twice");
                     pinned = true;
+                    continue;
+                }
+                if (a == "--evaluate")
+                {
+                    if (evaluate)
+                        throw new JoinedInput.Stop(2, "--evaluate given twice");
+                    evaluate = true;
                     continue;
                 }
                 if (Array.IndexOf(ValueOptions, a) < 0)
