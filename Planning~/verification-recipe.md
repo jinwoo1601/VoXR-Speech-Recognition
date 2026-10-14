@@ -1,6 +1,6 @@
 > Moved verbatim on 2026-10-01 (branch `light-harness-adopt`) from `.claude/verification-bindings.md`, the pre-harness workflow's verification procedure; the `unity` binding's `verification` key cites this file.
 > The file is now tracked at `Planning~/verification-recipe.md`, and `compile-check` reaches it through the `unity` binding's `verification` key rather than reading it directly. The body below is kept verbatim as it stood before the move, so these statements in it are superseded: that the file is gitignored with the rest of the workflow layer (`.claude/`); that `compile-check` reads it directly; that further detail lives in project memory `running-package-tests` (the maintainer's out-of-repo Claude memory, not this repo's `memory/`); and that the csproj is regenerated from `.claude/verification-bindings.md` (read: this file).
-> On 2026-10-01 (branch `light-workspace-move`) this repository moved from `D:\Game Development` to `D:\Workspace`, and the host `VoXR TestGround` with it; the body's paths were updated in place, nothing else. The `NativeBridge~/build*` CMake caches still name the old source tree, which CMake refuses, so the next native build configures fresh: delete `NativeBridge~/build` (and `build-desktop` in WSL) before configuring — CMake 3.22 has no `--fresh`.
+> On 2026-10-01 (branch `light-workspace-move`) this repository moved from `D:\Game Development` to `D:\Workspace`, and the host `VoXR TestGround` with it; the body's paths were updated in place, nothing else. The `NativeBridge~/build*` CMake caches still name the old source tree, which CMake refuses, so the next native build configures fresh: delete `NativeBridge~/build` before configuring — CMake 3.22 has no `--fresh`. *Edited 2026-10-14: a clause on the old Linux desktop cache dropped; the desktop harness now configures fresh into `build-windows/`.*
 
 # Verification bindings — VoXR Speech Recognition
 
@@ -14,14 +14,14 @@ What the `compile-check` agent runs, in this order. This is a bare UPM package �
    1. Unity editor must be closed (`<host>/Temp/UnityLockfile` gone).
    2. Rename `Tests~` → `Tests` in this repo; ensure `"testables": ["com.jinwoo1601.voxr"]` in the host manifest.
    3. Run **both** platforms — `Tests/Editor` is EditMode, `Tests/Runtime` is PlayMode (most parser/command tests are PlayMode; an EditMode-only run misses them):
-      `"/mnt/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Workspace\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<win path>.xml" -logFile "<win path>.log"` — no `-quit`; takes minutes on first import. Green = NUnit result XML with `failed="0"`.
+      `"/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Workspace\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<win path>.xml" -logFile "<win path>.log"` — no `-quit`; takes minutes on first import. Green = NUnit result XML with `failed="0"`.
    4. Revert: `Tests` → `Tests~`, delete Unity-generated `.meta` orphans (incl. root `Tests.meta`), restore the manifest.
 2. **NativeBridge (only when `NativeBridge~/` changed):**
    a. **arm64 build:** CMake/Ninja build per *Building NativeBridge* below. Green = `libvosk-bridge.so` builds with no errors.
    b. **Desktop harness (Windows-native, Git Bash, from the project root — MSVC from Visual Studio 2022 Community through CMake's "Visual Studio 17 2022" generator; the Unity 6000.3.7f1 Android SDK's `cmake.exe` by absolute path):** `cd NativeBridge~ && ls -d 'C:/Program Files/Microsoft Visual Studio/2022/Community' 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' >/dev/null && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --preset windows-x64 '-DCMAKE_GENERATOR_INSTANCE=C:/Program Files/Microsoft Visual Studio/2022/Community' && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --build --preset windows-x64 && ./build-windows/bin/vosk-bridge-harness.exe --model vendor/vosk-model-small-en-us-0.15 --fixtures "../Tests~/Fixtures/audio/tts" --manifest harness/expectations.json`. The leading `ls -d` fails naming any toolchain path that has moved; the two `cmake.exe` calls configure (preset `windows-x64`, pinned to the VS 2022 Community instance) and build Release; the harness then runs. No argument is one Git Bash path conversion rewrites, so the command behaves the same with or without `MSYS_NO_PATHCONV`. Green = exit 0 (16/16 fixture transcripts match the committed baseline); exit 1 = a transcript mismatch, which stops for the human's ruling and is never re-pinned; exit 2 = an operational error. One-time provisioning (gitignored `NativeBridge~/vendor/`: the pinned `vosk-win64-0.3.45` prebuilt + the small model) per `NativeBridge~/harness/README.md`; ratified as the standing check at Tier C's G2 (2026-07-30, design §12), its host Windows-native under Amendment A2 (`Planning~/design-docs/automated-verification.md` §0a).
    c. **On a bridge ABI change:** the rebuilt arm64 `.so` must be committed to `Runtime/Plugins/Android/arm64-v8a/` (the `build.sh` copy step — the shipped plugin, not just the build output; a PR #51 review finding).
 3. **`Samples~` compile gate (run whenever `Runtime/` public API or any `Samples~/` source changes):** out-of-band `dotnet build` of `Runtime/**/*.cs` + `Samples~/**/*.cs`, per *Compiling Samples~* below. **This gate is the only thing in this project that compiles `Samples~` at all** — there is no `.asmdef` under `Samples~/` and the samples are not imported into the host project, so step 1 can be fully green while the shipped samples are broken by an API change. Green = `Build succeeded` / `0 Error(s)`. It does **not** need the Unity editor lock (it only reads `Library/ScriptAssemblies`), so it can run with the editor open.
-4. **Human-only (cannot be verified from WSL — report as deferred, never claim it):** on-device Quest verification for mic capture, MonoBehaviour lifecycle behavior, and any native-bridge change. `OnApplicationPause` is the only lifecycle hook this package implements (`Runtime/VoxrPushToTalkController.cs:133`); its *state machine* is covered by PlayMode tests under step 1, so what stays human is whether Android actually **delivers** the callback on doff/system-menu. There is no `OnApplicationFocus` handler anywhere in this package. This paragraph is permanent: Tier D (the automated headset rig that would have replaced most of it) was dropped at the 2026-08-11 G1 re-lock, so no `device-check` binding exists or is planned.
+4. **Human-only (needs the Quest headset — report as deferred, never claim it):** on-device Quest verification for mic capture, MonoBehaviour lifecycle behavior, and any native-bridge change. `OnApplicationPause` is the only lifecycle hook this package implements (`Runtime/VoxrPushToTalkController.cs:133`); its *state machine* is covered by PlayMode tests under step 1, so what stays human is whether Android actually **delivers** the callback on doff/system-menu. There is no `OnApplicationFocus` handler anywhere in this package. This paragraph is permanent: Tier D (the automated headset rig that would have replaced most of it) was dropped at the 2026-08-11 G1 re-lock, so no `device-check` binding exists or is planned.
 
 ## Android Toolchain Paths
 
@@ -32,20 +32,19 @@ All tools are inside the Unity 6000.3.7f1 installation:
 - **CMake**: `C:\Program Files\Unity\Hub\Editor\6000.3.7f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\cmake\3.22.1\bin\cmake.exe`
 - **Ninja**: `C:\Program Files\Unity\Hub\Editor\6000.3.7f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\cmake\3.22.1\bin\ninja.exe`
 
-### WSL Usage
+### Git Bash usage
 
-From WSL, prefix paths with `/mnt/c/...` and call `.exe` variants directly:
+From Git Bash, call the Android SDK's `.exe` tools by their `/c/…` path:
 
 ```bash
 # adb
-"/mnt/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb.exe"
+"/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb.exe"
 
 # logcat (filtered for vosk-bridge)
-"/mnt/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb.exe" logcat -s "vosk-bridge:*" "Unity:*"
-
-# cmake (use Windows-style paths for -B, -S, toolchain since it's a .exe)
-"/mnt/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe"
+"/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb.exe" logcat -s "vosk-bridge:*" "Unity:*"
 ```
+
+A plain Git Bash rewrites `/`-prefixed arguments passed to a Windows program, so a device path such as `/sdcard/…` given to `adb` arrives mangled; prefix such a command with `MSYS_NO_PATHCONV=1` (Claude Code's Git Bash already sets it). CMake is in *Building NativeBridge* below and step 2b.
 
 ### Building NativeBridge
 
@@ -68,17 +67,18 @@ NDK_WIN="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngine
 ## Compiling Samples~
 
 Binding 3. Establishes that the seven shipped sample scripts still compile against the package's
-current public API. Verified working 2026-09-16 (dotnet SDK 10.0.112 under WSL, Unity 6000.4.7f1).
+current public API. Verified working 2026-10-14 (native .NET SDK 10.0.300 in Git Bash, Unity 6000.4.7f1).
 
-**The csproj is generated, never committed.** It lives in the session scratchpad
-(`<scratchpad>/samples-compile/SamplesCompile.csproj`) and references the package sources by
-absolute path, so nothing is added to the repo and no `Library/`-style droppings land in the
-package. Recreate it from the listing below each time.
+**The csproj is generated, never committed.** It lives at
+`.scratch/samples-compile/SamplesCompile.csproj` under the project root (`.scratch/` is gitignored)
+and names the package sources, the Unity data folder and the host's assemblies by absolute path
+in drive-letter form (`C:/…`, `D:/…`) — MSBuild reads the file, so `/c/…` forms do not resolve
+there — so nothing is added to the repo; recreate it from the listing each time.
 
 ### Command
 
 ```bash
-SP="<scratchpad>/samples-compile"          # e.g. /tmp/claude-1000/<project>/<session>/scratchpad/samples-compile
+SP=".scratch/samples-compile"   # from the project root
 mkdir -p "$SP"
 # ... write SamplesCompile.csproj (listing below) ...
 cd "$SP" && dotnet build SamplesCompile.csproj -v m -nologo
@@ -87,6 +87,8 @@ cd "$SP" && dotnet build SamplesCompile.csproj -v m -nologo
 **Green** = `Build succeeded` and `0 Error(s)`. One warning is expected and is *not* a failure:
 `Runtime/VoxrSpeechRecogniser.cs(359,13): warning CS0618: 'PermissionCallbacks.PermissionDeniedAndDontAskAgain' is obsolete`.
 Report errors as `file:line` from the `Samples~/...` or `Runtime/...` absolute paths in the output.
+
+A missing input stops the build before compiling — `VoxrCheckInputs` fails naming the missing path.
 
 ### Reference set, and how to relocate it if the Unity version changes
 
@@ -104,7 +106,7 @@ Three sources, all referenced with `<Private>false</Private>`:
    so they exist only after the host has imported at least once. No TextMeshPro reference is
    needed — no sample uses TMP.
 
-`<UnityData>` is `/mnt/c/Program Files/Unity/Hub/Editor/<version>/Editor/Data`. **If the editor
+`<UnityData>` is `C:/Program Files/Unity/Hub/Editor/<version>/Editor/Data`. **If the editor
 version changes**, update the `UnityData` property and the `UNITY_6000_4_7` / `UNITY_*_OR_NEWER`
 defines. The authoritative source for both the reference set and the define list is the host
 project's Unity-generated `D:\Workspace\VoXR TestGround\Assembly-CSharp.csproj` — read its
@@ -132,7 +134,7 @@ A cheap standing sanity check on the compile set itself:
 
 ```bash
 cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
-  | grep -oE '/mnt/d/Workspace/VoXR-Speech-Recognition/Samples~/[^ "]*\.cs' | sort -u | wc -l
+  | tr '\\' '/' | grep -oiE 'D:/Workspace/VoXR-Speech-Recognition/Samples~/[^ ";]*\.cs' | sort -fu | wc -l
 ```
 
 must print **7**.
@@ -171,9 +173,9 @@ at that exact file:line, and green returned after revert.
   </PropertyGroup>
 
   <PropertyGroup>
-    <UnityData>/mnt/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data</UnityData>
-    <PkgRoot>/mnt/d/Workspace/VoXR-Speech-Recognition</PkgRoot>
-    <HostAsm>/mnt/d/Workspace/VoXR TestGround/Library/ScriptAssemblies</HostAsm>
+    <UnityData>C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data</UnityData>
+    <PkgRoot>D:/Workspace/VoXR-Speech-Recognition</PkgRoot>
+    <HostAsm>D:/Workspace/VoXR TestGround/Library/ScriptAssemblies</HostAsm>
   </PropertyGroup>
 
   <!-- Player-build shape: UNITY_EDITOR is deliberately NOT defined. -->
@@ -205,5 +207,26 @@ at that exact file:line, and green returned after revert.
     </Reference>
   </ItemGroup>
 
+  <!-- Fail before compiling, naming any missing input; nothing falls back. -->
+  <Target Name="VoxrCheckInputs" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('$(PkgRoot)/Samples~')" Text="Missing package samples folder: $(PkgRoot)/Samples~" />
+    <Error Condition="!Exists('$(UnityData)/NetStandard/ref/2.1.0/netstandard.dll')" Text="Missing Unity BCL facade: $(UnityData)/NetStandard/ref/2.1.0/netstandard.dll" />
+    <Error Condition="!Exists('$(UnityData)/Managed/UnityEngine/UnityEngine.CoreModule.dll')" Text="Missing Unity engine module: $(UnityData)/Managed/UnityEngine/UnityEngine.CoreModule.dll" />
+    <Error Condition="!Exists('$(HostAsm)/UnityEngine.UI.dll')" Text="Missing host assembly: $(HostAsm)/UnityEngine.UI.dll (import the host project once)" />
+    <Error Condition="!Exists('$(HostAsm)/Unity.InputSystem.dll')" Text="Missing host assembly: $(HostAsm)/Unity.InputSystem.dll (import the host project once)" />
+  </Target>
+
 </Project>
 ```
+
+## Parser A/B rig — DocCheck
+
+Checks every number the scoring docs publish against the real parser (`Planning~/features/coverage-in-selection/ab-rig/`, `DocCheck.Run` via `--doccheck`). Not a bound Command; the one procedure for whoever runs it. From the project root in Git Bash, with the .NET SDK 10 on PATH (`Rig.csproj` targets `net10.0`):
+
+```bash
+env -u MSYS_NO_PATHCONV bash "Planning~/features/coverage-in-selection/ab-rig/stage.sh" WORKTREE .scratch/doccheck && cd .scratch/doccheck && dotnet build -v q --nologo && dotnet run --no-build -- --doccheck
+```
+
+`stage.sh` copies the checked-out parser sources and the rig into `.scratch/doccheck/` (emptied first, so every build is fresh) and prints `STAGED_FROM`; `dotnet` builds and runs the rig natively. Green = exit 0, no line starting `FAIL`, and the closing `<n>/<n> doc claims verified against the real parser.` with both numbers equal.
+
+`env -u MSYS_NO_PATHCONV` applies to `stage.sh` alone, which passes MSYS-form paths to native `git -C`; those fail when path conversion is off, as Claude Code's Git Bash sets it, and in a plain Git Bash the prefix changes nothing. `stage.sh` is not edited (design `windows-native-toolchain` §1). No other argument starts with `/`, so the line behaves the same in either shell.

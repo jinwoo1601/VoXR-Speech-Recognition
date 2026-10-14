@@ -1,6 +1,6 @@
 // vosk_api.h — VOSK C API declarations
 // Copied from the upstream vosk-api repository (Apache 2.0).
-// This header declares the functions exported by libvosk.so.
+// This header declares the functions exported by libvosk (libvosk.so on Android, libvosk.dll on the Windows desktop build).
 // Do not modify — it must match the prebuilt libvosk binary.
 
 #ifndef VOSK_API_H
