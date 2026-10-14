@@ -124,6 +124,7 @@ Lowest-risk first: Phase 1 is text against proven tools, its new runs native dot
 - **Phase 2 — host-neutral `generate.sh` and the closing gate.** The `generate.sh` edits of *Components*. Green: the `generate.sh` negative run first (no network); the human's `!` run from the empty cache, the agent's reading, the conversion-on rerun and the restore (*F3's check*); the Linux path read through by review; then the F7 sweep (a hit in a live area other than `KNOWN_LIMITATIONS.md` is fixed here); F9's diff; Commands 1–3 with conversion set and unset, results the same. *Discharges:* F3, F4, F7, F9, the NFRs for `generate.sh` and Commands 1–3; closes WSL-1 at G2 (adr-0001).
 - **Assets the build needs that code cannot author:** network for the human's Phase 2 `!` step (pip: piper-tts 1.6.0, soxr 1.1.0, numpy and their dependencies; the voice `en_US-lessac-medium`); the stock Python 3.12 with the `py` launcher; the .NET SDK 10.0.300; Unity 6000.4.7f1 and the host's `Library/ScriptAssemblies`; for Command 3, row 1's toolchain and the provisioned `NativeBridge~/vendor/` (else a human download per its README).
 - Phase 1 — persisted plan (2026-10-14): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-10-14): [plan-2.md](plan-2.md)
 
 ## Risks, tradeoffs & open questions
 
