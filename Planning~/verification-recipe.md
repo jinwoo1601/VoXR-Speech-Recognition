@@ -81,7 +81,7 @@ there — so nothing is added to the repo; recreate it from the listing each tim
 SP=".scratch/samples-compile"   # from the project root
 mkdir -p "$SP"
 # ... write SamplesCompile.csproj (listing below) ...
-cd "$SP" && dotnet build SamplesCompile.csproj -v m -nologo
+(cd "$SP" && dotnet build SamplesCompile.csproj -v m -nologo)
 ```
 
 **Green** = `Build succeeded` and `0 Error(s)`. One warning is expected and is *not* a failure:
@@ -133,8 +133,8 @@ can go red:
 A cheap standing sanity check on the compile set itself:
 
 ```bash
-cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
-  | tr '\\' '/' | grep -oiE 'D:/Workspace/VoXR-Speech-Recognition/Samples~/[^ ";]*\.cs' | sort -fu | wc -l
+(cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
+  | tr '\134' '/' | grep -oiE 'D:/Workspace/VoXR-Speech-Recognition/Samples~/[^ ";]*\.cs' | sort -fu | wc -l)
 ```
 
 must print **7**.
@@ -224,7 +224,7 @@ at that exact file:line, and green returned after revert.
 Checks every number the scoring docs publish against the real parser (`Planning~/features/coverage-in-selection/ab-rig/`, `DocCheck.Run` via `--doccheck`). Not a bound Command; the one procedure for whoever runs it. From the project root in Git Bash, with the .NET SDK 10 on PATH (`Rig.csproj` targets `net10.0`):
 
 ```bash
-env -u MSYS_NO_PATHCONV bash "Planning~/features/coverage-in-selection/ab-rig/stage.sh" WORKTREE .scratch/doccheck && cd .scratch/doccheck && dotnet build -v q --nologo && dotnet run --no-build -- --doccheck
+env -u MSYS_NO_PATHCONV bash "Planning~/features/coverage-in-selection/ab-rig/stage.sh" WORKTREE .scratch/doccheck && (cd .scratch/doccheck && dotnet build -v q --nologo && dotnet run --no-build -- --doccheck)
 ```
 
 `stage.sh` copies the checked-out parser sources and the rig into `.scratch/doccheck/` (emptied first, so every build is fresh) and prints `STAGED_FROM`; `dotnet` builds and runs the rig natively. Green = exit 0, no line starting `FAIL`, and the closing `<n>/<n> doc claims verified against the real parser.` with both numbers equal.

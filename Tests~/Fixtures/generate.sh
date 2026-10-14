@@ -12,6 +12,8 @@
 # Python as C:/... (cygpath -m), so MSYS_NO_PATHCONV set or unset makes no
 # difference. Generated WAVs are committed, so running this is only needed to
 # add or change fixtures.
+# VOXR_PYTHON is a command line split on spaces, as "py -3" is: it may name a
+# launcher with arguments ("py -3.12") but not a path containing spaces.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -28,7 +30,7 @@ if [ ! -x "$VBIN/piper$EXE" ]; then
     if [ -n "${VOXR_PYTHON:-}" ]; then
         PY="$VOXR_PYTHON"
         if ! $PY -c 'import sys; sys.exit(sys.version_info[0] != 3)' >/dev/null 2>&1; then
-            echo "generate.sh: VOXR_PYTHON=$VOXR_PYTHON does not run as Python 3" >&2
+            echo "generate.sh: VOXR_PYTHON=$VOXR_PYTHON does not run as Python 3 (it is split on spaces, so a path containing spaces cannot be used)" >&2
             exit 1
         fi
     else
