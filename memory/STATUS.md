@@ -5,7 +5,7 @@ updated: 2026-10-15
 ## Current
 
 - **`main` at the PR #176 merge (row 2, G2 2026-10-14); `v2.0.0`; toolchain backlog done; in flight: `feat-joined-rig-parser`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`feat-joined-rig-parser` (feature, Full): stage implement: Phase 3 built 2026-10-15, gate green; next: as-built reconcile, then `phase-pickup` Phase 4.**
+- **`feat-joined-rig-parser` (feature, Full): stage implement: Phases 1-3 built and as-built reconciled 2026-10-15; next: `phase-pickup` Phase 4.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
