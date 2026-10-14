@@ -144,6 +144,7 @@ Lowest-risk first and in dependency order: Phase 1 is a few harness lines, shown
 - Phase 1 — persisted plan (2026-10-14): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-10-14): [plan-2.md](plan-2.md)
 - Phase 3 — persisted plan (2026-10-14): [plan-3.md](plan-3.md)
+- Phase 4 — persisted plan (2026-10-15): [plan-4.md](plan-4.md)
 
 ## Risks, tradeoffs & open questions
 
