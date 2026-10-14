@@ -142,6 +142,7 @@ Lowest-risk first and in dependency order: Phase 1 is a few harness lines, shown
 - **Assets code cannot author:** none new — the provisioned `NativeBridge~/vendor/` (if absent, a human `!` download per `NativeBridge~/harness/README.md`), Command 3's toolchain, .NET SDK 10.0.300, Unity 6000.4.7f1 and the host. Unity runs generate `memory/**/*.meta`, which the PM commits, never deletes.
 - Phase 1 — persisted plan (2026-10-14): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-10-14): [plan-2.md](plan-2.md)
+- Phase 3 — persisted plan (2026-10-14): [plan-3.md](plan-3.md)
 
 ## Risks, tradeoffs & open questions
 
