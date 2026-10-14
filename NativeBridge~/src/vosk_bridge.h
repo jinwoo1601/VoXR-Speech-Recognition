@@ -3,7 +3,15 @@
 
 #include <stdint.h>
 
+#if defined(_WIN32)
+#if defined(vosk_bridge_EXPORTS)
+#define VOSK_BRIDGE_EXPORT __declspec(dllexport)
+#else
+#define VOSK_BRIDGE_EXPORT __declspec(dllimport)
+#endif
+#else
 #define VOSK_BRIDGE_EXPORT __attribute__((visibility("default")))
+#endif
 
 #ifdef __cplusplus
 extern "C" {

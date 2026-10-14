@@ -50,7 +50,7 @@ From WSL, prefix paths with `/mnt/c/...` and call `.exe` variants directly:
 ### Building NativeBridge
 
 ```bash
-CMAKE="/mnt/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe"
+CMAKE="/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe"
 NDK_WIN="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK"
 
 "$CMAKE" -B "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" \
