@@ -126,6 +126,7 @@ Ordered lowest-risk-first within the dependencies. No route prototype precedes t
 - **Phase 3 — the bound text and the README.** Command 3's desktop half and step 2b as written above, with any form Phase 2 proved; the README rewritten. Green: the verification agent runs Command 3 from the binding verbatim — both halves — and gets green (F7); following the README from a `vendor/` emptied of everything but the model — the existing contents moved aside, not deleted, and restored only if the run fails — yields a green run (F5); a case-insensitive grep of the six F4 sites for `wsl`, `/mnt/` and `desktop-linux` is empty. *Discharges:* F4 (closing), F5, F7.
 - **Assets the build needs that code cannot author:** the pinned `vosk-win64-0.3.45.zip` (one-time network; a copy already sits at `.scratch/vosk-win64-probe/`); the model `vendor/vosk-model-small-en-us-0.15/` (present); Visual Studio 2022 Community with the x64 C++ tools and Windows SDK 10.0.26100.0; Unity 6000.3.7f1's Android SDK (cmake for both halves, ninja for the arm64 half) and NDK (arm64 half, `llvm-nm`).
 - Phase 1 — persisted plan (2026-10-14): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-10-14): [plan-2.md](plan-2.md)
 
 ## Risks, tradeoffs & open questions
 
