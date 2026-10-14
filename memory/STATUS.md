@@ -5,7 +5,7 @@ updated: 2026-10-14
 ## Current
 
 - **`main` at the PR #174 merge (`design-windows-native-toolchain`, G1 2026-10-13); release `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`feat-windows-native-harness` (feature, Full): Phases 1-3 built + gated 2026-10-14 (Phase 3 `84ac534`: Command 3 bound verbatim, 16/16; README from empty vendor/ green); next: `review-cycle`, then G2.** Row 2 `windows-native-dotnet-fixtures` follows it.
+- **`feat-windows-native-harness` (feature, Full): built, reviewed (`58c17de`), reconciled, doc trimmed to budget; next: G2.** Row 2 `windows-native-dotnet-fixtures` follows.
 - **`feat-joined-rig-parser` held** behind `design-windows-native-toolchain` (human 2026-10-13: WSL removal first); its host choice (adr-0006) is settled there.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
@@ -24,3 +24,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **RSE-2** · OPEN · light-lane · v2026-10-04 — codex page contract wants frontmatter on product pages; no `Documentation~` page has any: rule on the contract vs this surface
 - **LHU-1** · OPEN · harness-hub · v2026-10-07 — vc-git `Bash(git branch:*)` allow admits a clustered force-delete (`git branch -vD x`) no ask rule matches: fix in the base template
 - **WSL-1** · OPEN · light-lane · v2026-10-13 — verification binding (Commands 3–4) and recipe still route harness and Samples~ compile via WSL; Claude Code is Windows-native: rule on toolchain
+- **WNH-1** · OPEN · light-lane · v2026-10-14 — `NativeBridge~/include/vosk_api.h:3` comment names only `libvosk.so`; the desktop build now links `libvosk.dll`: reword
