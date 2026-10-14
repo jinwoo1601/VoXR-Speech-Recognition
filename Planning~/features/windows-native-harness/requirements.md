@@ -2,7 +2,7 @@
 type: requirements
 feature: windows-native-harness
 topic: windows-native-toolchain
-status: draft
+status: accepted   # G2 ruled in-conversation 2026-10-14: accepted at 43dd329
 updated: 2026-10-14
 sources:
   - Planning~/design-docs/windows-native-toolchain.md
@@ -116,16 +116,18 @@ The G0 **Out** list in §2, plus:
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] F1: the desktop bridge and harness build on Windows x64 with MSVC from Visual Studio 2022 and Unity's bundled cmake.
-- [ ] F2: 16/16, exit 0; `expectations.json` changed only in its `libvosk` pin label.
-- [ ] F3: the arm64 `.so` builds and its exported symbol list matches the committed one.
-- [ ] F4: no `wsl`, `/mnt/` or `desktop-linux` at this feature's sites.
-- [ ] F5: the README provisions `vendor/` from empty to a green run.
-- [ ] F6: the zip carries `libvosk.lib`, and its `libvosk.dll` hash matches the shipped one, recorded in the architecture doc.
-- [ ] F7: the binding's Command 3 — both halves — runs verbatim and green, with the recipe's §2b and its `CMAKE=` line in Git Bash form.
-- [ ] F8: no change under `Runtime/`.
-- [ ] The commands of the `verification` binding this change triggers are green: Command 3, both halves.
-- [ ] Human-only verification: none — every check is Claude-runnable, which is goal 2's point (ruled 2026-10-14).
+- [x] F1: the desktop bridge and harness build on Windows x64 with MSVC from Visual Studio 2022 and Unity's bundled cmake. (Phase 2 gate; MSVC 19.44 / MSBuild 17.14 via the VS 17 2022 generator)
+- [x] F2: 16/16, exit 0; `expectations.json` changed only in its `libvosk` pin label. (16/16 exit 0 at Phases 2–3, the review fix and the G2 re-run; `expectations.json` diff is the label line only)
+- [x] F3: the arm64 `.so` builds and its exported symbol list matches the committed one. (symbol diff vs the committed `.so` empty, 15 lines, every gate)
+- [x] F4: no `wsl`, `/mnt/` or `desktop-linux` at this feature's sites. (Phase 3 gate grep: 0 at all six sites)
+- [x] F5: the README provisions `vendor/` from empty to a green run. (Phase 3 gate; re-run from an absent `vendor/` after the review fix, 2026-10-14)
+- [x] F6: the zip carries `libvosk.lib`, and its `libvosk.dll` hash matches the shipped one, recorded in the architecture doc. (architecture doc *Provisioned inputs*; `sha256sum -c` OK)
+- [x] F7: the binding's Command 3 — both halves — runs verbatim and green, with the recipe's §2b and its `CMAKE=` line in Git Bash form. (Phase 3 gate: Command 3 both halves verbatim from the binding)
+- [x] F8: no change under `Runtime/`. (`git diff main -- Runtime/` empty, every gate)
+- [x] The commands of the `verification` binding this change triggers are green: Command 3, both halves. (review fix gate and the G2 re-run; EditMode 203/203 and PlayMode 704/704 also green)
+- [x] Human-only verification: none — every check is Claude-runnable, which is goal 2's point (ruled 2026-10-14).
+
+**Ruled at G2 on 2026-10-14** by the maintainer, in conversation: accepted at head `43dd329`, with the preflight in view — F5 re-run from an absent `vendor/` after the review fix changed the README's provisioning, and six `memory/` `.meta` added, before the ruling.
 
 ## 10. Open questions
 

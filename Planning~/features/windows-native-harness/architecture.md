@@ -2,7 +2,7 @@
 type: architecture
 feature: windows-native-harness
 topic: windows-native-toolchain
-status: draft
+status: accepted
 updated: 2026-10-14
 sources:
   - Planning~/features/windows-native-harness/requirements.md
