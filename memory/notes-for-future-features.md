@@ -7,3 +7,4 @@ Process and methodology lessons routed out of architecture docs' `## As-built de
 - 2026-10-14 (windows-native-harness) — Subagent network downloads are refused by permission policy: a plan that needs a download names it as a human step.
 - 2026-10-14 (windows-native-harness) — MSBuild output through `cmake --build` carries no reliable Warning(s)/Error(s) summary line in the agents' capture: gates grep the output for warning/error counts.
 - 2026-10-14 (windows-native-harness) — An architecture doc near its 40 KB body budget needs headroom for its as-built pass, whose admitted kinds cannot be routed out.
+- 2026-10-14 (windows-native-harness) — The repo root is the package root, so Unity imports `memory/`: a Unity run's untracked `memory/**/*.meta` belong to new notes and are committed, never deleted as orphans; only `Tests~` leftovers are reverted.
