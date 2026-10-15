@@ -1,6 +1,7 @@
 #ifndef RESULT_QUEUE_H
 #define RESULT_QUEUE_H
 
+#include <cstdint>
 #include <string>
 #include <deque>
 #include <mutex>
@@ -8,6 +9,8 @@
 struct QueuedResult {
     std::string json;
     bool is_final;
+    int64_t consumed; // session input samples consumed when the result was pushed
+    int64_t origin;   // decoder samples fed before the session (word-time origin)
 };
 
 // Thread-safe result queue.
@@ -16,9 +19,9 @@ struct QueuedResult {
 // pop is once per Unity frame.
 class ResultQueue {
 public:
-    void Push(std::string json, bool is_final) {
+    void Push(std::string json, bool is_final, int64_t consumed, int64_t origin) {
         std::lock_guard<std::mutex> lock(mutex_);
-        queue_.push_back({std::move(json), is_final});
+        queue_.push_back({std::move(json), is_final, consumed, origin});
     }
 
     bool Pop(QueuedResult& out) {

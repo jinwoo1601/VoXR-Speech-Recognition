@@ -1,13 +1,14 @@
 // ============================================================================
 // Purpose:  Strict readers for the joined mode's inputs (harness dump, corpus manifest, pin) and their case joins
 // Layer:    Planning.AbRig
-// Owns:     JoinedInput (internal static class), JoinedInput.Stop (internal sealed class), JoinedInput.Word (internal sealed class), JoinedInput.Dump (internal sealed class), JoinedInput.DumpCase (internal sealed class), JoinedInput.Manifest (internal sealed class), JoinedInput.ManifestCase (internal sealed class), JoinedInput.Pin (internal sealed class)
+// Owns:     JoinedInput (internal static class), JoinedInput.Stop (internal sealed class), JoinedInput.Word (internal sealed class), JoinedInput.Dump (internal sealed class), JoinedInput.DumpCase (internal sealed class), JoinedInput.DumpResult (internal sealed class), JoinedInput.Manifest (internal sealed class), JoinedInput.ManifestCase (internal sealed class), JoinedInput.Pin (internal sealed class)
 // Depends:  (none)
 // ============================================================================
 // Every reader finishes before the guard, the kill check or any scoring looks at its
 // output, and every input defect is a named stop: exit 2 with the file (and line, for the
 // dump) or the case and key. Unknown dump record keys are ignored (`schema` versions the
-// dump); the manifest and the pin are read strictly (feat-joined-rig-parser, *Marks*).
+// dump: 1, or 2 with the bridge positions, read strictly; feat-joined-rig-recogniser,
+// *Schema 2*); the manifest and the pin are read strictly (feat-joined-rig-parser, *Marks*).
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,6 +48,11 @@ namespace AbRig
         {
             internal string Name;
 
+            // The `case` record's `samples` (the WAV's) and `sampleRate`: audio time is
+            // `consumed` / SampleRate, end of audio Samples / SampleRate (*The clock*).
+            internal long Samples;
+            internal long SampleRate;
+
             // Ordered `text`s of the case's `final:true` records, empty ones dropped.
             internal readonly List<string> Finals = new List<string>();
 
@@ -56,12 +62,33 @@ namespace AbRig
             // Why the case is a failed decode (`raw`, an `error` payload, non-empty `errors`);
             // empty = decoded.
             internal readonly List<string> Failures = new List<string>();
+
+            // The `case-end` record's `pushed`, and its `consumed` (null in schema 1).
+            internal long Pushed;
+            internal long? Consumed;
+
+            // Every `result` record of the case, in dump order.
+            internal readonly List<DumpResult> Results = new List<DumpResult>();
+        }
+
+        // One `result` record: `Consumed` and `Origin` are null in schema 1; exactly one of
+        // `Payload` (the payload's raw JSON text) and `Raw` is set.
+        internal sealed class DumpResult
+        {
+            internal long Seq;
+            internal bool Final;
+            internal long? Consumed;
+            internal long? Origin;
+            internal string Payload;
+            internal string Raw;
         }
 
         internal sealed class Dump
         {
             internal string Path;
             internal JsonElement Header;
+            internal long Schema;
+            internal long? DecoderRate; // null in schema 1
             internal double Gain;
             internal string Libvosk;
             internal string[] Grammar;
@@ -138,6 +165,11 @@ namespace AbRig
             long nextSeq = 0;
             bool ended = false;
 
+            // Schema 2, per open case: the last result's `consumed` (0 before any) and the
+            // case's `origin` (null before its first result).
+            long lastConsumed = 0;
+            long? caseOrigin = null;
+
             for (int i = 0; i < lines.Length; i++)
             {
                 string where = path + ":" + (i + 1);
@@ -157,8 +189,19 @@ namespace AbRig
                             where + ": the first record is \"" + kind + "\", not `header`"
                         );
                     long schema = Int(rec, "schema", where);
-                    if (schema != 1)
-                        throw new Stop(2, where + ": `schema` " + schema + ", expected 1");
+                    if (schema != 1 && schema != 2)
+                        throw new Stop(2, where + ": `schema` " + schema + ", expected 1 or 2");
+                    dump.Schema = schema;
+                    if (schema == 2)
+                    {
+                        long decoderRate = Int(rec, "decoderRate", where);
+                        if (decoderRate <= 0)
+                            throw new Stop(
+                                2,
+                                where + ": `decoderRate` " + decoderRate + ", expected > 0"
+                            );
+                        dump.DecoderRate = decoderRate;
+                    }
                     Str(rec, "manifest", where);
                     Str(rec, "fixtures", where);
                     Str(rec, "model", where);
@@ -183,13 +226,20 @@ namespace AbRig
                                 where + ": case \"" + open.Name + "\" has no `case-end`"
                             );
                         string name = Str(rec, "case", where);
-                        Int(rec, "samples", where);
-                        Int(rec, "sampleRate", where);
+                        long samples = Int(rec, "samples", where);
+                        long sampleRate = Int(rec, "sampleRate", where);
                         if (!framed.Add(name))
                             throw new Stop(2, where + ": case \"" + name + "\" framed twice");
-                        open = new DumpCase { Name = name };
+                        open = new DumpCase
+                        {
+                            Name = name,
+                            Samples = samples,
+                            SampleRate = sampleRate,
+                        };
                         dump.Cases.Add(open);
                         nextSeq = 0;
+                        lastConsumed = 0;
+                        caseOrigin = null;
                         break;
                     }
 
@@ -213,17 +263,65 @@ namespace AbRig
                             throw new Stop(2, where + ": `seq` " + seq + ", expected " + nextSeq);
                         nextSeq++;
                         bool isFinal = Bool(rec, "final", where);
-                        Int(rec, "pushed", where);
+                        long pushed = Int(rec, "pushed", where);
                         Int(rec, "prevPushed", where);
+                        var entry = new DumpResult { Seq = seq, Final = isFinal };
+                        if (dump.Schema == 2)
+                        {
+                            // F1's evidence: within a case `consumed` never decreases and never
+                            // passes `pushed`, and `origin` is constant.
+                            long consumed = Int(rec, "consumed", where);
+                            long origin = Int(rec, "origin", where);
+                            if (consumed < 0)
+                                throw new Stop(
+                                    2,
+                                    where + ": `consumed` " + consumed + ", expected >= 0"
+                                );
+                            if (origin < 0)
+                                throw new Stop(
+                                    2,
+                                    where + ": `origin` " + origin + ", expected >= 0"
+                                );
+                            if (consumed < lastConsumed)
+                                throw new Stop(
+                                    2,
+                                    where
+                                        + ": `consumed` "
+                                        + consumed
+                                        + " below the previous result's "
+                                        + lastConsumed
+                                );
+                            if (consumed > pushed)
+                                throw new Stop(
+                                    2,
+                                    where + ": `consumed` " + consumed + " above `pushed` " + pushed
+                                );
+                            if (caseOrigin.HasValue && origin != caseOrigin.Value)
+                                throw new Stop(
+                                    2,
+                                    where
+                                        + ": `origin` "
+                                        + origin
+                                        + ", but the case's is "
+                                        + caseOrigin.Value
+                                );
+                            lastConsumed = consumed;
+                            caseOrigin = origin;
+                            entry.Consumed = consumed;
+                            entry.Origin = origin;
+                        }
+                        open.Results.Add(entry);
 
                         if (rec.TryGetProperty("raw", out JsonElement raw))
                         {
                             if (raw.ValueKind != JsonValueKind.String)
                                 throw new Stop(2, where + ": mistyped field `raw`");
+                            entry.Raw = raw.GetString();
                             open.Failures.Add("unparseable result (`raw`) at seq " + seq);
                             break;
                         }
                         JsonElement payload = Obj(rec, "payload", where);
+                        entry.Payload = payload.GetRawText();
                         if (payload.TryGetProperty("error", out _))
                             open.Failures.Add(
                                 "`error` payload at seq " + seq + ": " + payload.GetRawText()
@@ -263,7 +361,21 @@ namespace AbRig
                                 2,
                                 where + ": `results` " + results + ", but the case holds " + nextSeq
                             );
-                        Int(rec, "pushed", where);
+                        open.Pushed = Int(rec, "pushed", where);
+                        if (dump.Schema == 2)
+                        {
+                            long consumed = Int(rec, "consumed", where);
+                            if (consumed < lastConsumed)
+                                throw new Stop(
+                                    2,
+                                    where
+                                        + ": `consumed` "
+                                        + consumed
+                                        + " below the last result's "
+                                        + lastConsumed
+                                );
+                            open.Consumed = consumed;
+                        }
                         JsonElement errors = Arr(rec, "errors", where);
                         if (errors.GetArrayLength() > 0)
                             open.Failures.Add("`errors` " + errors.GetRawText());

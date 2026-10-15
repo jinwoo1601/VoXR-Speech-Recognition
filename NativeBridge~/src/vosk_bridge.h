@@ -64,6 +64,16 @@ VOSK_BRIDGE_EXPORT float vosk_bridge_get_input_level();
 VOSK_BRIDGE_EXPORT int         vosk_bridge_has_result();
 VOSK_BRIDGE_EXPORT const char* vosk_bridge_get_result(int* out_is_final, int* out_length);
 
+// Position of the result vosk_bridge_get_result last returned: the session's
+// input samples (pre-DSP 48 kHz) consumed when it was queued, and its word-time
+// origin (decoder samples fed before the session). Each non-null out-param is
+// filled; both are 0 before any result.
+VOSK_BRIDGE_EXPORT void    vosk_bridge_get_result_position(int64_t* out_consumed,
+                                                           int64_t* out_origin);
+// Input samples the recognition thread has consumed this session; held after
+// vosk_bridge_stop until the next start.
+VOSK_BRIDGE_EXPORT int64_t vosk_bridge_get_consumed(void);
+
 // Status
 VOSK_BRIDGE_EXPORT int vosk_bridge_is_running();
 VOSK_BRIDGE_EXPORT int vosk_bridge_is_initialised();

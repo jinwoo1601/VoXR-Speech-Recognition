@@ -176,6 +176,7 @@ namespace AbRig
                     args,
                     joinedParser,
                     VoxrCommandParser.GenerateGrammarJson(Slots(), Commands(), FollowUpWords()),
+                    Slots(),
                     Commands()
                 );
             }

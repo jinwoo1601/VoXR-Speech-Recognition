@@ -42,6 +42,16 @@ namespace AbRig
             internal double? SlotCredit; // matched / expected; null = "n/a" (none expected)
             internal int ExtraFires;
             internal int FinalCount;
+
+            // The recogniser layer's (feat-joined-rig-recogniser, *Timing measures*, *Trace*):
+            // each fire's frame time in order; the first's minus the end of audio, null without
+            // a fire; a pending never confirmed; the grammar the staged recogniser applied; the
+            // case's trace lines, each LF-ended. Unset at the parser layer.
+            internal double[] FireTimes;
+            internal double? Delay;
+            internal bool Pending;
+            internal string AppliedGrammar;
+            internal string Trace;
         }
 
         internal static Outcome Score(
@@ -74,24 +84,38 @@ namespace AbRig
             if (o.HasPrimary)
                 o.Primary = pool[0];
 
+            o.Class = Classify(o.HasPrimary, o.Primary, expected, out o.SlotCredit);
+            return o;
+        }
+
+        // Steps 4-5, shared by both layers (feat-joined-rig-recogniser, *Recogniser-layer
+        // scoring*): the class of the fire against the expectation, and the slot credit.
+        internal static string Classify(
+            bool hasPrimary,
+            VoxrCommand primary,
+            JoinedInput.ManifestCase expected,
+            out double? slotCredit
+        )
+        {
             // 4. The class.
+            string cls;
             KeyValuePair<string, string>[] slots = expected.ExpectedSlots;
             bool extraSlot = false;
-            int matched = o.HasPrimary ? Matched(o.Primary, slots, out extraSlot) : 0;
+            int matched = hasPrimary ? Matched(primary, slots, out extraSlot) : 0;
             if (expected.ExpectedIntent.Length == 0)
-                o.Class = o.HasPrimary ? "false-fire" : "correct-no-fire";
-            else if (!o.HasPrimary)
-                o.Class = "missed";
+                cls = hasPrimary ? "false-fire" : "correct-no-fire";
+            else if (!hasPrimary)
+                cls = "missed";
             else if (
-                !string.Equals(o.Primary.Intent, expected.ExpectedIntent, StringComparison.Ordinal)
+                !string.Equals(primary.Intent, expected.ExpectedIntent, StringComparison.Ordinal)
             )
-                o.Class = "wrong-intent";
+                cls = "wrong-intent";
             else
-                o.Class = matched == slots.Length && !extraSlot ? "correct-fire" : "wrong-slots";
+                cls = matched == slots.Length && !extraSlot ? "correct-fire" : "wrong-slots";
 
             // 5. Slot credit: "n/a" whenever none is expected, whatever the fire; no weight.
-            o.SlotCredit = slots.Length == 0 ? (double?)null : (double)matched / slots.Length;
-            return o;
+            slotCredit = slots.Length == 0 ? (double?)null : (double)matched / slots.Length;
+            return cls;
         }
 
         // *Fire gate*: the recogniser's flush gate (VoxrCommandRecogniser :1027-1029) minus
@@ -112,12 +136,14 @@ namespace AbRig
 
         // *Slot matching*: an expected {name, value} matches an actual slot of that name with an
         // ordinally equal value, wherever it sits (literal: no actual slot is consumed; no case
-        // repeats a slot name). `extra` = an actual slot outside the expected names.
+        // repeats a slot name). `extra` = an actual slot outside the expected names. Null `Slots`
+        // (a recogniser event's command) reads as none.
         static int Matched(VoxrCommand cmd, KeyValuePair<string, string>[] expected, out bool extra)
         {
+            VoxrSlotMatch[] actual = cmd.Slots ?? Array.Empty<VoxrSlotMatch>();
             int matched = 0;
             foreach (KeyValuePair<string, string> e in expected)
-            foreach (VoxrSlotMatch s in cmd.Slots)
+            foreach (VoxrSlotMatch s in actual)
                 if (
                     string.Equals(s.Name, e.Key, StringComparison.Ordinal)
                     && string.Equals(s.Value, e.Value, StringComparison.Ordinal)
@@ -128,7 +154,7 @@ namespace AbRig
                 }
 
             extra = false;
-            foreach (VoxrSlotMatch s in cmd.Slots)
+            foreach (VoxrSlotMatch s in actual)
             {
                 bool named = false;
                 foreach (KeyValuePair<string, string> e in expected)
