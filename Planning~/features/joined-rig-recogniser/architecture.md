@@ -139,6 +139,7 @@ Ordered to retire the riskiest unknown first at no product risk, then the one sh
 - Phase 1 — persisted plan (2026-10-15): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-10-15): [plan-2.md](plan-2.md)
 - Phase 3 — persisted plan (2026-10-15): [plan-3.md](plan-3.md)
+- Phase 4 — persisted plan (2026-10-15): [plan-4.md](plan-4.md)
 - **Approved 2026-10-15** by the maintainer, in session ("All recommended"): four phases, order and risk ordering as written.
 - **Assets code cannot author:** none new — `NativeBridge~/vendor/` (a human download per `NativeBridge~/harness/README.md` if absent), Command 3's toolchain, .NET SDK 10, Unity 6000.4.7f1 and the host; for G2 a Quest 3 and the human.
 
