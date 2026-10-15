@@ -28,6 +28,9 @@ using nlohmann::ordered_json;
 
 namespace {
 
+// The bridge's init rate: decoder samples per second (the dump's decoderRate).
+constexpr int kDecoderRate = 16000;
+
 struct FixtureOutcome {
     std::string file;
     std::vector<std::string> expected;
@@ -37,6 +40,7 @@ struct FixtureOutcome {
     size_t pushed = 0;     // input samples pushed for this case so far
     size_t prevPushed = 0; // `pushed` at the previous drain
     size_t seq = 0;        // results popped for this case so far
+    int64_t consumed = 0;  // --dump: input samples the bridge consumed, at case end
 };
 
 // Opt-in --dump sink: JSON lines, one record per line, LF only (binary
@@ -68,6 +72,7 @@ void DumpCaseEnd(const FixtureOutcome& r) {
     rec["case"] = r.file;
     rec["results"] = r.seq;
     rec["pushed"] = r.pushed;
+    rec["consumed"] = r.consumed;
     rec["errors"] = r.errors;
     dump_writer.Write(rec);
 }
@@ -81,8 +86,11 @@ void DrainResults(FixtureOutcome& r) {
     while ((p = vosk_bridge_get_result(&is_final, &length)) != nullptr) {
         std::string payload(p, static_cast<size_t>(length));
         // Dumped before handling, re-parsed as ordered_json so Vosk's own key
-        // order survives; every result of one drain carries that drain's pair.
+        // order survives; every result of one drain carries that drain's pair,
+        // and its own bridge position (consumed, origin).
         if (dump_writer.enabled) {
+            int64_t consumed = 0, origin = 0;
+            vosk_bridge_get_result_position(&consumed, &origin);
             ordered_json rec;
             rec["kind"] = "result";
             rec["case"] = r.file;
@@ -90,6 +98,8 @@ void DrainResults(FixtureOutcome& r) {
             rec["final"] = is_final != 0;
             rec["pushed"] = r.pushed;
             rec["prevPushed"] = r.prevPushed;
+            rec["consumed"] = consumed;
+            rec["origin"] = origin;
             ordered_json parsed = ordered_json::parse(payload, nullptr, false);
             if (parsed.is_discarded())
                 rec["raw"] = payload;
@@ -247,7 +257,7 @@ int RunHarness(int argc, char** argv) {
             return Fail("cannot open dump file: " + dump_path);
         ordered_json header;
         header["kind"] = "header";
-        header["schema"] = 1;
+        header["schema"] = 2;
         header["manifest"] = manifest_path;
         header["fixtures"] = fixtures_dir;
         header["model"] = model_dir;
@@ -255,12 +265,13 @@ int RunHarness(int argc, char** argv) {
         header["libvosk"] = manifest["libvosk"];
         header["grammar"] = manifest["grammar"];
         header["ringCapacity"] = RingBuffer<float>::kCapacity;
+        header["decoderRate"] = kDecoderRate;
         dump_writer.Write(header);
     }
 
     float gain = manifest["gain"].get<float>();
 
-    int rc = vosk_bridge_init(model_dir.c_str(), 16000.0f, gain);
+    int rc = vosk_bridge_init(model_dir.c_str(), static_cast<float>(kDecoderRate), gain);
     if (rc != VOSK_BRIDGE_OK)
         return Fail("vosk_bridge_init failed with code " + std::to_string(rc) +
                     " (model: " + model_dir + ")");
@@ -305,9 +316,33 @@ int RunHarness(int argc, char** argv) {
             } else {
                 if (PushAll(wav.samples.data(), wav.samples.size(), r))
                     PushAll(padding.data(), padding.size(), r);
+                // --dump only: drain until the bridge has consumed every pushed
+                // sample, so stop ends each case at the same point in every run
+                // and every later origin depends on the corpus alone. Same stall
+                // rule as PushAll: ~10 s without progress is a case error.
+                if (dump_writer.enabled) {
+                    int stalled = 0;
+                    int64_t seen = vosk_bridge_get_consumed();
+                    while (seen != static_cast<int64_t>(r.pushed)) {
+                        DrainResults(r);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                        int64_t now = vosk_bridge_get_consumed();
+                        if (now != seen) {
+                            seen = now;
+                            stalled = 0;
+                        } else if (++stalled > 2000) { // ~10 s without progress
+                            r.errors.push_back("drain stalled: consumed " +
+                                               std::to_string(now) + " of " +
+                                               std::to_string(r.pushed) + " pushed");
+                            break;
+                        }
+                    }
+                }
                 DrainResults(r);
                 vosk_bridge_stop();
                 DrainResults(r); // the tail final is flushed during stop's join
+                if (dump_writer.enabled)
+                    r.consumed = vosk_bridge_get_consumed(); // held after stop
                 vosk_bridge_reset();
             }
         }

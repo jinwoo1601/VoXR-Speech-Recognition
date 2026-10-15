@@ -11,7 +11,8 @@
            (default)              the issue #65 A/B replay
            flag grammar           print GenerateGrammarJson over the demo grammar
            flag joined            the joined-rig mode, score or report (feat-joined-rig-parser),
-                                  or drive-check (feat-joined-rig-recogniser; a recogniser stage)
+                                  or drive-check (feat-joined-rig-recogniser; a recogniser stage),
+                                  or timing (feat-joined-rig-recogniser; schema-2 dump positions)
            flag check             its self-test
            flag sweep             the start-index sweep behind the blocked/recovered figure
            flag doccheck          the issue #83 documentation pin

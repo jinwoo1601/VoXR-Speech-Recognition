@@ -41,6 +41,16 @@ static std::string       g_last_error;
 static std::string       g_last_partial;
 static QueuedResult      g_current_result;
 
+// Bridge timing: input samples the loop has read this session (reset at each
+// session start, held after stop for vosk_bridge_get_consumed), decoder
+// samples fed since the recognizer was created (Vosk's word times run on
+// across vosk_recognizer_reset), and that decoder count at session start —
+// the session's word-time origin. Every queued result carries the first and
+// the last.
+static std::atomic<int64_t> g_consumed{0};
+static int64_t              g_decoder_fed    = 0;
+static int64_t              g_session_origin = 0;
+
 // Processing buffer sizes
 static constexpr uint32_t kReadChunkSize = 4096;       // 48 kHz samples per read (~85 ms)
 static constexpr uint32_t kDownsampledSize = kReadChunkSize / Downsampler::kDecimationFactor + 1;
@@ -84,7 +94,7 @@ static void recognition_loop() {
             g_result_queue.Push(
                 std::string("{\"error\": \"audio device error\", \"code\": ")
                     + std::to_string(VOSK_BRIDGE_ERR_AUDIO_DEVICE_UNAVAIL) + "}",
-                false);
+                false, g_consumed.load(std::memory_order_relaxed), g_session_origin);
             break;
         }
 
@@ -94,6 +104,8 @@ static void recognition_loop() {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
+
+        g_consumed += read_count;
 
         // Rolling RMS of the pre-DSP chunk for the input-level getter.
         // Alpha derives from the chunk length so the ~300 ms effective
@@ -124,19 +136,24 @@ static void recognition_loop() {
         if (ds_count > 0) {
             int result = vosk_recognizer_accept_waveform_s(
                 g_recognizer, int16_buf, static_cast<int>(ds_count));
+            g_decoder_fed += ds_count;
 
             if (result == 1) {
                 // Utterance boundary — final result
                 const char* json = vosk_recognizer_result(g_recognizer);
                 if (json)
-                    g_result_queue.Push(std::string(json), true);
+                    g_result_queue.Push(std::string(json), true,
+                                        g_consumed.load(std::memory_order_relaxed),
+                                        g_session_origin);
                 else
                     LOGE("vosk_recognizer_result returned NULL");
             } else {
                 const char* json = vosk_recognizer_partial_result(g_recognizer);
                 if (json && json != g_last_partial) {
                     g_last_partial = json;
-                    g_result_queue.Push(std::string(json), false);
+                    g_result_queue.Push(std::string(json), false,
+                                        g_consumed.load(std::memory_order_relaxed),
+                                        g_session_origin);
                 }
             }
         }
@@ -146,7 +163,7 @@ static void recognition_loop() {
             g_result_queue.Push(
                 std::string("{\"error\": \"ring buffer overflow\", \"code\": ")
                     + std::to_string(VOSK_BRIDGE_ERR_RING_BUFFER_OVERFLOW) + "}",
-                false);
+                false, g_consumed.load(std::memory_order_relaxed), g_session_origin);
             LOGI("Ring buffer overflow detected");
         }
     }
@@ -157,7 +174,8 @@ static void recognition_loop() {
     // Flush remaining audio as final result
     const char* final_json = vosk_recognizer_final_result(g_recognizer);
     if (final_json)
-        g_result_queue.Push(std::string(final_json), true);
+        g_result_queue.Push(std::string(final_json), true,
+                            g_consumed.load(std::memory_order_relaxed), g_session_origin);
     else
         LOGE("vosk_recognizer_final_result returned NULL");
 
@@ -176,6 +194,8 @@ static int start_internal(bool start_capture) {
         return VOSK_BRIDGE_ERR_ALREADY_RUNNING;
 
     reset_pipeline();
+    g_consumed = 0;
+    g_session_origin = g_decoder_fed;
     g_input_level.store(0.0f, std::memory_order_relaxed);
     g_push_mode.store(!start_capture, std::memory_order_release);
 
@@ -223,6 +243,7 @@ int vosk_bridge_init(const char* model_path, float sample_rate,
 
     g_sample_rate = sample_rate;
     g_recognizer = vosk_recognizer_new(g_model, g_sample_rate);
+    g_decoder_fed = 0;
     if (!g_recognizer) {
         g_last_error = "vosk_recognizer_new() returned NULL";
         LOGE("%s", g_last_error.c_str());
@@ -363,6 +384,7 @@ int vosk_bridge_set_grammar(const char* grammar_json) {
         g_recognizer = vosk_recognizer_new_grm(g_model, g_sample_rate, grammar_json);
     else
         g_recognizer = vosk_recognizer_new(g_model, g_sample_rate);
+    g_decoder_fed = 0;
 
     if (!g_recognizer) {
         g_last_error = "vosk_recognizer_new failed during set_grammar";
@@ -388,6 +410,17 @@ const char* vosk_bridge_get_result(int* out_is_final, int* out_length) {
     if (out_length)
         *out_length = static_cast<int>(g_current_result.json.size());
     return g_current_result.json.c_str();
+}
+
+void vosk_bridge_get_result_position(int64_t* out_consumed, int64_t* out_origin) {
+    if (out_consumed)
+        *out_consumed = g_current_result.consumed;
+    if (out_origin)
+        *out_origin = g_current_result.origin;
+}
+
+int64_t vosk_bridge_get_consumed(void) {
+    return g_consumed.load(std::memory_order_acquire);
 }
 
 int vosk_bridge_is_running() {

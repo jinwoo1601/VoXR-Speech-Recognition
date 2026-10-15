@@ -175,6 +175,13 @@ Ordered to retire the riskiest unknown first at no product risk, then the one sh
 - **Small choices the plan left open, built.** `RunWorld` sets the clock to frame 0 before setup; `SendMessage` with `RequireReceiver` and no receiver calls `Debug.LogError`, so the guard sees it; `drive-check` rejects any extra argument as `unknown argument`, like `ParseOptions`; scripted final payloads time words at 0.3 s each.
 - **Corrections to always-current sections:** none. The first *Risks* bullet's "completes synchronously on a completed extractor task" stays true.
 
+### Phase 2 — as built (2026-10-15)
+
+- **Built as planned.** plan-2 Steps 1-7 landed in the seven NB/AB files and the committed arm64 `.so`. Command 3's stdout is unchanged by the bridge change. Two `--dump` runs give schema-2 dumps that `timing` agrees on exactly (largest consumed difference 0 input samples), each case draining to `consumed` = `pushed`. The parser-layer `main`-vs-`main` run reads a schema-2 dump with the same report as a schema-1 dump. The `.so` exports the two new names beside the 14 old ones, with no other `Runtime/` change. Commands 1-2 green. Runtime claims a-l held.
+- **Small choices the plan left open, built.** `Pop` is unchanged (it already moves the whole `QueuedResult`). `g_decoder_fed` is zeroed at `vosk_bridge_init`'s recognizer creation and in `vosk_bridge_set_grammar`'s new-recognizer branches. `r.consumed` is set, and the drain runs, only under `--dump`; the drain also runs after an earlier `PushAll` failure. `DumpCase.Results` holds a new `DumpResult` class (`Seq`, `Final`, `Consumed`, `Origin`, the payload's raw text or `Raw`). A repeated `timing` option is a `given twice` stop, in `ParseOptions`'s wording. With no final pairs the difference line prints 0. A dump's `samples` and `sampleRate` are on the `case` line, where claim a's bound reads them.
+- **Citations re-pointed to the landed tree.** `vosk_bridge.h` :71 (`vosk_bridge_get_result_position`), :75 (`vosk_bridge_get_consumed`); `vosk_bridge.cpp` :415, :422 (their definitions; the *ABI route* decision's :383-391 was plan-time); `harness/main.cpp` :32 (`kDecoderRate`), :334 (`drain stalled`); `Joined.cs` :458 (`timing`'s difference line) and :470-471 (schema-1 stop).
+- **Corrections to always-current sections:** none.
+
 ## Related
 
 The frontmatter's sources, plus: design `joined-rig.md` §1 (rules 2, 3, 6, 10, 11), §4, §7 · `Documentation~/native-bridge.md` (ABI table :77-96) · `NativeBridge~/harness/README.md` · `Planning~/verification-recipe.md` ("Building NativeBridge" :49-64; DocCheck :222-232) · `Planning~/research/2026-09-05-next-level/03-critique-and-ranking.md` (R11 :232, R17 :238) · `KNOWN_LIMITATIONS.md`

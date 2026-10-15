@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The rig's --joined mode: sub-verb dispatch, the drive-check hook, option parsing, grammar-pin guard, kill check, scored-record writer
+// Purpose:  The rig's --joined mode: sub-verb dispatch, the drive-check hook, option parsing, grammar-pin guard, kill check, scored-record writer, the timing check
 // Layer:    Planning.AbRig
 // Owns:     Joined (internal static class)
 // Depends:  JoinedInput, JoinedScorer, JoinedReport, VoxrCommandParser, VoxrCommandDefinition, VoxrSlotDefinition, VoxrSlotMatch
@@ -7,15 +7,19 @@
 // feat-joined-rig-parser Phases 2-3. A `score` run scores one side (one dump through one
 // staged ref); `report` compares the two sides' scored files (JoinedReport); `drive-check`
 // (feat-joined-rig-recogniser Phase 1) runs JoinedRecogniser's scripted worlds, reached through
-// the DriveCheck hook it sets from a module initializer in a recogniser stage only:
+// the DriveCheck hook it sets from a module initializer in a recogniser stage only; `timing`
+// (feat-joined-rig-recogniser Phase 2) checks schema-2 dump positions, and with two dumps
+// their agreement:
 //
 //   --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]
 //   --joined report --a A --b B --out R
 //   --joined drive-check
+//   --joined timing --dump D [--dump-b D2]
 //
-// Exit 0 scored (or reported, or every world passed); 1 a drive-check FAIL; 2 an input stop or
-// the grammar-pin guard (or a drive-check stop); 3 the kill check (the pinned dump does not
-// reproduce the pin). Every stop is named on stderr, prefixed `joined: `;
+// Exit 0 scored (or reported, or every world passed, or every timing case passed); 1 a
+// drive-check or timing FAIL; 2 an input stop or the grammar-pin guard (or a drive-check or
+// timing stop); 3 the kill check (the pinned dump does not reproduce the pin). Every stop is
+// named on stderr, prefixed `joined: `;
 // every stop after the options parse leaves no scored file (an argument stop precedes `--out`
 // being known). Each scored case's outcome is JoinedScorer's.
 using System;
@@ -53,6 +57,7 @@ namespace AbRig
             "usage: --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]";
         const string ReportUsage = "usage: --joined report --a A --b B --out R";
         const string DriveCheckUsage = "usage: --joined drive-check (a recogniser stage only)";
+        const string TimingUsage = "usage: --joined timing --dump D [--dump-b D2]";
 
         // Set by JoinedRecogniser's module initializer; null in a parser stage, which does not
         // compile JoinedRecogniser (*Stage layering*).
@@ -92,7 +97,15 @@ namespace AbRig
                         );
                     return DriveCheck(args, slots, commands);
                 }
-                throw new JoinedInput.Stop(2, ScoreUsage, ReportUsage, DriveCheckUsage);
+                if (verb == "timing")
+                    return Timing(args);
+                throw new JoinedInput.Stop(
+                    2,
+                    ScoreUsage,
+                    ReportUsage,
+                    DriveCheckUsage,
+                    TimingUsage
+                );
             }
             catch (JoinedInput.Stop stop)
             {
@@ -366,6 +379,251 @@ namespace AbRig
             Console.Out.WriteLine("missed " + classCounts["missed"]);
             Console.Out.WriteLine("false-fire " + classCounts["false-fire"]);
             return 0;
+        }
+
+        // `timing` (*Checks as commands*), on schema-2 dumps only; the reader has already held
+        // each case's `consumed` non-decreasing and within `pushed`, and its `origin` constant.
+        // FAIL per dump: a case-end `consumed` other than its `pushed`. FAIL with two dumps:
+        // unequal case sets or ordered non-empty final texts, or finals paired by order unequal
+        // in word count or in any word's per-case `start` or `end` (the printed time minus
+        // `origin` / `decoderRate`, a decimal from the number's text, compared exactly). The
+        // largest `consumed` difference is over those final pairs, never results by `seq`.
+        static int Timing(string[] args)
+        {
+            int at = Array.IndexOf(args, "--joined");
+            string pathA = null,
+                pathB = null;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (i == at || i == at + 1)
+                    continue;
+                string a = args[i];
+                if (a != "--dump" && a != "--dump-b")
+                    throw new JoinedInput.Stop(2, "unknown argument \"" + a + "\"");
+                if ((a == "--dump" ? pathA : pathB) != null)
+                    throw new JoinedInput.Stop(2, a + " given twice");
+                if (i + 1 >= args.Length || i + 1 == at)
+                    throw new JoinedInput.Stop(2, a + " needs a value");
+                if (a == "--dump")
+                    pathA = args[++i];
+                else
+                    pathB = args[++i];
+            }
+            if (pathA == null)
+                throw new JoinedInput.Stop(2, "missing --dump", TimingUsage);
+
+            JoinedInput.Dump dumpA = ReadTimed(pathA);
+            JoinedInput.Dump dumpB = pathB != null ? ReadTimed(pathB) : null;
+
+            var casesB = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
+            if (dumpB != null)
+                foreach (JoinedInput.DumpCase c in dumpB.Cases)
+                    casesB.Add(c.Name, c);
+            var namesA = new HashSet<string>(StringComparer.Ordinal);
+
+            int passed = 0,
+                total = 0;
+            long largest = 0;
+            foreach (JoinedInput.DumpCase ca in dumpA.Cases)
+            {
+                namesA.Add(ca.Name);
+                var why = new List<string>();
+                CheckConsumed(dumpA, ca, why);
+                if (dumpB != null)
+                {
+                    if (casesB.TryGetValue(ca.Name, out JoinedInput.DumpCase cb))
+                    {
+                        CheckConsumed(dumpB, cb, why);
+                        CompareFinals(dumpA, ca, dumpB, cb, why, ref largest);
+                    }
+                    else
+                        why.Add("not in " + dumpB.Path);
+                }
+                total++;
+                passed += TimingVerdict(ca.Name, why);
+            }
+            if (dumpB != null)
+            {
+                foreach (JoinedInput.DumpCase cb in dumpB.Cases)
+                {
+                    if (namesA.Contains(cb.Name))
+                        continue;
+                    var why = new List<string>();
+                    CheckConsumed(dumpB, cb, why);
+                    why.Add("not in " + dumpA.Path);
+                    total++;
+                    passed += TimingVerdict(cb.Name, why);
+                }
+                Console.Out.WriteLine(
+                    "timing: largest consumed difference " + largest + " input samples"
+                );
+            }
+            Console.Out.WriteLine("timing: " + passed + "/" + total + " cases passed");
+            return passed == total ? 0 : 1;
+        }
+
+        static JoinedInput.Dump ReadTimed(string path)
+        {
+            reading = path;
+            JoinedInput.Dump dump = JoinedInput.ReadDump(path);
+            reading = null;
+            if (dump.Schema == 1)
+                throw new JoinedInput.Stop(2, path + ": schema 1, no positions");
+            return dump;
+        }
+
+        static void CheckConsumed(JoinedInput.Dump dump, JoinedInput.DumpCase c, List<string> why)
+        {
+            if (c.Consumed.Value != c.Pushed)
+                why.Add(
+                    dump.Path
+                        + ": case-end `consumed` "
+                        + c.Consumed.Value
+                        + ", `pushed` "
+                        + c.Pushed
+                );
+        }
+
+        // Prints each FAIL line of the case; 1 when it passed, else 0.
+        static int TimingVerdict(string name, List<string> why)
+        {
+            foreach (string line in why)
+                Console.Out.WriteLine("FAIL " + name + ": " + line);
+            return why.Count == 0 ? 1 : 0;
+        }
+
+        static void CompareFinals(
+            JoinedInput.Dump dumpA,
+            JoinedInput.DumpCase ca,
+            JoinedInput.Dump dumpB,
+            JoinedInput.DumpCase cb,
+            List<string> why,
+            ref long largest
+        )
+        {
+            var fa = TimedFinals(dumpA, ca);
+            var fb = TimedFinals(dumpB, cb);
+            bool sameTexts = fa.Count == fb.Count;
+            for (int k = 0; sameTexts && k < fa.Count; k++)
+                sameTexts = string.Equals(fa[k].Text, fb[k].Text, StringComparison.Ordinal);
+            if (!sameTexts)
+            {
+                why.Add(
+                    "finals "
+                        + JsonArray(fa.ConvertAll(f => f.Text).ToArray())
+                        + " in "
+                        + dumpA.Path
+                        + ", "
+                        + JsonArray(fb.ConvertAll(f => f.Text).ToArray())
+                        + " in "
+                        + dumpB.Path
+                );
+                return;
+            }
+            for (int k = 0; k < fa.Count; k++)
+            {
+                largest = Math.Max(largest, Math.Abs(fa[k].Consumed - fb[k].Consumed));
+                string final = "final " + k + " \"" + fa[k].Text + "\"";
+                if (fa[k].Start.Length != fb[k].Start.Length)
+                {
+                    why.Add(
+                        final
+                            + ": "
+                            + fa[k].Start.Length
+                            + " words in "
+                            + dumpA.Path
+                            + ", "
+                            + fb[k].Start.Length
+                            + " in "
+                            + dumpB.Path
+                    );
+                    continue;
+                }
+                for (int w = 0; w < fa[k].Start.Length; w++)
+                {
+                    if (fa[k].Start[w] != fb[k].Start[w])
+                        why.Add(TimeDiff(final, w, "start", fa[k].Start[w], fb[k].Start[w]));
+                    if (fa[k].End[w] != fb[k].End[w])
+                        why.Add(TimeDiff(final, w, "end", fa[k].End[w], fb[k].End[w]));
+                }
+            }
+        }
+
+        static string TimeDiff(string final, int word, string key, decimal a, decimal b) =>
+            final
+            + ": word "
+            + word
+            + " per-case `"
+            + key
+            + "` "
+            + a.ToString(CultureInfo.InvariantCulture)
+            + " vs "
+            + b.ToString(CultureInfo.InvariantCulture);
+
+        // The case's non-empty finals in dump order (the reader's rule: final, a payload with
+        // no `error`, non-empty `text`), each with its `consumed` and every word's per-case
+        // `start` and `end`.
+        static List<(string Text, long Consumed, decimal[] Start, decimal[] End)> TimedFinals(
+            JoinedInput.Dump dump,
+            JoinedInput.DumpCase c
+        )
+        {
+            var finals = new List<(string Text, long Consumed, decimal[] Start, decimal[] End)>();
+            foreach (JoinedInput.DumpResult r in c.Results)
+            {
+                if (!r.Final || r.Payload == null)
+                    continue;
+                using (JsonDocument doc = JsonDocument.Parse(r.Payload))
+                {
+                    JsonElement p = doc.RootElement;
+                    if (p.TryGetProperty("error", out _))
+                        continue;
+                    string text = p.GetProperty("text").GetString();
+                    if (text.Length == 0)
+                        continue;
+                    decimal origin = (decimal)r.Origin.Value / dump.DecoderRate.Value;
+                    JsonElement words = p.GetProperty("result");
+                    var start = new decimal[words.GetArrayLength()];
+                    var end = new decimal[start.Length];
+                    int i = 0;
+                    foreach (JsonElement e in words.EnumerateArray())
+                    {
+                        string where =
+                            dump.Path
+                            + ": case \""
+                            + c.Name
+                            + "\" seq "
+                            + r.Seq
+                            + " `result`["
+                            + i
+                            + "]";
+                        start[i] = DecimalText(e.GetProperty("start"), "start", where) - origin;
+                        end[i] = DecimalText(e.GetProperty("end"), "end", where) - origin;
+                        i++;
+                    }
+                    finals.Add((text, r.Consumed.Value, start, end));
+                }
+            }
+            return finals;
+        }
+
+        // A JSON number as a decimal from its own text, exponent forms included; never a double.
+        static decimal DecimalText(JsonElement number, string key, string where)
+        {
+            string text = number.GetRawText();
+            if (
+                !decimal.TryParse(
+                    text,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out decimal value
+                )
+            )
+                throw new JoinedInput.Stop(
+                    2,
+                    where + ": `" + key + "` " + text + " does not parse as a decimal"
+                );
+            return value;
         }
 
         static Dictionary<string, string> ParseOptions(
