@@ -1,0 +1,171 @@
+---
+type: architecture
+feature: joined-rig-recogniser
+topic: joined-rig
+status: draft
+updated: 2026-10-15
+sources:
+  - Planning~/features/joined-rig-recogniser/requirements.md
+  - Planning~/design-docs/joined-rig.md
+  - Planning~/design-docs/joined-rig/decisions/adr-0001-file-handoff-pipe.md
+  - Planning~/design-docs/joined-rig/decisions/adr-0002-phased-parser-then-recogniser.md
+  - Planning~/design-docs/joined-rig/decisions/adr-0003-outcome-classes-never-netted.md
+  - Planning~/design-docs/joined-rig/decisions/adr-0004-on-demand-instrument.md
+  - Planning~/design-docs/joined-rig/decisions/adr-0005-measurement-discipline.md
+  - Planning~/design-docs/joined-rig/decisions/adr-0006-host-neutral-runner.md
+  - Planning~/features/joined-rig-parser/architecture.md
+  - "Runtime/Commands/VoxrCommandRecogniser.cs and its collaborators, Runtime/VoxrSpeechRecogniser.cs, Runtime/VoxrJsonParser.cs, Runtime/Native/BridgeNative.cs, NativeBridge~/src/{vosk_bridge.cpp, vosk_bridge.h, result_queue.h}, NativeBridge~/harness/main.cpp, Planning~/features/coverage-in-selection/ab-rig/{stage.sh, joined.sh, Joined.cs, JoinedInput.cs, JoinedScorer.cs, Program.cs, UnityStub.cs, Rig.csproj}, Tests~/Fixtures/audio/manifest.json, Planning~/verification-recipe.md, .claude/bindings/unity.md (## verification)"
+---
+
+# feat-joined-rig-recogniser — Architecture
+
+Realizes `Planning~/features/joined-rig-recogniser/requirements.md` (Track **Full**; S1, F1–F11, the §6 NFRs, the §10 items): phase 2 of design `joined-rig` (adr-0002). The bridge queues with every result the input samples its decoder had read when it emitted and the session's word-time origin, read through two additive exports into a schema-2 dump; the rig gains a recogniser layer that stages the shipped `VoxrCommandRecogniser` and `VoxrSpeechRecogniser` from a ref, unchanged, replays each case's results into them on a simulated audio-time clock, and scores what they fire with phase 1's classes and discipline. The governing driver is **fidelity without edits** (F3, §2 Out 1): the measured code is the ref's own source, compiled as a player build and driven only through the seams Unity and the bridge drive on device — every stand-in is a Unity engine type or sits below the P/Invoke boundary, and whatever the stubs cannot serve stops the build or run by name.
+
+## What this implements
+
+| Requirement | Work | Phase | Section |
+|---|---|---|---|
+| F1 | Bridge counters, two exports, schema 2, drain before stop, `timing` | 2 | Register: bridge timing, ABI route, deterministic stream, checks |
+| F2 | Two dumps of one build, decoder shape; flips outcome-only | 3 | Register: timing measures, checks |
+| F3 | `recogniser` stage, stub, player loop, clock | 1, 3 | Register: staging, player loop, clock |
+| F4 | Stand-in bridge under the real speech recogniser; trace | 1, 3 | Register: delivery, trace |
+| F5, F6 | Every non-sealed case; shared classifier; first fire; pending label; canary | 3 | Register: scoring, canary |
+| F7 | Reflected configuration; tick rate | 3, 4 | Register: configuration; *Tuning record* |
+| F8 | Fire times, finals count, end-of-audio→fire delay | 3 | Register: timing measures |
+| F9 | Kill check, guards, sealed, shapes, flips at this layer | 3 | Register: guards, run script |
+| F10 | Every half Windows-native (phase 1's *Hosts*) | all | Build plan |
+| F11 | Parser stage and layer untouched; schema 1 and 2 read there | 1–4 | Register: stage layering, schema 2 |
+| NFRs | Simulated clock; schema-1 refusal; bridge alters no output | 1–3 | Non-functional realization |
+| §10 items 1–3 | Stubs and stand-ins; additive exports; tick rate | 1, 2, 4 | Register; *Tuning record* |
+
+## Context & scope
+
+The recogniser (`Runtime/Commands/VoxrCommandRecogniser.cs`, a `MonoBehaviour` :15) owns the timed behaviours phase 1 left unscored — buffer window (:72), eager flush (:79), prefix hold (:89), cooldown (:94), pending timeout (:105) — read off `Time.time` in `Update` (:647-672) and `HandleResult` (:679). Results reach it only through `VoxrSpeechRecogniser`, whose `Update` polls `BridgeNative.vosk_bridge_get_result` each frame on device (`Runtime/VoxrSpeechRecogniser.cs` :567-606) and whose `DispatchJsonResult` (:622-656) parses each payload with `VoxrJsonParser` and raises `OnResult` or `OnPartialResult`; the recogniser subscribes to partials only under `UNITY_EDITOR` (:522-524, :615-617). The bridge knows positions only on its recognition thread — each `Read` takes up to `kReadChunkSize` input samples (`vosk_bridge.cpp` :45, :91) — and `QueuedResult` carries only the JSON and the final flag (`result_queue.h` :8-11), so phase 1's dump brackets positions by the ring and carries a run-dependent word-time origin (feature `joined-rig-parser`, *Audio time* and its 2026-10-14 amendment; deferral JRP-1).
+
+**Owns:** the two exports and their counters; dump schema 2 and the drain; the rig's recogniser layer — staged world, drive, scorer, trace, `timing` verb, report additions, `joined.sh --layer`, `stage.sh`'s `recogniser` argument; the tick rate. **Shipped tree changed:** `NativeBridge~/src/` and the rebuilt `Runtime/Plugins/Android/arm64-v8a/libvosk-bridge.so`. **Untouched:** every shipped C# source (staged, never edited); `expectations.json`; the binding and Command 3 (adr-0004); parser-layer behaviour (F11); the manifest; `DocCheck.cs`. **Owed after G2:** the two exports in `Documentation~/native-bridge.md`'s ABI table (:77-96), by the codex reconciler.
+
+## Decision register
+
+- **Staging — the ref's sources, unchanged, as a player build (§10 item 1, F3).** The recogniser stage compiles from the ref `VoxrCommandRecogniser.cs` and every `Runtime/` source it and `VoxrSpeechRecogniser.cs` reach — the speech recogniser, `VoxrJsonParser`, `VoxrGrammarValidator`, `VoxrBridgeErrorCode`, the Unity-free collaborators and the asset types — beside phase 1's ten parser sources (`stage.sh` :15-26). `UnityEngine` is the rig's `UnityStub.cs` (:5-13) grown to a superset: `Object`, `MonoBehaviour`, `ScriptableObject`, a settable `Time.time`, `Debug` with `Assert` and `isDebugBuild`, `SendMessageOptions`, and the attributes the sources carry. The asset types are compiled, never built: the rig configures in code (`Configure` :260), so `Awake` skips the Inspector path (:557-558). Two shipped types are stood in because they are the device boundary, not the measured path: `BridgeNative` (P/Invoke, `Runtime/Native/BridgeNative.cs` :14) and `ModelExtractor` (model files). No Unity define is set, so every `#if` resolves as a player's: the bridge branches (`VoxrSpeechRecogniser.cs` :251-261, :384-397), no partial subscription, sibling ties on their flag only (`VoxrCommandParser.cs` :530-536). *Why:* F3 and §2 Out 1 measure the ref's own code; rule 6 measures the native pipeline, whose C# half is the player build; staging the speech recogniser keeps the dispatch a ref may change — R17's seam — the ref's own. *Rejected:* a rig-written `VoxrSpeechRecogniser` (a copy of the device dispatch); `UNITY_EDITOR` defined (measures a partial subscription and diagnostics no player runs); edits behind `#if` (Out 1); a Unity host (adr-0006).
+
+- **Stage layering — `stage.sh <ref> <out> recogniser`; without it, phase 1's stage (F11).** The argument adds the recogniser's sources and the recogniser-only rig files (`JoinedRecogniser.cs`, the two stand-ins); the stub superset is compile-only for the parser layer. `JoinedRecogniser.cs` registers its drive with `Joined` from a module initializer, so `Joined.cs` and `Program.cs` compile in both stages and `--layer recogniser` in a parser stage is a named stop. *Why:* F11, and DocCheck (`Planning~/verification-recipe.md` :222-232) stages through the same script — a recogniser change that outgrows the stub must break neither. *Rejected:* the recogniser in every stage (couples every parser-layer run and DocCheck to it); a compile symbol from a staged props file (two builds of one rig).
+
+- **The player loop — Unity's messages by name; one fresh world per case (F3).** Per case the rig constructs both components (field initializers: shipped defaults), wires the command recogniser's serialized reference through its internal `SpeechRecogniser` setter before enabling (`VoxrCommandRecogniser.cs` :513-540), sends `Awake` and `OnEnable`, calls `Configure(Slots(), Commands())` with the rig's demo definitions, then `StartRecognition()`, whose initialisation lets `HandleModelReady` apply the grammar. Each frame sends `Update` to the speech recogniser, then the command recogniser; at the horizon `OnDisable` and `OnDestroy` end the world, freeing the static bridge claim (`VoxrSpeechRecogniser.cs` :53). *Why:* Unity reaches these private methods by name, so this is the device's path; a fresh world matches the harness's per-case reset (`main.cpp` :311). *Rejected:* one world for the corpus (case order would move outcomes); `InjectText` (:330) or `HandleResult` direct (bypasses the speech recogniser, F4); command-first order (Unity leaves it undefined and `Runtime/` sets none; speech-first lets a frame's results meet that frame's flush check).
+
+- **Delivery — the stand-in bridge feeds the real poll (F4).** The stand-in `BridgeNative` holds the case's `result` records in dump order; `vosk_bridge_get_result` hands out the next whose audio time the clock has reached, as UTF-8 bytes behind an opaque token its `SpanFromPtr` maps back, so the shipped `Update` and `DispatchJsonResult` parse and raise every final and partial as on device. It records the grammar it is given; lifecycle calls succeed. *Why:* a ref whose recogniser subscribes to `OnPartialResult` in a player build (R17) gets the partials with no rig change, built by the shipped parser. *Rejected:* `InjectResult`/`InjectPartialResult` (`VoxrSpeechRecogniser.cs` :517-527; skips the dispatch's parse and error path); P/Invoke into a real bridge (adr-0001 (b)).
+
+- **The clock — case audio time on a fixed frame grid (F3, §10 item 3).** Only the player loop sets `Time.time`: frame k runs at k ÷ tick rate. A result's audio time is its `consumed` ÷ the case's `sampleRate`; a frame's poll releases every result at or before the frame's time, in dump order, so a result is delivered on the first frame at or after its audio time, as on device (ruled 2026-10-15). A case runs from frame 0 to its horizon — its last result's time plus the staged `bufferWindow` and `pendingTimeout`, read off the instance — and a command still pending there stops the run (exit 2). *Why:* on device `Time.time` is the frame's and results are polled once per frame (`VoxrSpeechRecogniser.cs` :567-606); the tick rate is a provisional rig number (*Tuning record*). *Rejected:* delivery between frames (a `Time.time` no frame takes); one clock across cases; a fixed horizon (a lengthened timer would lose its outcome silently).
+
+- **Bridge timing — counted on the recognition thread, queued with each result (F1, JRP-1).** The loop adds each `Read`'s count to a session counter of input samples consumed, reset with the session (`start_internal` :169-197), and each accept's count to a decoder counter of samples fed, reset only where the recognizer is created (:225, :355-365), not by `vosk_bridge_reset` (:307); that counter at session start is the session's word-time origin. Every `Push` — final, partial, error, the tail final (:157-160) — carries the consumed count after its chunk, and the origin. *Why:* consumption at emission is exact only on that thread; Vosk's word times run on across `vosk_recognizer_reset` (phase 1's amendment), so samples fed before the session are their origin. *Rejected:* positions inferred by the harness (phase 1's ring-wide bracket); a recognizer recreated per case (changes what the decoder carries between cases — §2 Out 1).
+
+- **ABI route — two additive exports; the payload untouched (§10 item 2).** `vosk_bridge_get_result_position(int64_t*, int64_t*)` gives the consumed count and origin of the result `vosk_bridge_get_result` last returned (:383-391); `vosk_bridge_get_consumed()` gives the live session count, for the drain. No existing signature or payload byte changes and `BridgeNative` binds neither; being an ABI change, the arm64 `.so` is rebuilt and committed (Command 3). *Why:* the payload is Vosk's, verbatim (phase 1, *Schema*), and the shipped consumer reads it by first-match key search (`VoxrJsonParser.cs` :26, :54-64; `"error"` anywhere, `DispatchJsonResult` :630), so a spliced field is a hazard on every device result; out-params cost two integer copies and no string work on the hot thread. *Rejected:* fields in the JSON payload (string surgery per result; every consumer's payload changes; the first-match search becomes load-bearing on a name and a place); widening `vosk_bridge_get_result` (breaks the shipped P/Invoke, `BridgeNative.cs` :35).
+
+- **Deterministic dump stream — `--dump` drains the decoder before stop (F1, F2).** After a case's padding (`main.cpp` :306-307), a `--dump` run drains results until `vosk_bridge_get_consumed()` equals the case's pushed count, under the stall guard's bound (:136-139), then stops (:309); without `--dump` nothing changes, the standing Command 3 run included (ruled 2026-10-15). *Why:* `vosk_bridge_stop` (`vosk_bridge.cpp` :283-294) ends the thread with whatever the ring still holds, a run-dependent amount that moves every later origin; with all pushed samples consumed, each origin depends on the corpus alone, so per-case word times printed at finite precision subtract to the same values in two runs. *Rejected:* the origin alone (subtracting two different origins from rounded times can differ in the last digit, failing F1's exact agreement); draining in every run (changes the standing Tier C check, which adr-0001 and adr-0004 keep additive).
+
+- **Schema 2 — fields added; schema 1 still read at the parser layer (§6, F11).** Header `schema` 2 and `decoderRate` (the bridge's init rate, `main.cpp` :263); `result` gains `consumed` (input samples) and `origin` (decoder samples); `case-end` gains `consumed`; phase 1's fields stay. The reader takes schema 1 or 2 at the parser layer and reads the new fields strictly (integers; `consumed` non-decreasing within a case, never above its `pushed`; `origin` constant within a case); the recogniser layer refuses schema 1, exit 2, naming the dump. *Why:* the reader versions on `schema` (`JoinedInput.cs` :9, :159-161), and the parser layer reads only finals and words. *Rejected:* a side file of timings (two files to pair); dropping `pushed`/`prevPushed` (breaks phase 1's reader for nothing).
+
+- **Recogniser-layer scoring — every non-sealed case; the first fire (F5, F6; adr-0003).** Dispositions are `scored` and `sealed`; `layer: recogniser` cases score like the rest. Fires are the commands raised through `OnCommandRecognised` (`VoxrCommandRecogniser.cs` :128), confirmations included (:1844-1851), in order: the first is the case's fire, the rest extra fires, never netted. Class and slot credit come from phase 1's rule, extracted from `JoinedScorer.Score` (:77-93) into one function both layers call. No fire, with `OnCommandPending` raised and never confirmed: `missed`, shown "pending, timed out". No rig gate: the component's own gates decide. *Why:* rulings A and B (requirements §5); one classifier keeps both layers' classes the same. *Rejected:* phase 1's gate constants (`JoinedScorer.cs` :23-24; re-gates what the recogniser gated); a pending class (ruling B).
+
+- **Timing measures — beside the class, never a flip (F8, F2).** Per case: each fire's audio time; the finals count (non-empty finals, phase 1's `finalCount`); the end-of-audio→fire delay, first fire minus `samples` ÷ `sampleRate`, signed, absent without a fire. Flips keep phase 1's outcome fields; timings show side by side, and the report states that per-record positions may differ between runs by at most one decoder read. *Why:* rulings E and F; R11's kill criterion reads finals and end-of-audio delay in sample time. *Rejected:* timing differences as flips (F2 would turn on scheduling); a combined latency score (adr-0003).
+
+- **Configuration — read off the staged instance (F7).** Every `[SerializeField]` field of the staged `VoxrCommandRecogniser` is read by reflection after construction and printed, name and value, with the tick rate. *Why:* ruling C; reflection names a field a ref adds or renames. *Rejected:* a hand-kept list (drifts silently); rig-set values (ruling C).
+
+- **Guards at this layer (F9; rule 10).** Phase 1's readers, grammar-pin guard (`Joined.cs` :125-141) and kill check (:143-195) run first, unchanged; then per case the grammar the staged recogniser applied must equal the pin's, ordinally, and a `Debug.LogError` or failed `Debug.Assert` from the staged sources stops the run (exit 2), named. *Why:* a recogniser emitting another grammar varies the decoder side; an error log means the drive left the component's contract. *Rejected:* phase 1's guard alone (it checks the rig's `GenerateGrammarJson`, not what the recogniser applies).
+
+- **Run script — `joined.sh --layer parser|recogniser`, default `parser` (F9, F11).** `recogniser` stages each ref with that argument and passes `--layer recogniser` to each score; the rest is phase 1's, its two shapes included (`joined.sh` :83-102, :130-158). At this layer `--vary parser` varies the C# side, parser and recogniser together (ruling D), and the report names it so. *Why:* two shapes keep one side per run structural, and every phase 1 command line keeps its meaning. *Rejected:* a second script; a third shape (rule 10).
+
+- **Checks as commands (F1, F2).** `--joined timing --dump D [--dump-b D2]`: per case, `consumed` non-decreasing and within the samples pushed for the case — the WAV plus the harness's padding (ruled 2026-10-15); with two dumps, finals equal, per-case word times (printed time minus `origin` ÷ `decoderRate`, in decimal) equal exactly, and the largest position difference printed. F2 is the decoder shape on two dumps of one build at this layer: 0 flips. *Rejected:* a hand diff of dumps.
+
+- **The F6 canary edits a staged copy, never the worktree.** A one-line edit to a `.scratch/` stage's copy of a recogniser source, scored there and reported against an unedited side. *Why:* no `Runtime/` edit and no revert; phase 1's worktree canary was refused by the auto-mode classifier at its Phase 4 (`joined-rig-parser`, *As-built deltas*). *Rejected:* phase 1's edit and `git checkout --`.
+
+- **Trace — every case, every delivery (F4).** Each score at this layer writes `trace-<side>.jsonl` beside its scored file: per case, in timeline order, each result as observed through the speech recogniser's own events (seq, final, audio time, frame time, text) and each recogniser event (fire, pending, confirmed, cancelled) with its frame time. *Why:* F4's check reads it; it explains a timed outcome. *Rejected:* an opt-in flag (a second run for the check).
+
+## Components & responsibilities
+
+- **Bridge** — `vosk_bridge.cpp`: counters in `recognition_loop` (:70-165), origin in `start_internal`, decoder-counter resets beside recognizer creation, the exports beside `vosk_bridge_get_result`; `vosk_bridge.h` declares them; `QueuedResult` (`result_queue.h` :8-11) and `Push` (:19-22) carry the two counts.
+- **Harness** — `main.cpp`, under `--dump`: `DrainResults` (:78-117) reads each position; the header (:248-258) writes schema 2 and `decoderRate`; `DumpCaseEnd` (:65-73) adds `consumed`; the drain precedes stop.
+- **`UnityStub.cs`** (edited, both stages) — the superset; `LogError` and failed `Assert` recorded for the drive, still printed.
+- **`BridgeNative.cs`, `ModelExtractor.cs`** (new, recogniser stage) — stand-ins with the shipped names and the members the staged sources call.
+- **`JoinedRecogniser.cs`** (new, recogniser stage) — player loop, clock, drive, fire and pending collection, configuration reflection, trace, `drive-check`.
+- **Edited:** `Joined.cs` (`--layer`, hook, schema-1 refusal, header, `timing`); `JoinedInput.cs` (schema 1 or 2, new fields, result records kept); `JoinedScorer.cs` (class step shared); `JoinedReport.cs` (layer, configuration, timings); `Program.cs` (dispatch hands `Slots()` too); `stage.sh`; `joined.sh`; `Rig.csproj`'s entry-points comment (:9-24).
+- **Committed:** the rebuilt `libvosk-bridge.so`. **Generated, never committed:** `.scratch/joined/**`.
+
+## Data contract & runtime flow
+
+**Dump schema 2** (input samples unless named decoder samples):
+
+- `header` adds `"schema":2`, `"decoderRate"`.
+- `result` adds `"consumed"` (input samples the decoder had read in this case when it emitted) and `"origin"` (decoder samples fed before this case began).
+- `case-end` adds `"consumed"` — equal to `pushed` under the drain.
+- Audio time = `consumed` ÷ the case's `sampleRate`; a word's per-case time = printed time − `origin` ÷ `decoderRate`.
+
+**Scored record, recogniser layer:** phase 1's header plus `layer: recogniser`, `config` and `tickRate`, no `gate`; per case `case`, `disposition`, `finals`, and if scored `class`, `intent`, `slots`, `score`, `slotCredit`, `extraFires`, `finalCount`, `fireTimes`, `delay` (null without a fire), `pending`. A parser-layer scored file has no `layer` key, so stays byte-for-byte phase 1's.
+
+**Trace:** `{"kind":"result","case","seq","final","audioTime","frameTime","text"}` and `{"kind":"event","case","event","frameTime","intent","slots"}`.
+
+**Report, recogniser layer:** phase 1's sections plus the layer, each side's configuration and tick rate, the C# side named under `--vary parser`, the one-read sentence, and per case each side's fire times, finals count, delay and pending label; no not-scored list. Two scored files differing on `layer` or `tickRate` are a defect (exit 2).
+
+**One recogniser-layer run**, from the project root in Git Bash:
+
+1. The operator builds the harness by Command 3 and re-runs it with `--dump`, once or twice as the shape needs.
+2. `joined.sh --layer recogniser` checks inputs (exit 2), stages each distinct ref with `recogniser` and builds it.
+3. Per (dump, ref), `--joined score --layer recogniser`: readers (schema 2 required), grammar-pin guard, kill check if pinned (exit 3); per manifest case, sealed without `--evaluate` → skipped, else a fresh world driven to its horizon, guards checked, classified, timed, written, traced.
+4. `--joined report` writes `report.md` and prints it.
+
+### Tuning record (F7)
+
+| Number | Value | Evidence |
+|---|---|---|
+| Tick rate | 90 Hz | Provisional → Phase 4's tuning pass. The project's device measurements ran a Quest 3 at 90 Hz (`KNOWN_LIMITATIONS.md` :363; `Runtime/ModelExtractor.cs` :444). Phase 4 probes one notch each way on the 16 fixtures and records whether any class moves. |
+
+The horizon is derived from the staged timers, not a number. The recogniser's own values (`minConfidence` :27, `minScore` :31, `bufferWindow` :72, `commandCooldown` :94, `pendingTimeout` :105, …) are configuration staged with each ref (F7), not rig numbers; phase 1's `MinScore` and `MinConfidence` stay parser-layer only.
+
+## Non-functional realization
+
+- **Simulated time (§6 Performance).** Only the player loop sets `Time.time`; the rig never sleeps or reads a wall clock, so a case costs its frame count in `Update` calls. The harness's drain waits on its own decoder thread, never on audio time.
+- **Input boundary (§6).** Phase 1's strict readers plus the schema-2 fields; schema 1 refused at this layer (exit 2), read at the parser layer. A recogniser score in a parser stage, scored files of two layers, a pending command at the horizon, a staged error log, an applied grammar off the pin: each exit 2, named, no scored file.
+- **Degraded dependencies (§6).** A pinned-side decode error is exit 3. The bridge change alters no recognition output by construction — counters only count; payload bytes and existing exports unchanged — and Command 3's 16/16 on an untouched `expectations.json` shows it; the C# consumer binds nothing new; the `.so` is rebuilt and committed; the Quest on-device check is the human's at G2.
+- **Fidelity by construction (F3).** A ref needing a Unity member, a `BridgeNative` member or a `Runtime/` file the stage lacks fails its stage build, named; the stubs implement only engine plumbing (lifecycle, clock, logging) and the native boundary.
+- **Hot path (`NativeBridge~/src/**`).** Per chunk two counter adds; per result two 64-bit copies under the queue's existing lock; no allocation, no string work.
+
+## Build plan
+
+Ordered to retire the riskiest unknown first at no product risk, then the one shipped change, then what needs both: Phase 1 proves the shipped sources compile and run outside Unity unchanged (requirements §8) in rig files alone, so a failure stops the feature before the bridge is touched; Phase 2 is the only shipped-tree change and the costliest verification; Phase 3 scores Phase 2's dumps in Phase 1's world; Phase 4 tunes and closes. Every rig phase runs the recipe's DocCheck (exit 0, `<n>/<n>`); every run is made from Claude's Git Bash (F10).
+
+- **Phase 1 — the staged world (prototype, rig only).** Stub superset, stand-ins, `stage.sh`'s argument, `JoinedRecogniser.cs`'s player loop, clock and delivery, and `--joined drive-check` on scripted timelines in place of a dump. Green: a `recogniser` stage of `main` builds with 0 errors and `git status --short -- Runtime/` empty; drive-check shows a fire on the frame grid, a buffer-window merge and its absence, a partial reaching `OnPartialResult`, a pending timing out; DocCheck; phase 1's `main`-vs-`main` parser-layer run, 0 flips. No binding command is triggered. *Discharges:* F3 (staging), F4 (path), §10 item 1.
+- **Phase 2 — bridge timing and dump schema 2.** Counters, `QueuedResult`, exports; the harness's schema 2 and drain; `JoinedInput.cs` reading both schemas; `timing`; the `.so` rebuilt and committed. Green: Command 3 verbatim (16/16, exit 0); Commands 1–2, since the committed `.so` is under `Runtime/`; two `--dump` re-runs with stdout identical to Command 3's and `timing` passing F1; phase 1's parser-layer `main`-vs-`main` on a schema-2 dump, 0 flips, phase 1's counts. *Discharges:* F1, F11 (schema), §6 degraded dependencies, §10 item 2; the Quest check is the human's, deferred to G2.
+- **Phase 3 — recogniser-layer scoring and report.** `--layer` in `Joined.cs` and `joined.sh`, shared classifier, fires, pending label, timings, configuration, guards, trace, report, schema-1 refusal. Green: DocCheck; F3 `main`-vs-`main` C# side, 0 flips; F2 two dumps of one build, 0 flips; F4 a case's trace; F5 the split case in a class; F6 the staged-copy canary in its class, report kept in `.scratch/joined/` for the maintainer; F7, F8 read on the 16 fixtures; F9 the kill canary (exit 3) and sealed/`--evaluate` on a `.scratch/` manifest copy; a schema-1 dump refused here, read at the parser layer. *Discharges:* F2–F9, §6 input boundary.
+- **Phase 4 — tuning pass and closing gate.** The tick-rate probe into the *Tuning record*; every acceptance run re-made with `MSYS_NO_PATHCONV` set and unset; Command 3; DocCheck; phase 1's F11 run. *Discharges:* F7 (record), F10, F11, §10 item 3.
+- **Approved 2026-10-15** by the maintainer, in session ("All recommended"): four phases, order and risk ordering as written.
+- **Assets code cannot author:** none new — `NativeBridge~/vendor/` (a human download per `NativeBridge~/harness/README.md` if absent), Command 3's toolchain, .NET SDK 10, Unity 6000.4.7f1 and the host; for G2 a Quest 3 and the human.
+
+## Risks, tradeoffs & open questions
+
+- **Unrecorded behaviour, proved at each phase's first run.** Phase 1: the sources compile against the stub unedited (§8); `InitialiseAsync` (`VoxrSpeechRecogniser.cs` :188-281) completes synchronously on a completed extractor task; `UnityEngine.Object` and `Debug` resolve beside `System`. Phase 2: Vosk's word times take samples fed since recognizer creation as origin, so a case's first word lands near its onset and two runs agree exactly; the drain moves no final (kill check, Command 3); chunk boundaries repeat run to run, and F2's one-read bound covers them when not. Phase 3: the applied grammar equals the pin, since `GrammarManager.Rebuild` (:19-24) calls the same `GenerateGrammarJson` with follow-up words built as `ab-rig/Program.cs` mirrors (:142-152); if not, a stop, never a relaxed compare.
+- **Delivery is quantized to the frame**, as on device; the exact audio time stays in the trace and report — the reading of F4's "at their audio times", ruled 2026-10-15.
+- **Decoder latency is not modelled.** Audio time is the decoder's sample clock; on device a result also waits out decode time (`VoxrCommandRecogniser.cs` :65-71), so a delay here is the endpointer's and the recogniser's — the sample-time measure R11's criterion asks for.
+- **The served payload is the harness's re-serialization** (`main.cpp` :93-97); key order and values survive, so `VoxrJsonParser` reads the same text and numbers. Unset serialized arrays are null here and empty in a scene; the shipped code resolves both to the defaults (`PendingCommandHandler.cs` :108-111; `VoxrCommandParser.cs` :537-540).
+- **Drift watch.** Stand-ins mirror `BridgeNative`'s members and `ModelExtractor.ExtractModelAsync`; a ref adding a bridge export its sources call fails to stage until taught. The horizon reads `bufferWindow` and `pendingTimeout` by name. The dump run decodes more padding than the standing check; the kill check guards it. TTS-only evidence cannot rank decoders (C12).
+- **Readings, ruled by the maintainer in session on 2026-10-15.** F1's position check reads against the samples pushed for the case (the WAV plus the harness's padding; `case-end` `pushed`), not the WAV's `samples`, since the harness pads every case (`main.cpp` :277-280) and endpoints and the tail final fall in that padding — requirements F1 amended to match on this branch ("All recommended"). F4's "at their audio times" is realised on the frame grid: a result is delivered on the first frame at or after its audio time, as on device, and the exact audio time stays in the trace and report — confirmed. The decoder drain before stop applies only under `--dump`; the standing Command 3 run is unchanged — confirmed. The four-phase build plan was approved as ordered (*Build plan*).
+
+## As-built deltas
+
+<!--
+**The `## As-built deltas` charter.** This section is about the plan, and the plan lives in the plan files this document links: four kinds of entry are **admitted** here, two are **amended into `## Decision register`** in place with a dated line instead, a fact the landed tree has made false in an always-current section is **corrected in place** where it stands, and every other kind is **routed** to a home that already receives it — the session's dated note, `memory/<YYYY-MM-DD>.md`; the cross-session state the `board` binding names, `memory/STATUS.md` where none is bound; or the lessons file, `memory/notes-for-future-features.md`. No new home is built for what is routed out.
+
+**Admitted**, each a statement about the plan: (1) divergence between the persisted plan and the tree as built, with the ruling that settled it; (2) "built as planned" confirmations, which are a real result; (3) citation re-pointing, plan-time line numbers read against the landed tree; (4) post-G2 addenda from unrelated later work, carrying their date.
+
+**Amended into `## Decision register`**, in place and carrying the amendment's date, in the form `**Amended YYYY-MM-DD:**` appended to the decision it extends: a ruling that extends a decision this document already carries, and a trap or do-not-undo notice for a later maintainer. Both are design rationale, and the register is the one section carried forward into the product surface the `product-docs` binding names; filed here instead, a decision would reach that surface without the category later added to it.
+
+**Corrected in place**, by the reconcile pass: a fact the landed tree has made false in an always-current section — `What this implements`, `Context & scope`, `Components & responsibilities`, `Data contract & runtime flow`, `Non-functional realization`, `Risks, tradeoffs & open questions` — is corrected where it stands, and each correction is logged in that phase's entry here, with what the passage said and what it says now, as citation re-pointing is. A change of decision is never a correction: it goes to a dated `## Decision register` amendment. Dated passages — plan files, the entries here, `**Amended YYYY-MM-DD:**` clauses — stay records and are not corrected.
+
+**Routed out**, each to a home that already receives it: gate evidence (commit shas, test counts, exit codes, live-run transcripts), review-cycle records, and authorship or provenance confessions about the document itself go to the session's dated note, `memory/<YYYY-MM-DD>.md`; deferrals and named limitations go to the cross-session state the `board` binding names — `memory/STATUS.md` under *Deferred*, one line each, where none is bound; process and methodology lessons aimed at future features go to `memory/notes-for-future-features.md`.
+
+**Frontmatter `updated:`** — the reconcile pass also moves the doc's frontmatter `updated:` to its own date: bookkeeping, never logged as a correction, never a change of decision.
+
+**A persisted phase plan is never edited** — it is the record of what its planner knew on its own date, which is why re-pointing its citations is an admitted kind here rather than a correction there.
+-->
+
+## Related
+
+The frontmatter's sources, plus: design `joined-rig.md` §1 (rules 2, 3, 6, 10, 11), §4, §7 · `Documentation~/native-bridge.md` (ABI table :77-96) · `NativeBridge~/harness/README.md` · `Planning~/verification-recipe.md` ("Building NativeBridge" :49-64; DocCheck :222-232) · `Planning~/research/2026-09-05-next-level/03-critique-and-ranking.md` (R11 :232, R17 :238) · `KNOWN_LIMITATIONS.md`

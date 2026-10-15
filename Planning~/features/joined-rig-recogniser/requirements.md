@@ -60,11 +60,11 @@ This feature carries `Planning~/design-docs/automated-verification.md` §3 goals
 
 ## 5. Functional requirements
 
-**Ruled on 2026-10-15** by the maintainer, in session: forks A–G each at option (a) — every non-sealed case scored (A); phase 1's classes, first fire is the fire, pending-never-confirmed is missed shown "pending, timed out" (B); shipped component defaults, tick rate a provisional rig number (C); the recogniser is on the C# side with the parser, a reading of rule 10 (D); exact per run, reproducible in outcome (E); timing measures reported (F); Quest on-device check required at G2 (G); the rest settled as drafted.
+**Ruled on 2026-10-15** by the maintainer, in session: forks A–G each at option (a) — every non-sealed case scored (A); phase 1's classes, first fire is the fire, pending-never-confirmed is missed shown "pending, timed out" (B); shipped component defaults, tick rate a provisional rig number (C); the recogniser is on the C# side with the parser, a reading of rule 10 (D); exact per run, reproducible in outcome (E); timing measures reported (F); Quest on-device check required at G2 (G); the rest settled as drafted. **Amended 2026-10-15** (PLAN ruling 1, the maintainer, in session): F1's check reads positions against the samples pushed for the case, the WAV plus the harness's padding, not the WAV alone.
 
 | #  | Requirement | Story | Priority | Acceptance check | Source |
 |----|-------------|-------|----------|------------------|--------|
-| F1 | The dump gives each result's audio position as the samples the decoder had consumed when it emitted (no ring-wide bracket), and each case's word times on a per-case origin; harness verdict and existing output unchanged. | S1 | Must | Command 3 green 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within its case's samples and never decreases within a case. | JRP-1; adr-0001; adr-0002 |
+| F1 | The dump gives each result's audio position as the samples the decoder had consumed when it emitted (no ring-wide bracket), and each case's word times on a per-case origin; harness verdict and existing output unchanged. | S1 | Must | Command 3 green 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within the samples pushed for its case (the WAV plus the harness's padding) and never decreases within a case. | JRP-1; adr-0001; adr-0002 |
 | F2 | Reproducibility: two dumps of one build give the same recogniser-layer outcome for every case; per-record positions may differ between runs by at most one decoder read, and the report says so. | S1 | Must | Two `--dump` runs of one build, one ref: recogniser-layer run reports 0 flips. | adr-0005 (attribution) |
 | F3 | The staged recogniser is the shipped `VoxrCommandRecogniser` source at the ref under test, its behaviour unchanged; its clock follows the case's audio time; it is ticked at a stated rate. | S1 | Must | Built from `stage.sh` of a ref; a `main`-vs-`main` C#-side run reports 0 flips. | adr-0002 |
 | F4 | Finals and partials reach the recogniser in dump order at their audio times, through the paths the shipped speech recogniser delivers them on, so a ref whose recogniser consumes partials (R17) is measured with no rig change. | S1 | Must | A trace of one case lists every result delivered with its audio time, in dump order. | backlog row; adr-0002 |
@@ -97,7 +97,7 @@ This feature carries `Planning~/design-docs/automated-verification.md` §3 goals
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] F1: Command 3 green, 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within its case's samples and never decreases within a case.
+- [ ] F1: Command 3 green, 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within the samples pushed for its case (the WAV plus the harness's padding) and never decreases within a case.
 - [ ] F2: two `--dump` runs of one build, one ref: the recogniser-layer run reports 0 flips.
 - [ ] F3: the staged recogniser built from `stage.sh` of a ref; a `main`-vs-`main` C#-side run reports 0 flips.
 - [ ] F4: a trace of one case lists every result delivered with its audio time, in dump order.
