@@ -137,6 +137,7 @@ Ordered to retire the riskiest unknown first at no product risk, then the one sh
 - **Phase 3 — recogniser-layer scoring and report.** `--layer` in `Joined.cs` and `joined.sh`, shared classifier, fires, pending label, timings, configuration, guards, trace, report, schema-1 refusal. Green: DocCheck; F3 `main`-vs-`main` C# side, 0 flips; F2 two dumps of one build, 0 flips; F4 a case's trace; F5 the split case in a class; F6 the staged-copy canary in its class, report kept in `.scratch/joined/` for the maintainer; F7, F8 read on the 16 fixtures; F9 the kill canary (exit 3) and sealed/`--evaluate` on a `.scratch/` manifest copy; a schema-1 dump refused here, read at the parser layer. *Discharges:* F2–F9, §6 input boundary.
 - **Phase 4 — tuning pass and closing gate.** The tick-rate probe into the *Tuning record*; every acceptance run re-made with `MSYS_NO_PATHCONV` set and unset; Command 3; DocCheck; phase 1's F11 run. *Discharges:* F7 (record), F10, F11, §10 item 3.
 - Phase 1 — persisted plan (2026-10-15): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-10-15): [plan-2.md](plan-2.md)
 - **Approved 2026-10-15** by the maintainer, in session ("All recommended"): four phases, order and risk ordering as written.
 - **Assets code cannot author:** none new — `NativeBridge~/vendor/` (a human download per `NativeBridge~/harness/README.md` if absent), Command 3's toolchain, .NET SDK 10, Unity 6000.4.7f1 and the host; for G2 a Quest 3 and the human.
 
