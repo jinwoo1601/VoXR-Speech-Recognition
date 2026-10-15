@@ -37,4 +37,4 @@ The scope agreed at G0 (`Planning~/design-docs/endpointer-profile.md` §0, In 1 
 
 ## Status
 
-Accepted on 2026-10-16 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/endpointer-profile.md`; it is not yet locked.
+Accepted on 2026-10-16 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/endpointer-profile.md`; it was locked at G1 on 2026-10-16.

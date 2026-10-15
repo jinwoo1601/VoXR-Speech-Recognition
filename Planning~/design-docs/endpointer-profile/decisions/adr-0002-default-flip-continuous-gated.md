@@ -34,8 +34,8 @@ Once a tuned profile exists (adr-0001, adr-0003), the design must say whether co
 - Acoustic baselines are re-pinned to the shipped default through the harness, never edited (rulings 2 and 10).
 - The standing harness baseline (`expectations.json`) pins the Continuous default, the tuned preset: the harness already simulates continuous listening, since it appends silence and lets the endpointer fire. The flip re-pins `expectations.json` through the harness at merge (rulings 2 and 10). The archive's own conf stays measurable as side A of a decoder-side run. Rejected, on the same ruling: pinning "Model default", because the shipped Continuous default would then leave the standing check; and pinning both, because it doubles the harness run and adds a second expectations file.
 - G2 carries a human-only item: the check on-device or by a recorded listen.
-- Left open: the human-only check's exact form, on-device or a recorded listen (`Planning~/design-docs/endpointer-profile.md` §6); and whether the listening mode can change after model load, since the profile is resolved at load.
+- Left open: the human-only check's exact form, on-device or a recorded listen (`Planning~/design-docs/endpointer-profile.md` §7); and whether the listening mode can change after model load, since the profile is resolved at load.
 
 ## Status
 
-Accepted on 2026-10-16 by the human's (the maintainer's) ruling in conversation; the ruling on what the standing baseline pins was added the same day. The design doc is `Planning~/design-docs/endpointer-profile.md`; it is not yet locked.
+Accepted on 2026-10-16 by the human's (the maintainer's) ruling in conversation; the ruling on what the standing baseline pins was added the same day. The design doc is `Planning~/design-docs/endpointer-profile.md`; it was locked at G1 on 2026-10-16.

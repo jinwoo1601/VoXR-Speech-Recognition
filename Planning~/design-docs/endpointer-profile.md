@@ -21,7 +21,7 @@ sources:
 
 **Branch:** `design-endpointer-profile`
 **Origin:** next-level plan item R11 (`03-critique-and-ranking.md` rank 6; Phase D).
-**Status:** In design — opened at G0 2026-10-15; not locked.
+**Status:** **G1 LOCKED 2026-10-16.** Rulings in adr-0001 through adr-0004. This document is immutable from here; a contradiction found during implementation reopens it on a new design branch and re-locks.
 
 **Scope, agreed at G0 (2026-10-15):** choose the endpointer values in `conf/model.conf` (which trailing-silence rules change, and to what) by a sweep on the joined rig, whose first sweep is `rule2 ∈ {0.5, 0.35, 0.25}`; read the measures from the joined rig's recogniser layer (`Planning~/features/joined-rig-recogniser/architecture.md`, its *Timing* measures) — finals per utterance and end-of-audio→fire delay, in sample time, since the harness pushes faster than real time; adopt the kill criteria below as scope; define the delivery route, meaning how a chosen profile reaches a developer's `conf/model.conf` given that the package bundles no model (the developer places a vosk model `.zip` in `StreamingAssets`, `Documentation~/getting-started.md` :51) and how that route meets the R9 cache stamp (hand-edits to the extracted copy are invisible to the stamp, `Documentation~/getting-started.md` :63); and state the standing rule "re-pin, never edit" (rulings 2 and 10), so that any moved acoustic baseline is re-pinned by running the harness and never hand-edited. The kill criteria: if, on the joined rig, the rise in finals-per-utterance multiplied by the buffer window exceeds the endpointer time saved, the profile is a mean-latency regression and is rejected; any change to transcript *content* rather than segmentation is an immediate stop.
 
@@ -102,7 +102,7 @@ This system is the endpointer profile: the set of endpoint trailing-silence valu
 | 6 | Default | This feature flips the default. In Continuous mode the default is the tuned preset; in Push-to-talk it stays the model's own values; an explicit developer choice overrides both. | adr-0002 |
 | 7 | The gate on the flip | The flip is gated before G2 on the pause-ladder sweep, both kill criteria (§0), and a human-only check, on-device or a recorded listen. It is not gated on the full R5 corpus. | adr-0002 |
 | 8 | Evidence | A pause-ladder corpus — the same commands with silences of controlled length spliced after a complete-command prefix and mid-phrase — drives the sweep beside the 16 TTS fixtures. Timing is measured with `bufferWindow` time-driven and with eager commit on. | adr-0004 |
-| 9 | Instrument coupling | The harness and the rig decode with exactly the conf the package would produce. The standing baseline pins the Continuous default, the tuned preset, and is re-pinned through the harness at merge, never edited (rulings 2 and 10); the archive's own conf stays measurable as side A of a decoder-side run. Each run records which conf it decoded with; today the dump header does not, and the joined-rig features build that. | adr-0002 |
+| 9 | Instrument coupling | The harness and the rig decode with exactly the conf the package would produce. The standing baseline pins the Continuous default, the tuned preset, and is re-pinned through the harness at merge, never edited (rulings 2 and 10); the archive's own conf stays measurable as side A of a decoder-side run. Each run records which conf it decoded with; today the dump header does not, and the feature `endpointer-profile` builds that. | adr-0002 |
 
 **One model load, resolved** (design intent, not yet built).
 
@@ -140,7 +140,7 @@ The operator is the developer who integrates the package.
 
 - **Owns:** the profile and its presets; its resolution at model load; the overlay of the endpoint trailing-silence keys and its invariant; the default.
 - **Consumes:** the R9 extractor and its stamp, which keeps describing the archive; the joined rig's recogniser-layer *Timing* measures — finals per utterance and end-of-audio→fire delay in sample time, decode latency not modelled (`Planning~/features/joined-rig-recogniser/architecture.md` :69, :150); the joined rig's one-side-varies rule and its re-pin discipline (`Planning~/design-docs/joined-rig.md` rules 2 and 10).
-- **Hands off:** recording which conf a run decoded with, to the joined-rig features (rule 9).
+- **Hands off:** recording which conf a run decoded with, to the feature `endpointer-profile` (rule 9).
 - **Does not decide:** R10's lattice keys, which extend the overlay under their own design (I3-P2 proposes building the rewrite once for both, `ideas/I3-latency-ux-redesign.md` :88); retuning `bufferWindow`; eager commit (R17); VAD (R16); download-on-demand (ruling 6), beyond the overlay working for any model source; native setters.
 
 ## 5. What it delivers
@@ -149,19 +149,28 @@ In Continuous mode, a command the player has finished ends at the tuned preset's
 
 When it goes right, a Continuous-mode command fires sooner after the speaker stops; the rise in finals per utterance times the buffer window stays below the time saved; no transcript changes words; and Push-to-talk behaves exactly as before.
 
-## 6. Status / openness
+## 6. Feature backlog — locked at G1 (2026-10-16)
 
-- **Status: draft.** In design; not locked. The model was settled with the human (the maintainer) on 2026-10-15 and 2026-10-16; its forks are recorded as four ADRs, adr-0001 through adr-0004.
+One feature. It is **Full**: the design leaves the pause-ladder corpus, the overlay mechanics, the conf record in the dump and the preset values to the requirements and architecture docs, so the build writes its own.
+
+| Feature | Scope | Depends on |
+|---|---|---|
+| `endpointer-profile` | The pause-ladder corpus pinned by the harness, and each run recording the conf it decoded with (rule 9); the rule2 sweep on the joined rig with both buffer setups, rule3 and rule4 only on evidence, and both kill criteria (rule 8, adr-0004); named presets with the measured values (adr-0003); the profile resolved by listening mode with an explicit choice overriding, and the runtime overlay with its invariant (adr-0001); the Continuous default flip, `expectations.json` re-pinned to it through the harness, and the human-only check before G2 (adr-0002). **Full.** | None. |
+
+## 7. Status / openness
+
+- **Status: locked at G1 2026-10-16.** The model was settled with the human (the maintainer) on 2026-10-15 and 2026-10-16; its forks are recorded as four ADRs, adr-0001 through adr-0004.
 - **The goal:** no locked design doc states a latency target (200–300 ms appears only in research, `ideas/I3-latency-ux-redesign.md` :41 and `research/R3-kws-slu-endpointing-latency.md` :18). The goal is the maintainer's shortlist item 6 (`05-rulings.md`) and rank 6's rationale (`03-critique-and-ranking.md` :232).
 - **All numbers provisional → the tuning pass:** the tuned presets' count, names and values; the first sweep, `rule2 ∈ {0.5, 0.35, 0.25}` (rank 6); any rule3 or rule4 value, moved only on measured evidence.
 - **Hard dependencies / open:**
-  - The tuned presets' values and count (adr-0003, adr-0004).
-  - Whether the listening mode can change after model load: the profile is resolved at load, so a later mode change does not re-apply it until the next load — requirements to settle.
-  - The human-only check's exact form, on-device or a recorded listen (adr-0002).
-  - The dump-header field that records the conf a run decoded with — the joined-rig features (rule 9).
-  - The product-doc text that hand-edits to the extracted copy are invisible to the stamp (`Documentation~/getting-started.md` :63) — to change after G2.
-  - The arm64 `.so`'s vosk version is unconfirmed; the harness runs win64 vosk 0.3.45; both read the same conf.
+  - The tuned presets' values and count (adr-0003, adr-0004) — owner: the tuning pass.
+  - Whether the listening mode can change after model load: the profile is resolved at load, so a later mode change does not re-apply it until the next load — requirements to settle — owner: the requirements of `endpointer-profile`.
+  - The human-only check's exact form, on-device or a recorded listen (adr-0002) — owner: the requirements of `endpointer-profile`.
+  - The pause-ladder's silence lengths, the commands it uses and its count of cases (adr-0004) — owner: the requirements of `endpointer-profile`.
+  - The dump-header field that records the conf a run decoded with — owner: the feature `endpointer-profile` (rule 9).
+  - The product-doc text that hand-edits to the extracted copy are invisible to the stamp (`Documentation~/getting-started.md` :63) — to change after G2 — owner: the G2 product-docs pass of `endpointer-profile`.
+  - The arm64 `.so`'s vosk version is unconfirmed; the harness runs win64 vosk 0.3.45; both read the same conf — owner: the on-device human check of `endpointer-profile`, which confirms the device honours the overlaid conf.
 
-## 7. Related
+## 8. Related
 
 `Planning~/design-docs/endpointer-profile/decisions/adr-0001-runtime-overlay.md` · `…/adr-0002-default-flip-continuous-gated.md` · `…/adr-0003-named-presets.md` · `…/adr-0004-pause-ladder-evidence.md` · `Planning~/design-docs/joined-rig.md` (rules 2, 10) · `Planning~/features/joined-rig-recogniser/architecture.md` (*Timing* measures, `:69`, `:150`) · `Planning~/research/2026-09-05-next-level/03-critique-and-ranking.md` (`:122`; C2, `:134-135`; rank 6, `:232`; R10, `:253`) · `…/05-rulings.md` (rulings 2, 6, 10; shortlist item 6) · `…/02-verified-facts.md` (`:21-34`) · `…/ideas/I3-latency-ux-redesign.md` (I3-P2, `:80-98`) · `…/ideas/I1-recognition-core-redesign.md` (I1-P7b, `:152-168`) · `Documentation~/getting-started.md` (`:51`, `:63`) · `NativeBridge~/harness/main.cpp` (`:258-269`) · `NativeBridge~/src/vosk_bridge.cpp` (`:175`)

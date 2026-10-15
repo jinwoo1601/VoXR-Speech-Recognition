@@ -35,4 +35,4 @@ The overlay (adr-0001) rewrites the endpoint trailing-silence keys of the extrac
 
 ## Status
 
-Accepted on 2026-10-16 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/endpointer-profile.md`; it is not yet locked.
+Accepted on 2026-10-16 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/endpointer-profile.md`; it was locked at G1 on 2026-10-16.
