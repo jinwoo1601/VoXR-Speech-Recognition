@@ -139,15 +139,16 @@ namespace AbRig
             Send(name, command, "Awake", "frame 0 (setup)");
             speech.isActiveAndEnabled = true;
             command.isActiveAndEnabled = true;
-            Send(name, speech, "OnEnable", "frame 0 (setup)");
-            Send(name, command, "OnEnable", "frame 0 (setup)");
-
+            // The rig's observers first: a result is traced before any fire it raises synchronously (*Trace*, timeline order).
             speech.OnResult += r => observed.Add(Result(name, true, r.Text, timeline));
             speech.OnPartialResult += text => observed.Add(Result(name, false, text, timeline));
             command.OnCommandRecognised += c => observed.Add(Event(name, "fire", c));
             command.OnCommandPending += c => observed.Add(Event(name, "pending", c));
             command.OnCommandConfirmed += c => observed.Add(Event(name, "confirmed", c));
             command.OnCommandCancelled += c => observed.Add(Event(name, "cancelled", c));
+
+            Send(name, speech, "OnEnable", "frame 0 (setup)");
+            Send(name, command, "OnEnable", "frame 0 (setup)");
 
             command.Configure(slots, commands);
             Guard(name, "frame 0 (setup), Configure");
