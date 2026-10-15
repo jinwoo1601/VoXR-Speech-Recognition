@@ -2,7 +2,7 @@
 type: requirements
 feature: joined-rig-recogniser
 topic: joined-rig
-status: draft
+status: accepted   # G2 ruled in-conversation 2026-10-15: accepted at c49c5fa
 updated: 2026-10-15
 sources:
   - Planning~/design-docs/joined-rig.md
@@ -97,20 +97,22 @@ This feature carries `Planning~/design-docs/automated-verification.md` §3 goals
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] F1: Command 3 green, 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within the samples pushed for its case (the WAV plus the harness's padding) and never decreases within a case.
-- [ ] F2: two `--dump` runs of one build, one ref: the recogniser-layer run reports 0 flips.
-- [ ] F3: the staged recogniser built from `stage.sh` of a ref; a `main`-vs-`main` C#-side run reports 0 flips.
-- [ ] F4: a trace of one case lists every result delivered with its audio time, in dump order.
-- [ ] F5: the split case lands in a class on the 16 fixtures.
-- [ ] F6: the classes read on the 16-fixture run; a seeded regression lands in its class.
-- [ ] F7: the report lists the recogniser configuration values; the architecture doc's tuning record holds the tick rate.
-- [ ] F8: per case finals count and end-of-audio→fire delay read on the 16-fixture run, beside the classes, never netted into them.
-- [ ] F9: phase 1's F2, F7 checks re-run at the recogniser layer.
-- [ ] F10: every G2 run made from Claude's own Windows-native shell.
-- [ ] F11: phase 1's `main`-vs-`main` run: 0 flips, same report on a new-schema dump.
-- [ ] The `unity` binding's commands as triggered are green: Command 3 (bridge changed); Commands 1–2 if `Runtime/` changes; Command 4 if public API changes.
-- [ ] Human-only verification: the Quest on-device check after the bridge change.
-- [ ] Human-only verification: the human reads the 16-fixture recogniser-layer report and finds the split case and flips legible.
+- [x] F1: Command 3 green, 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within the samples pushed for its case (the WAV plus the harness's padding) and never decreases within a case. (Phase 2 and Phase 4 gates: harness 16/16; `timing` 16/16 on two dumps, largest consumed difference 0)
+- [x] F2: two `--dump` runs of one build, one ref: the recogniser-layer run reports 0 flips. (Phase 4 gate A: two dumps, one ref, Flips 0)
+- [x] F3: the staged recogniser built from `stage.sh` of a ref; a `main`-vs-`main` C#-side run reports 0 flips. (Phase 4 gate A: staged `main` vs `main`, Flips 0)
+- [x] F4: a trace of one case lists every result delivered with its audio time, in dump order. (Phase 4 gate A: 124 dump results, 124 traced, in dump order; trace order fixed in review, `6c9f1a0`)
+- [x] F5: the split case lands in a class on the 16 fixtures. (the split case lands in `missed`)
+- [x] F6: the classes read on the 16-fixture run; a seeded regression lands in its class. (Phase 4 gate A: classes read; the seeded canary gives 14 flips)
+- [x] F7: the report lists the recogniser configuration values; the architecture doc's tuning record holds the tick rate. (the report's configuration block; architecture doc *Tuning record*, 90 Hz)
+- [x] F8: per case finals count and end-of-audio→fire delay read on the 16-fixture run, beside the classes, never netted into them. (the report's `## Timing` section, beside the classes)
+- [x] F9: phase 1's F2, F7 checks re-run at the recogniser layer. (Phase 4 gate A: sealed and `--evaluate` runs re-made at the recogniser layer)
+- [x] F10: every G2 run made from Claude's own Windows-native shell. (every run from Git Bash, Windows-native, both shells)
+- [x] F11: phase 1's `main`-vs-`main` run: 0 flips, same report on a new-schema dump. (Phase 4 gate A: Flips 0, correct 15, on a schema-2 dump)
+- [x] The `unity` binding's commands as triggered are green: Command 3 (bridge changed); Commands 1–2 if `Runtime/` changes; Command 4 if public API changes. (Command 3 16/16 both shells; Commands 1-2 EditMode 203/203, PlayMode 704/704 after the `.so` change; Command 4 not triggered)
+- [ ] Human-only verification: the Quest on-device check after the bridge change. (not stated at the G2 ruling; open at acceptance)
+- [ ] Human-only verification: the human reads the 16-fixture recogniser-layer report and finds the split case and flips legible. (not stated at the G2 ruling; open at acceptance)
+
+**Ruled at G2 on 2026-10-15** by the maintainer, in conversation ("Accept"): accepted at head `c49c5fa`, with the second preflight in view — the first preflight's missing handoff `.meta` files added in `c49c5fa`; the two human-only checks not stated at the ruling and left open.
 
 ## 10. Open questions
 
