@@ -1,11 +1,11 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-10-14
+updated: 2026-10-15
 
 ## Current
 
-- **`main` at the PR #176 merge (row 2, G2 2026-10-14); `v2.0.0`; toolchain backlog done; next: `feat-joined-rig-parser`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`feat-joined-rig-parser` unblocked** 2026-10-14 (its WSL-removal prerequisite merged, #175 and #176); its host choice (adr-0006) is settled in `windows-native-toolchain`.
+- **`main` at the PR #176 merge (row 2, G2 2026-10-14); `v2.0.0`; toolchain backlog done; in flight: `feat-joined-rig-parser`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
+- **`feat-joined-rig-parser` (feature, Full): stage review: `review-cycle` done 2026-10-15 (7 fixed, 2 refuted, F4 scratch run); next: `g2-accept`.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -26,3 +26,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **WND-2** · OPEN · light-lane · v2026-10-14 — `core.autocrlf=true` checks `generate.sh` out CRLF; Git Bash proven on CRLF `stage.sh` only: run a CRLF `generate.sh` or pin `eol=lf`
 - **WND-3** · OPEN · light-lane · v2026-10-14 — binding Command 4 expects "one CS0618 warning", but an incremental rebuild prints 0 warnings: say the warning shows on a fresh compile
 - **WND-4** · OPEN · design-relock · v2026-10-14 — locked `windows-native-toolchain.md:44` cites the recipe's pre-Phase-1 `:21`, `:35`, `:71`: re-point at the next unlock
+- **JRP-1** · OPEN · feature · v2026-10-14 — joined-rig dump times partials only by a ring-wide bracket (ruled (a)): exact partial timing, and exact per-case word-time origin (Vosk times run on across resets, origin run-dependent; ruled as-built 2026-10-14), are `joined-rig-recogniser`'s, a bridge change

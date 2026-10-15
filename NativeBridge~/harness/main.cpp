@@ -24,6 +24,7 @@
 #include <vector>
 
 using nlohmann::json;
+using nlohmann::ordered_json;
 
 namespace {
 
@@ -33,7 +34,43 @@ struct FixtureOutcome {
     std::vector<std::string> actual;
     std::vector<std::string> errors;
     bool pass = false;
+    size_t pushed = 0;     // input samples pushed for this case so far
+    size_t prevPushed = 0; // `pushed` at the previous drain
+    size_t seq = 0;        // results popped for this case so far
 };
+
+// Opt-in --dump sink: JSON lines, one record per line, LF only (binary
+// stream), key order as built. Inert unless --dump set `enabled`; every
+// write sits under that bit, and nothing here touches stdout.
+struct DumpWriter {
+    std::ofstream out;
+    bool enabled = false;
+
+    void Write(const ordered_json& record) {
+        out << record.dump(-1, ' ', false, json::error_handler_t::replace) << '\n';
+    }
+};
+
+DumpWriter dump_writer;
+
+void DumpCase(const std::string& file, size_t samples, uint32_t sample_rate) {
+    ordered_json rec;
+    rec["kind"] = "case";
+    rec["case"] = file;
+    rec["samples"] = samples;
+    rec["sampleRate"] = sample_rate;
+    dump_writer.Write(rec);
+}
+
+void DumpCaseEnd(const FixtureOutcome& r) {
+    ordered_json rec;
+    rec["kind"] = "case-end";
+    rec["case"] = r.file;
+    rec["results"] = r.seq;
+    rec["pushed"] = r.pushed;
+    rec["errors"] = r.errors;
+    dump_writer.Write(rec);
+}
 
 // Pops everything currently queued. Result strings are copied immediately —
 // the pointer from vosk_bridge_get_result dies on the next call. Non-final
@@ -43,6 +80,24 @@ void DrainResults(FixtureOutcome& r) {
     const char* p = nullptr;
     while ((p = vosk_bridge_get_result(&is_final, &length)) != nullptr) {
         std::string payload(p, static_cast<size_t>(length));
+        // Dumped before handling, re-parsed as ordered_json so Vosk's own key
+        // order survives; every result of one drain carries that drain's pair.
+        if (dump_writer.enabled) {
+            ordered_json rec;
+            rec["kind"] = "result";
+            rec["case"] = r.file;
+            rec["seq"] = r.seq;
+            rec["final"] = is_final != 0;
+            rec["pushed"] = r.pushed;
+            rec["prevPushed"] = r.prevPushed;
+            ordered_json parsed = ordered_json::parse(payload, nullptr, false);
+            if (parsed.is_discarded())
+                rec["raw"] = payload;
+            else
+                rec["payload"] = std::move(parsed);
+            dump_writer.Write(rec);
+        }
+        ++r.seq;
         json j = json::parse(payload, nullptr, false);
         if (j.is_discarded()) {
             r.errors.push_back("unparseable result: " + payload);
@@ -58,6 +113,7 @@ void DrainResults(FixtureOutcome& r) {
                 r.actual.push_back(text);
         }
     }
+    r.prevPushed = r.pushed;
 }
 
 // Pushes the whole buffer with clamped-write pacing: a short write means the
@@ -75,6 +131,7 @@ bool PushAll(const float* data, size_t count, FixtureOutcome& r) {
             return false;
         }
         offset += static_cast<size_t>(written);
+        r.pushed += static_cast<size_t>(written);
         if (static_cast<uint32_t>(written) < chunk) {
             if (written == 0 && ++stalled > 2000) { // ~10 s without progress
                 r.errors.push_back("recognition thread stalled (ring never drained)");
@@ -99,7 +156,7 @@ int Fail(const std::string& msg) {
 } // namespace
 
 int RunHarness(int argc, char** argv) {
-    std::string model_dir, fixtures_dir, manifest_path;
+    std::string model_dir, fixtures_dir, manifest_path, dump_path;
     bool write_baseline = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -108,7 +165,8 @@ int RunHarness(int argc, char** argv) {
         else if (arg == "--fixtures" && i + 1 < argc) fixtures_dir = argv[++i];
         else if (arg == "--manifest" && i + 1 < argc) manifest_path = argv[++i];
         else if (arg == "--write-baseline") write_baseline = true;
-        else return Fail("unknown or incomplete argument: " + arg + "\nusage: vosk-bridge-harness --model <dir> --fixtures <dir> --manifest <expectations.json> [--write-baseline]");
+        else if (arg == "--dump" && i + 1 < argc) { dump_path = argv[++i]; dump_writer.enabled = true; }
+        else return Fail("unknown or incomplete argument: " + arg + "\nusage: vosk-bridge-harness --model <dir> --fixtures <dir> --manifest <expectations.json> [--write-baseline] [--dump <file>]");
     }
     if (model_dir.empty() || fixtures_dir.empty() || manifest_path.empty())
         return Fail("--model, --fixtures and --manifest are all required");
@@ -174,6 +232,32 @@ int RunHarness(int argc, char** argv) {
             return Fail("fixture WAVs have no manifest entry (add cases or remove files): " + unlisted);
     }
 
+    // Opt-in dump: opened before the model loads, so a bad path fails legibly
+    // (exit 2) up front; the header pins the decode regime the dump came from.
+    if (dump_writer.enabled) {
+        std::filesystem::path parent = std::filesystem::path(dump_path).parent_path();
+        if (!parent.empty()) {
+            std::error_code ec;
+            std::filesystem::create_directories(parent, ec);
+            if (ec)
+                return Fail("cannot create directory for dump: " + dump_path + " (" + ec.message() + ")");
+        }
+        dump_writer.out.open(dump_path, std::ios::binary | std::ios::trunc);
+        if (!dump_writer.out)
+            return Fail("cannot open dump file: " + dump_path);
+        ordered_json header;
+        header["kind"] = "header";
+        header["schema"] = 1;
+        header["manifest"] = manifest_path;
+        header["fixtures"] = fixtures_dir;
+        header["model"] = model_dir;
+        header["gain"] = manifest["gain"];
+        header["libvosk"] = manifest["libvosk"];
+        header["grammar"] = manifest["grammar"];
+        header["ringCapacity"] = RingBuffer<float>::kCapacity;
+        dump_writer.Write(header);
+    }
+
     float gain = manifest["gain"].get<float>();
 
     int rc = vosk_bridge_init(model_dir.c_str(), 16000.0f, gain);
@@ -209,7 +293,11 @@ int RunHarness(int argc, char** argv) {
         std::string wav_err = LoadWav(fixtures_dir + "/" + r.file, wav);
         if (!wav_err.empty()) {
             r.errors.push_back(wav_err);
+            if (dump_writer.enabled)
+                DumpCase(r.file, 0, 0); // the reader still sees every case
         } else {
+            if (dump_writer.enabled)
+                DumpCase(r.file, wav.samples.size(), wav.sample_rate);
             rc = vosk_bridge_start_push();
             if (rc != VOSK_BRIDGE_OK) {
                 r.errors.push_back("vosk_bridge_start_push failed with code " +
@@ -223,6 +311,8 @@ int RunHarness(int argc, char** argv) {
                 vosk_bridge_reset();
             }
         }
+        if (dump_writer.enabled)
+            DumpCaseEnd(r); // every case's frame closes here, on every branch
 
         r.pass = r.errors.empty() && (write_baseline || r.actual == r.expected);
         if (!r.errors.empty())
@@ -252,6 +342,18 @@ int RunHarness(int argc, char** argv) {
                                    {"errors", r.errors}});
         if (r.pass)
             ++passed;
+    }
+    // The trailer proves the dump complete. A bad stream is reported, never a
+    // verdict: the exit code stays the run's.
+    if (dump_writer.enabled) {
+        ordered_json rec;
+        rec["kind"] = "end";
+        rec["cases"] = outcomes.size();
+        rec["passed"] = passed;
+        dump_writer.Write(rec);
+        dump_writer.out.close();
+        if (!dump_writer.out)
+            std::fprintf(stderr, "vosk-bridge-harness: dump write failed: %s\n", dump_path.c_str());
     }
     report["passed"] = passed;
     report["failed"] = static_cast<int>(outcomes.size()) - passed;
