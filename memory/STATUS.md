@@ -1,17 +1,18 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-10-15
+updated: 2026-10-16
 
 ## Current
 
 - **`main` at the PR #178 merge (`feat-joined-rig-recogniser`, G2 2026-10-15); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
+- **`design-endpointer-profile` (design): G1 locked 2026-10-16, PR to `main` for the human to merge; backlog: `endpointer-profile` (Full); next: its G0.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
 - **Plan of action** (2026-09-06 rulings, `Planning~/research/2026-09-05-next-level/05-rulings.md`): Phase A complete (#143–#148, #150, #153, #154 merged).
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
-- Phase D after R1, none started: R11 endpointer, R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
+- Phase D after R1: R11 endpointer locked at G1; not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 
 ## Deferred
 
