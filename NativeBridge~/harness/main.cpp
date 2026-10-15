@@ -293,10 +293,8 @@ int RunHarness(int argc, char** argv) {
         std::string wav_err = LoadWav(fixtures_dir + "/" + r.file, wav);
         if (!wav_err.empty()) {
             r.errors.push_back(wav_err);
-            if (dump_writer.enabled) {
+            if (dump_writer.enabled)
                 DumpCase(r.file, 0, 0); // the reader still sees every case
-                DumpCaseEnd(r);
-            }
         } else {
             if (dump_writer.enabled)
                 DumpCase(r.file, wav.samples.size(), wav.sample_rate);
@@ -304,19 +302,17 @@ int RunHarness(int argc, char** argv) {
             if (rc != VOSK_BRIDGE_OK) {
                 r.errors.push_back("vosk_bridge_start_push failed with code " +
                                    std::to_string(rc));
-                if (dump_writer.enabled)
-                    DumpCaseEnd(r);
             } else {
                 if (PushAll(wav.samples.data(), wav.samples.size(), r))
                     PushAll(padding.data(), padding.size(), r);
                 DrainResults(r);
                 vosk_bridge_stop();
                 DrainResults(r); // the tail final is flushed during stop's join
-                if (dump_writer.enabled)
-                    DumpCaseEnd(r);
                 vosk_bridge_reset();
             }
         }
+        if (dump_writer.enabled)
+            DumpCaseEnd(r); // every case's frame closes here, on every branch
 
         r.pass = r.errors.empty() && (write_baseline || r.actual == r.expected);
         if (!r.errors.empty())

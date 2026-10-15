@@ -10,8 +10,9 @@
 //
 // Both scored files are read whole and strictly before anything is written: every line exactly
 // the keys `score` writes, the files sides a and b, agreeing on `vary`, manifest, provenance,
-// gate and case names in order. Any defect is a stop, exit 2, naming the file and line or the
-// difference, and leaves no report. Counts sit side by side, never totalled or netted.
+// gate, `evaluate` (and the dump under `vary` parser), `pinned` as `vary` implies, and case
+// names in order. Any defect is a stop, exit 2, naming the file and line or the difference,
+// and leaves no report. Counts sit side by side, never totalled or netted.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -85,8 +86,6 @@ namespace AbRig
             "sealed-skipped",
         };
 
-        static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
-
         internal sealed class Side
         {
             internal string Path;
@@ -99,7 +98,8 @@ namespace AbRig
             Dictionary<string, string> o = ParseOptions(args);
             string outPath = o["--out"];
 
-            // No stale report survives a stop; then both files are read before anything else.
+            // No stale report survives a stop after the options parse; then both files are read
+            // before anything else.
             try
             {
                 if (File.Exists(outPath))
@@ -156,21 +156,18 @@ namespace AbRig
             string text;
             try
             {
-                text = File.ReadAllText(path, StrictUtf8);
+                text = File.ReadAllText(path, JoinedInput.StrictUtf8);
             }
             catch (Exception e)
             {
                 throw new JoinedInput.Stop(2, path + ": " + e.Message);
             }
-            string[] lines = text.Split('\n');
-            int count = lines.Length;
-            if (count > 0 && lines[count - 1].Length == 0)
-                count--; // the LF closing the last line
-            if (count == 0)
+            string[] lines = JoinedInput.SplitLines(text);
+            if (lines.Length == 0)
                 throw new JoinedInput.Stop(2, path + ": empty scored file");
 
             var s = new Side { Path = path };
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 string where = path + ":" + (i + 1);
                 if (lines[i].IndexOf('\r') >= 0)
@@ -178,7 +175,7 @@ namespace AbRig
                         2,
                         where + ": CR in the line (scored files are LF only)"
                     );
-                JsonElement rec = ParseObject(lines[i], where);
+                JsonElement rec = JoinedInput.ParseObject(lines[i], where);
                 if (i == 0)
                 {
                     CheckHeader(rec, side, where);
@@ -354,25 +351,19 @@ namespace AbRig
             return true;
         }
 
-        static JsonElement ParseObject(string line, string where)
-        {
-            try
-            {
-                using (JsonDocument doc = JsonDocument.Parse(line))
-                {
-                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                        return doc.RootElement.Clone();
-                }
-            }
-            catch (JsonException) { }
-            throw new JoinedInput.Stop(2, where + ": not a JSON object");
-        }
-
         // --- the two sides agree ----------------------------------------------------------
 
         static void Compare(Side a, Side b)
         {
-            foreach (string key in new[] { "vary", "manifest", "provenance", "gate" })
+            // `vary` first: under `parser` both sides scored one dump (F3), so it joins the keys.
+            var keys = new List<string> { "vary", "manifest", "provenance", "gate", "evaluate" };
+            bool parser = a.Header.GetProperty("vary").GetString() == "parser";
+            if (parser)
+            {
+                keys.Add("dump");
+                keys.Add("dumpHeader");
+            }
+            foreach (string key in keys)
             {
                 string ra = a.Header.GetProperty(key).GetRawText();
                 string rb = b.Header.GetProperty(key).GetRawText();
@@ -382,6 +373,9 @@ namespace AbRig
                         "`" + key + "` differs: " + a.Path + " " + ra + ", " + b.Path + " " + rb
                     );
             }
+            // `pinned` as `vary` implies: both sides under `parser`; A only under `decoder`.
+            ExpectPinned(a, true, parser);
+            ExpectPinned(b, parser, parser);
             int n = Math.Max(a.Cases.Count, b.Cases.Count);
             for (int i = 0; i < n; i++)
             {
@@ -402,6 +396,23 @@ namespace AbRig
                             + (cb == null ? "(none)" : "\"" + cb + "\"")
                     );
             }
+        }
+
+        static void ExpectPinned(Side s, bool expected, bool parser)
+        {
+            bool actual = Bool(s.Header, "pinned");
+            if (actual != expected)
+                throw new JoinedInput.Stop(
+                    2,
+                    s.Path
+                        + ": `pinned` "
+                        + (actual ? "true" : "false")
+                        + ", expected "
+                        + (expected ? "true" : "false")
+                        + " under `vary` \""
+                        + (parser ? "parser" : "decoder")
+                        + "\""
+                );
         }
 
         // --- rendering --------------------------------------------------------------------

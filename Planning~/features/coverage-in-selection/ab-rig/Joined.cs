@@ -11,8 +11,9 @@
 //   --joined report --a A --b B --out R
 //
 // Exit 0 scored (or reported); 2 an input stop or the grammar-pin guard; 3 the kill check (the
-// pinned dump does not reproduce the pin). Every stop is named on stderr, prefixed `joined: `,
-// and leaves no scored file. Each scored case's outcome is JoinedScorer's.
+// pinned dump does not reproduce the pin). Every stop is named on stderr, prefixed `joined: `;
+// every stop after the options parse leaves no scored file (an argument stop precedes `--out`
+// being known). Each scored case's outcome is JoinedScorer's.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -105,12 +106,13 @@ namespace AbRig
             Dictionary<string, string> o = ParseOptions(args, out pinned, out evaluate);
             string outPath = o["--out"];
 
-            // 1. No stale scored file survives a stop; then every reader finishes first.
+            // 1. No stale scored file survives a stop after the options parse; then every reader
+            // finishes first.
             reading = outPath;
             if (File.Exists(outPath))
                 File.Delete(outPath);
             reading = "./STAGED_FROM";
-            string[] stagedFrom = SplitLines(File.ReadAllText("STAGED_FROM"));
+            string[] stagedFrom = JoinedInput.SplitLines(File.ReadAllText("STAGED_FROM"));
             reading = o["--dump"];
             JoinedInput.Dump dump = JoinedInput.ReadDump(o["--dump"]);
             reading = o["--manifest"];
@@ -418,16 +420,6 @@ namespace AbRig
                 2,
                 "grammar guard: the rig's grammar JSON is not an array of strings"
             );
-        }
-
-        static string[] SplitLines(string text)
-        {
-            string[] lines = text.Split('\n');
-            int count = lines.Length;
-            if (count > 0 && lines[count - 1].Length == 0)
-                count--;
-            Array.Resize(ref lines, count);
-            return lines;
         }
 
         // The first index where the two differ ordinally (a length difference counts at the

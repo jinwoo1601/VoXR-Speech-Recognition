@@ -99,7 +99,7 @@ namespace AbRig
             internal readonly List<string> Order = new List<string>();
         }
 
-        static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
+        internal static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
 
         // Today's corpus manifest keys plus the two marks; any other key stops the run.
         static readonly HashSet<string> ManifestCaseKeys = new HashSet<string>(
@@ -128,11 +128,8 @@ namespace AbRig
         internal static Dump ReadDump(string path)
         {
             string text = File.ReadAllText(path, StrictUtf8);
-            string[] lines = text.Split('\n');
-            int count = lines.Length;
-            if (count > 0 && lines[count - 1].Length == 0)
-                count--; // the LF closing the last record
-            if (count == 0)
+            string[] lines = SplitLines(text);
+            if (lines.Length == 0)
                 throw new Stop(2, path + ": empty dump");
 
             var dump = new Dump { Path = path };
@@ -141,7 +138,7 @@ namespace AbRig
             long nextSeq = 0;
             bool ended = false;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 string where = path + ":" + (i + 1);
                 if (ended)
@@ -304,10 +301,10 @@ namespace AbRig
             if (open != null)
                 throw new Stop(
                     2,
-                    path + ":" + count + ": case \"" + open.Name + "\" has no `case-end`"
+                    path + ":" + lines.Length + ": case \"" + open.Name + "\" has no `case-end`"
                 );
             if (!ended)
-                throw new Stop(2, path + ":" + count + ": no `end` record");
+                throw new Stop(2, path + ":" + lines.Length + ": no `end` record");
             return dump;
         }
 
@@ -561,14 +558,17 @@ namespace AbRig
 
         // --- JSON helpers: a missing or mistyped field is a stop naming `where` --------------
 
-        static JsonElement ParseObject(string line, string where)
+        internal static JsonElement ParseObject(string line, string where)
         {
             try
             {
                 using (JsonDocument doc = JsonDocument.Parse(line))
                 {
                     if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        RejectDuplicateKeys(doc.RootElement, where);
                         return doc.RootElement.Clone();
+                    }
                 }
             }
             catch (JsonException) { }
@@ -584,6 +584,7 @@ namespace AbRig
                 {
                     if (doc.RootElement.ValueKind != JsonValueKind.Object)
                         throw new Stop(2, path + ": not a JSON object");
+                    RejectDuplicateKeys(doc.RootElement, path);
                     return doc.RootElement.Clone();
                 }
             }
@@ -592,6 +593,37 @@ namespace AbRig
                 string line = e.LineNumber.HasValue ? ":" + (e.LineNumber.Value + 1) : "";
                 throw new Stop(2, path + line + ": " + e.Message);
             }
+        }
+
+        // No object at any depth names a key twice (ruled 2026-10-15, "Reject duplicates"):
+        // the first repeat is a stop naming the key, never a silent last-one-wins.
+        static void RejectDuplicateKeys(JsonElement value, string where)
+        {
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                var names = new HashSet<string>(StringComparer.Ordinal);
+                foreach (JsonProperty p in value.EnumerateObject())
+                {
+                    if (!names.Add(p.Name))
+                        throw new Stop(2, where + ": duplicate key `" + p.Name + "`");
+                    RejectDuplicateKeys(p.Value, where);
+                }
+            }
+            else if (value.ValueKind == JsonValueKind.Array)
+                foreach (JsonElement e in value.EnumerateArray())
+                    RejectDuplicateKeys(e, where);
+        }
+
+        // The text's LF-separated lines, the empty element after a closing LF dropped; empty
+        // text gives none. A CR stays in its line for the caller to refuse.
+        internal static string[] SplitLines(string text)
+        {
+            string[] lines = text.Split('\n');
+            int count = lines.Length;
+            if (count > 0 && lines[count - 1].Length == 0)
+                count--;
+            Array.Resize(ref lines, count);
+            return lines;
         }
 
         static JsonElement Field(JsonElement obj, string key, JsonValueKind kind, string where)
