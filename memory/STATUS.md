@@ -1,11 +1,11 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-10-15
+updated: 2026-10-16
 
 ## Current
 
 - **`main` at the PR #178 merge (`feat-joined-rig-recogniser`, G2 2026-10-15); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
-- **`design-endpointer-profile` (design, R11 alone): stage G0 done 2026-10-15; next: `system-design-doc` §1 on.**
+- **`design-endpointer-profile` (design, R11 alone): stage design-doc, drafted + adr-0001..0004 2026-10-16; next: human review, then `g1-lock`.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
