@@ -1,17 +1,21 @@
 // ============================================================================
-// Purpose:  The rig's --joined mode: sub-verb dispatch, option parsing, grammar-pin guard, kill check, scored-record writer
+// Purpose:  The rig's --joined mode: sub-verb dispatch, the drive-check hook, option parsing, grammar-pin guard, kill check, scored-record writer
 // Layer:    Planning.AbRig
 // Owns:     Joined (internal static class)
-// Depends:  JoinedInput, JoinedScorer, JoinedReport, VoxrCommandParser, VoxrCommandDefinition, VoxrSlotMatch
+// Depends:  JoinedInput, JoinedScorer, JoinedReport, VoxrCommandParser, VoxrCommandDefinition, VoxrSlotDefinition, VoxrSlotMatch
 // ============================================================================
 // feat-joined-rig-parser Phases 2-3. A `score` run scores one side (one dump through one
-// staged ref); `report` compares the two sides' scored files (JoinedReport):
+// staged ref); `report` compares the two sides' scored files (JoinedReport); `drive-check`
+// (feat-joined-rig-recogniser Phase 1) runs JoinedRecogniser's scripted worlds, reached through
+// the DriveCheck hook it sets from a module initializer in a recogniser stage only:
 //
 //   --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]
 //   --joined report --a A --b B --out R
+//   --joined drive-check
 //
-// Exit 0 scored (or reported); 2 an input stop or the grammar-pin guard; 3 the kill check (the
-// pinned dump does not reproduce the pin). Every stop is named on stderr, prefixed `joined: `;
+// Exit 0 scored (or reported, or every world passed); 1 a drive-check FAIL; 2 an input stop or
+// the grammar-pin guard (or a drive-check stop); 3 the kill check (the pinned dump does not
+// reproduce the pin). Every stop is named on stderr, prefixed `joined: `;
 // every stop after the options parse leaves no scored file (an argument stop precedes `--out`
 // being known). Each scored case's outcome is JoinedScorer's.
 using System;
@@ -48,14 +52,26 @@ namespace AbRig
         const string ScoreUsage =
             "usage: --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]";
         const string ReportUsage = "usage: --joined report --a A --b B --out R";
+        const string DriveCheckUsage = "usage: --joined drive-check (a recogniser stage only)";
+
+        // Set by JoinedRecogniser's module initializer; null in a parser stage, which does not
+        // compile JoinedRecogniser (*Stage layering*).
+        internal static Func<
+            string[],
+            VoxrSlotDefinition[],
+            VoxrCommandDefinition[],
+            int
+        > DriveCheck;
 
         // `parser` is the default replay's (Program.cs), for the scorer; `grammarJson` is what
         // --grammar prints for the staged ref, which the guard compares with the pin; `commands`
-        // are the parser's definitions, which the scorer's fire gate reads.
+        // are the parser's definitions, which the scorer's fire gate reads; `slots` and
+        // `commands` are what drive-check configures its staged recogniser with.
         internal static int Run(
             string[] args,
             VoxrCommandParser parser,
             string grammarJson,
+            VoxrSlotDefinition[] slots,
             VoxrCommandDefinition[] commands
         )
         {
@@ -67,7 +83,16 @@ namespace AbRig
                     return Score(args, parser, grammarJson, commands);
                 if (verb == "report")
                     return JoinedReport.Run(args);
-                throw new JoinedInput.Stop(2, ScoreUsage, ReportUsage);
+                if (verb == "drive-check")
+                {
+                    if (DriveCheck == null)
+                        throw new JoinedInput.Stop(
+                            2,
+                            "drive-check needs a recogniser stage: this stage has no JoinedRecogniser; stage with stage.sh <ref> <out> recogniser"
+                        );
+                    return DriveCheck(args, slots, commands);
+                }
+                throw new JoinedInput.Stop(2, ScoreUsage, ReportUsage, DriveCheckUsage);
             }
             catch (JoinedInput.Stop stop)
             {

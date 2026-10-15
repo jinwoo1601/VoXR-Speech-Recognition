@@ -10,7 +10,8 @@
          incremental rebuild, which yields false greens. Dispatch from Program instead:
            (default)              the issue #65 A/B replay
            flag grammar           print GenerateGrammarJson over the demo grammar
-           flag joined            the joined-rig mode, score or report (feat-joined-rig-parser)
+           flag joined            the joined-rig mode, score or report (feat-joined-rig-parser),
+                                  or drive-check (feat-joined-rig-recogniser; a recogniser stage)
            flag check             its self-test
            flag sweep             the start-index sweep behind the blocked/recovered figure
            flag doccheck          the issue #83 documentation pin
@@ -21,7 +22,9 @@
          XML comment cannot contain.) Only Program and PlayerCheck still carry a Main;
          Check, Sweep, DocCheck and Joined expose Run() and are reached through their
          flags (JoinedReport.Run through Joined); grammar, bench, prefix-verdicts and
-         verdicts run inside Program.Main itself. -->
+         verdicts run inside Program.Main itself. JoinedRecogniser, staged only by
+         stage.sh's recogniser argument, registers drive-check with Joined from a module
+         initializer. -->
     <StartupObject Condition="'$(StartupObject)' == ''">AbRig.Program</StartupObject>
     <!-- The staged parser sources are shipped code; their warnings are not this rig's
          business and must not fail the build. -->
