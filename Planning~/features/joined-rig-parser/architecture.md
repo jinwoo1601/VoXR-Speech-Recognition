@@ -2,7 +2,7 @@
 type: architecture
 feature: joined-rig-parser
 topic: joined-rig
-status: draft
+status: accepted
 updated: 2026-10-15
 sources:
   - Planning~/features/joined-rig-parser/requirements.md

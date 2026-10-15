@@ -2,8 +2,8 @@
 type: requirements
 feature: joined-rig-parser
 topic: joined-rig
-status: draft
-updated: 2026-10-14
+status: accepted   # G2 ruled in-conversation 2026-10-15: accepted at 2c61018
+updated: 2026-10-15
 sources:
   - Planning~/design-docs/joined-rig.md
   - Planning~/design-docs/joined-rig/decisions/adr-0001-file-handoff-pipe.md
@@ -112,18 +112,20 @@ Row cut as not applicable: accessibility.
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] F1: Verification Command 3 green, 16/16; a dump from that run holds partials and timestamps.
-- [ ] F2: the kill check passes on the 16 fixtures; a deliberately altered final makes the run refuse, naming the case.
-- [ ] F3: a `main`-vs-`main` parser-side run reports 0 flips.
-- [ ] F4: a run with a side-B dump carrying a changed final lists it and is not refused.
-- [ ] F5: a parser ref seeded with a deliberate regression shows the case in its class; no count nets another.
-- [ ] F6: the F5 canary run's report names its corpus, the corpus's provenance and the side varied, and lists every flipped case with old and new transcript and outcome.
-- [ ] F7: a test manifest with one sealed case, run without `--evaluate`, skips it; run with `--evaluate`, scores it and stamps the report "holdout evaluation".
-- [ ] F8: the split case sits in the "not scored at this layer" row of the 16-fixture report.
-- [ ] F9: every G2 run above is made from Claude's own Windows-native shell, with no Unity, no device and no WSL.
-- [ ] F10: the tuning-pass record of every number the rig uses, or "none", is present in the architecture doc.
-- [ ] Human-only verification: the maintainer reads the F5 canary report and confirms each flip is legible with its old and new transcript and outcome.
-- [ ] The commands the project's `verification` binding names for the paths changed are green (Command 3 at least).
+- [x] F1: Verification Command 3 green, 16/16; a dump from that run holds partials and timestamps. (Phase 4 and review-fix gates: harness 16/16, exit 0; the dump holds partials and timestamps)
+- [x] F2: the kill check passes on the 16 fixtures; a deliberately altered final makes the run refuse, naming the case. (Phase 4: an altered-final dump copy exits 3 naming the cases)
+- [x] F3: a `main`-vs-`main` parser-side run reports 0 flips. (Phase 4 and review-fix gates: `main` vs `main`, Flips 0, byte-equal set and unset)
+- [x] F4: a run with a side-B dump carrying a changed final lists it and is not refused. (Phase 4: a side-B dump with changed finals listed, not refused)
+- [x] F5: a parser ref seeded with a deliberate regression shows the case in its class; no count nets another. (Phase 3 canary: 14 cases to `missed`; review F4 scratch run, ruled 2026-10-15: one case each in `false-fire`, `wrong-intent`, `wrong-slots`; the Phase 4 re-made canary not run, ruled 2026-10-15)
+- [x] F6: the F5 canary run's report names its corpus, the corpus's provenance and the side varied, and lists every flipped case with old and new transcript and outcome. (Phase 3 canary report: corpus, provenance, side varied, every flip with both transcripts and outcomes)
+- [x] F7: a test manifest with one sealed case, run without `--evaluate`, skips it; run with `--evaluate`, scores it and stamps the report "holdout evaluation". (Phase 4: sealed case skipped; with `--evaluate` scored and stamped `HOLDOUT EVALUATION`)
+- [x] F8: the split case sits in the "not scored at this layer" row of the 16-fixture report. (Phase 4: the split case in the not-scored row)
+- [x] F9: every G2 run above is made from Claude's own Windows-native shell, with no Unity, no device and no WSL. (every run from Git Bash, `MSYS_NO_PATHCONV` set and unset)
+- [x] F10: the tuning-pass record of every number the rig uses, or "none", is present in the architecture doc. (architecture doc *Tuning record*)
+- [x] Human-only verification: the maintainer reads the F5 canary report and confirms each flip is legible with its old and new transcript and outcome. (confirmed by the maintainer at G2, 2026-10-15)
+- [x] The commands the project's `verification` binding names for the paths changed are green (Command 3 at least). (review-fix gate: Command 3 both halves, DocCheck 66/66, EditMode 203/203, PlayMode 704/704)
+
+**Ruled at G2 on 2026-10-15** by the maintainer, in conversation: accepted at head `2c61018`, with the preflight in view, the canary report's flips confirmed legible — the Phase 4 as-built entry added after the first preflight, and the Phase 4 re-made canary not run by the maintainer's ruling.
 
 ## 10. Open questions
 
