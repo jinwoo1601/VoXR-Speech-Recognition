@@ -116,7 +116,7 @@ The recogniser (`Runtime/Commands/VoxrCommandRecogniser.cs`, a `MonoBehaviour` :
 
 | Number | Value | Evidence |
 |---|---|---|
-| Tick rate | 90 Hz | Provisional → Phase 4's tuning pass. The project's device measurements ran a Quest 3 at 90 Hz (`KNOWN_LIMITATIONS.md` :363; `Runtime/ModelExtractor.cs` :444). Phase 4 probes one notch each way on the 16 fixtures and records whether any class moves. |
+| Tick rate | 90 Hz | Recorded, not re-picked (Phase 4, ruled 2026-10-15). The project's device measurements ran a Quest 3 at 90 Hz (`KNOWN_LIMITATIONS.md` :363; `Runtime/ModelExtractor.cs` :444; re-verified at HEAD). At 90 Hz the 16 fixtures score correct 15 (1 no fire), missed 1. One notch each way, 80 and 120 Hz: no class moves, no case pending. Provisional (TTS-only, C12). |
 
 The horizon is derived from the staged timers, not a number. The recogniser's own values (`minConfidence` :27, `minScore` :31, `bufferWindow` :72, `commandCooldown` :94, `pendingTimeout` :105, …) are configuration staged with each ref (F7), not rig numbers; phase 1's `MinScore` and `MinConfidence` stay parser-layer only.
 
