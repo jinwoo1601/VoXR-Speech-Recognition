@@ -4,14 +4,13 @@ updated: 2026-10-15
 
 ## Current
 
-- **`main` at the PR #176 merge (row 2, G2 2026-10-14); `v2.0.0`; toolchain backlog done; in flight: `feat-joined-rig-parser`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`feat-joined-rig-parser` (feature, Full): stage review: `review-cycle` done 2026-10-15 (7 fixed, 2 refuted, F4 scratch run); next: `g2-accept`.**
+- **`main` at the PR #177 merge (`feat-joined-rig-parser`, G2 2026-10-15); `v2.0.0`; next: `feat-joined-rig-recogniser` at G0.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
 - **Plan of action** (2026-09-06 rulings, `Planning~/research/2026-09-05-next-level/05-rulings.md`): Phase A complete (#143–#148, #150, #153, #154 merged).
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
-- Phase C instruments, none started: R1 parser A/B rig joined to the push-audio harness (gates Phase D); R5 human corpus; R4 negative corpus.
+- Phase C instruments: R1 parser half merged (#177), recogniser half `joined-rig-recogniser` next (gates Phase D); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1, none started: R11 endpointer, R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 
 ## Deferred
