@@ -1,12 +1,13 @@
 // ============================================================================
-// Purpose:  The recogniser layer's staged world: player loop, frame clock, horizon, error-log guard, and the drive-check verb
+// Purpose:  The recogniser layer's staged world: player loop, frame clock, horizon, error-log guard, the drive-check verb, a case scored and traced, the configuration read
 // Layer:    Planning.AbRig
 // Owns:     JoinedRecogniser (internal static class), JoinedRecogniser.Observation (internal sealed class)
-// Depends:  Joined, JoinedInput, BridgeNative, VoxrSpeechRecogniser, VoxrCommandRecogniser, VoxrResult, VoxrCommand, VoxrSlotMatch, VoxrSlotDefinition, VoxrCommandDefinition
+// Depends:  Joined, JoinedInput, JoinedScorer, BridgeNative, VoxrSpeechRecogniser, VoxrCommandRecogniser, VoxrResult, VoxrCommand, VoxrSlotMatch, VoxrSlotDefinition, VoxrCommandDefinition
 // ============================================================================
-// feat-joined-rig-recogniser Phase 1. Recogniser stage only (stage.sh's `recogniser` argument):
-// a module initializer hands DriveCheck to Joined, so a parser stage compiles Joined unchanged and
-// stops `drive-check` by name (*Stage layering*). One world per run of RunWorld: both staged
+// feat-joined-rig-recogniser Phases 1 and 3. Recogniser stage only (stage.sh's `recogniser`
+// argument): a module initializer hands DriveCheck, ScoreCase and Config to Joined, so a parser
+// stage compiles Joined unchanged and stops `drive-check` and `score --layer recogniser` by name
+// (*Stage layering*). One world per run of RunWorld: both staged
 // components built fresh, driven through Unity's messages by name, frame by frame on a fixed
 // clock, results served by the stand-in bridge on the first frame at or after their audio time
 // (*The player loop*, *The clock*, *Delivery*). `drive-check` runs five scripted worlds:
@@ -61,11 +62,17 @@ namespace AbRig
             internal string Event; // "fire", "pending", "confirmed" or "cancelled"
             internal string Intent;
             internal VoxrSlotMatch[] Slots;
+            internal VoxrCommand Command; // the event's command, whole
         }
 
 #pragma warning disable CA2255
         [ModuleInitializer]
-        internal static void Register() => Joined.DriveCheck = DriveCheck;
+        internal static void Register()
+        {
+            Joined.DriveCheck = DriveCheck;
+            Joined.ScoreRecogniser = ScoreCase;
+            Joined.RecogniserConfig = Config;
+        }
 #pragma warning restore CA2255
 
         // The least frame k with k / TickRate at or after the audio time.
@@ -118,10 +125,10 @@ namespace AbRig
             var speech = new VoxrSpeechRecogniser();
             var command = new VoxrCommandRecogniser();
 
-            // Horizon: the last result's audio time plus the staged timers, then 3 frames (*The
-            // clock*, ruled 2026-10-15).
+            // Horizon: the last result's audio time (0 for an empty timeline) plus the staged
+            // timers, then 3 frames (*The clock*, ruled 2026-10-15).
             double h =
-                timeline[timeline.Count - 1].AudioTime
+                (timeline.Count == 0 ? 0 : timeline[timeline.Count - 1].AudioTime)
                 + ReadFloat(command, "bufferWindow")
                 + ReadFloat(command, "pendingTimeout");
             int horizon = DeliveryFrame(h) + 3;
@@ -242,7 +249,118 @@ namespace AbRig
                 Event = name,
                 Intent = c.Intent,
                 Slots = c.Slots,
+                Command = c,
             };
+
+        // -------- score --layer recogniser --------
+
+        // One case through a fresh world (feat-joined-rig-recogniser, *Recogniser-layer
+        // scoring*, *Timing measures*, *Trace*): the dump's results in order at `consumed` /
+        // `sampleRate`; the first fire is the case's fire, the rest extra fires; the class is
+        // phase 1's (JoinedScorer.Classify). Stop, exit 2: no sample rate, or a `raw` result.
+        static JoinedScorer.Outcome ScoreCase(
+            JoinedInput.ManifestCase c,
+            JoinedInput.DumpCase d,
+            VoxrSlotDefinition[] slots,
+            VoxrCommandDefinition[] commands
+        )
+        {
+            if (d.SampleRate <= 0)
+                throw new JoinedInput.Stop(
+                    2,
+                    "case \"" + c.Name + "\": `sampleRate` " + d.SampleRate + ", expected > 0"
+                );
+            var timeline = new List<(double AudioTime, bool Final, string Payload)>();
+            foreach (JoinedInput.DumpResult r in d.Results)
+            {
+                if (r.Raw != null)
+                    throw new JoinedInput.Stop(
+                        2,
+                        "case \"" + c.Name + "\": a `raw` result at seq " + r.Seq + ", no payload"
+                    );
+                timeline.Add(((double)r.Consumed.Value / d.SampleRate, r.Final, r.Payload));
+            }
+
+            List<Observation> observed = RunWorld(c.Name, timeline, slots, commands);
+
+            List<Observation> fires = Events(observed, "fire");
+            var o = new JoinedScorer.Outcome
+            {
+                HasPrimary = fires.Count > 0,
+                ExtraFires = Math.Max(0, fires.Count - 1),
+                FinalCount = d.Finals.Count,
+                FireTimes = new double[fires.Count],
+                AppliedGrammar = BridgeNative.RigAppliedGrammar,
+            };
+            if (o.HasPrimary)
+                o.Primary = fires[0].Command;
+            o.Class = JoinedScorer.Classify(o.HasPrimary, o.Primary, c, out o.SlotCredit);
+            for (int i = 0; i < fires.Count; i++)
+                o.FireTimes[i] = fires[i].FrameTime;
+            o.Delay = o.HasPrimary
+                ? o.FireTimes[0] - (double)d.Samples / d.SampleRate
+                : (double?)null;
+
+            // Pending: a `pending` event with no `confirmed` after it.
+            var trace = new StringBuilder();
+            foreach (Observation x in observed)
+            {
+                if (x.Kind == "event" && x.Event == "pending")
+                    o.Pending = true;
+                else if (x.Kind == "event" && x.Event == "confirmed")
+                    o.Pending = false;
+                trace.Append(Line(x)).Append('\n');
+            }
+            o.Trace = trace.ToString();
+            return o;
+        }
+
+        // The configuration a fresh staged recogniser carries (*Configuration*): every instance
+        // field it declares with [SerializeField], in source (metadata) order, as (name, text);
+        // and the tick rate.
+        static (float, KeyValuePair<string, string>[]) Config()
+        {
+            var fresh = new VoxrCommandRecogniser();
+            var fields = new List<FieldInfo>();
+            foreach (
+                FieldInfo f in typeof(VoxrCommandRecogniser).GetFields(
+                    BindingFlags.Instance
+                        | BindingFlags.Public
+                        | BindingFlags.NonPublic
+                        | BindingFlags.DeclaredOnly
+                )
+            )
+                if (f.GetCustomAttribute<SerializeFieldAttribute>() != null)
+                    fields.Add(f);
+            fields.Sort((x, y) => x.MetadataToken.CompareTo(y.MetadataToken));
+
+            var config = new KeyValuePair<string, string>[fields.Count];
+            for (int i = 0; i < fields.Count; i++)
+                config[i] = new KeyValuePair<string, string>(
+                    fields[i].Name,
+                    ConfigText(fields[i].GetValue(fresh))
+                );
+            return (TickRate, config);
+        }
+
+        // Invariant text: null `null`, a float round-trip, a bool lower case, an array `[a, b]`.
+        static string ConfigText(object value)
+        {
+            if (value == null)
+                return "null";
+            if (value is float f)
+                return f.ToString("R", CultureInfo.InvariantCulture);
+            if (value is bool b)
+                return b ? "true" : "false";
+            if (value is Array array)
+            {
+                var parts = new List<string>();
+                foreach (object e in array)
+                    parts.Add(ConfigText(e));
+                return "[" + string.Join(", ", parts) + "]";
+            }
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
 
         // -------- drive-check --------
 
@@ -434,7 +552,10 @@ namespace AbRig
 
         static string PartialPayload(string text) => "{\"partial\":\"" + text + "\"}";
 
-        static void Print(Observation o)
+        static void Print(Observation o) => Console.Out.WriteLine(Line(o));
+
+        // One observation as a *Trace* line, no line end; null slots as [].
+        static string Line(Observation o)
         {
             var buffer = new MemoryStream();
             using (var w = new Utf8JsonWriter(buffer, WriterOptions))
@@ -456,7 +577,7 @@ namespace AbRig
                     w.WriteNumber("frameTime", o.FrameTime);
                     w.WriteString("intent", o.Intent);
                     w.WriteStartArray("slots");
-                    foreach (VoxrSlotMatch slot in o.Slots)
+                    foreach (VoxrSlotMatch slot in o.Slots ?? Array.Empty<VoxrSlotMatch>())
                     {
                         w.WriteStartObject();
                         w.WriteString("name", slot.Name);
@@ -467,7 +588,7 @@ namespace AbRig
                 }
                 w.WriteEndObject();
             }
-            Console.Out.WriteLine(Encoding.UTF8.GetString(buffer.ToArray()));
+            return Encoding.UTF8.GetString(buffer.ToArray());
         }
     }
 }

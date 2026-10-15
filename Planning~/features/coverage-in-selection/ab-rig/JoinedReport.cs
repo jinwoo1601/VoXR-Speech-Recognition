@@ -12,9 +12,12 @@
 // the keys `score` writes, the files sides a and b, agreeing on `vary`, manifest, provenance,
 // gate, `evaluate` (and the dump under `vary` parser), `pinned` as `vary` implies, and case
 // names in order. Any defect is a stop, exit 2, naming the file and line or the difference,
-// and leaves no report. Counts sit side by side, never totalled or netted.
+// and leaves no report. Counts sit side by side, never totalled or netted. A recogniser-layer
+// file (feat-joined-rig-recogniser Phase 3) has `layer`, `config` and `tickRate` for `gate`
+// and per scored case the timing keys; both files of one layer and one tick rate.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -59,6 +62,42 @@ namespace AbRig
             "finalCount",
         };
 
+        // The recogniser layer's: `gate` becomes `layer config tickRate`; a case is `sealed` or
+        // `scored`, scored with the timing keys.
+        static readonly string[] RecogniserHeaderKeys =
+        {
+            "kind",
+            "side",
+            "vary",
+            "stagedFrom",
+            "dump",
+            "dumpHeader",
+            "manifest",
+            "provenance",
+            "pinned",
+            "layer",
+            "config",
+            "tickRate",
+            "evaluate",
+        };
+        static readonly string[] RecogniserScoredKeys =
+        {
+            "kind",
+            "case",
+            "disposition",
+            "finals",
+            "class",
+            "intent",
+            "slots",
+            "score",
+            "slotCredit",
+            "extraFires",
+            "finalCount",
+            "fireTimes",
+            "delay",
+            "pending",
+        };
+
         // What a flip compares (*Report*): transcripts, disposition, class, intent, slots,
         // credit, extra fires.
         static readonly string[] FlipKeys =
@@ -85,6 +124,7 @@ namespace AbRig
             "not scored at this layer",
             "sealed-skipped",
         };
+        const int NotScoredRow = 7;
 
         internal sealed class Side
         {
@@ -183,7 +223,7 @@ namespace AbRig
                 }
                 else
                 {
-                    CheckCase(rec, where);
+                    CheckCase(rec, Layered(s), where);
                     s.Cases.Add(rec);
                 }
             }
@@ -192,7 +232,8 @@ namespace AbRig
 
         static void CheckHeader(JsonElement rec, string side, string where)
         {
-            Keys(rec, HeaderKeys, where);
+            bool layered = rec.TryGetProperty("layer", out _);
+            Keys(rec, layered ? RecogniserHeaderKeys : HeaderKeys, where);
             Expect(rec, "kind", IsString(rec, "kind", "header"), where);
             if (rec.GetProperty("side").ValueKind != JsonValueKind.String)
                 Expect(rec, "side", false, where);
@@ -214,11 +255,18 @@ namespace AbRig
             Expect(rec, "manifest", Is(rec, "manifest", JsonValueKind.String), where);
             Expect(rec, "provenance", Is(rec, "provenance", JsonValueKind.String), where);
             Expect(rec, "pinned", IsBool(rec, "pinned"), where);
-            Expect(rec, "gate", Is(rec, "gate", JsonValueKind.Object), where);
+            if (layered)
+            {
+                Expect(rec, "layer", IsString(rec, "layer", "recogniser"), where);
+                Expect(rec, "config", IsStringObject(rec.GetProperty("config")), where);
+                Expect(rec, "tickRate", Is(rec, "tickRate", JsonValueKind.Number), where);
+            }
+            else
+                Expect(rec, "gate", Is(rec, "gate", JsonValueKind.Object), where);
             Expect(rec, "evaluate", IsBool(rec, "evaluate"), where);
         }
 
-        static void CheckCase(JsonElement rec, string where)
+        static void CheckCase(JsonElement rec, bool layered, string where)
         {
             string disposition =
                 rec.TryGetProperty("disposition", out JsonElement d)
@@ -226,15 +274,19 @@ namespace AbRig
                     ? d.GetString()
                     : null;
             string[] keys =
-                disposition == "scored" ? ScoredKeys
-                : disposition == "recogniser-layer" ? UnscoredKeys
+                disposition == "scored" ? (layered ? RecogniserScoredKeys : ScoredKeys)
+                : disposition == "recogniser-layer" && !layered ? UnscoredKeys
                 : disposition == "sealed" ? SealedKeys
                 : null;
             if (keys == null)
                 throw new JoinedInput.Stop(
                     2,
                     where
-                        + ": missing or mistyped key `disposition` (scored, recogniser-layer, sealed)"
+                        + (
+                            layered
+                                ? ": missing or mistyped key `disposition` (scored, sealed)"
+                                : ": missing or mistyped key `disposition` (scored, recogniser-layer, sealed)"
+                        )
                 );
             Keys(rec, keys, where);
             Expect(rec, "kind", IsString(rec, "kind", "case"), where);
@@ -274,6 +326,16 @@ namespace AbRig
             );
             Expect(rec, "extraFires", IsCount(rec.GetProperty("extraFires")), where);
             Expect(rec, "finalCount", IsCount(rec.GetProperty("finalCount")), where);
+            if (!layered)
+                return;
+            Expect(rec, "fireTimes", IsNumberArray(rec.GetProperty("fireTimes")), where);
+            Expect(
+                rec,
+                "delay",
+                Is(rec, "delay", JsonValueKind.Number) || Is(rec, "delay", JsonValueKind.Null),
+                where
+            );
+            Expect(rec, "pending", IsBool(rec, "pending"), where);
         }
 
         // The line's keys are exactly `keys`, in order.
@@ -327,6 +389,27 @@ namespace AbRig
             return true;
         }
 
+        static bool IsNumberArray(JsonElement v)
+        {
+            if (v.ValueKind != JsonValueKind.Array)
+                return false;
+            foreach (JsonElement e in v.EnumerateArray())
+                if (e.ValueKind != JsonValueKind.Number)
+                    return false;
+            return true;
+        }
+
+        // `config`: an object whose every value is a string.
+        static bool IsStringObject(JsonElement v)
+        {
+            if (v.ValueKind != JsonValueKind.Object)
+                return false;
+            foreach (JsonProperty p in v.EnumerateObject())
+                if (p.Value.ValueKind != JsonValueKind.String)
+                    return false;
+            return true;
+        }
+
         // `slots`: [{"name","value"}], each exactly two strings.
         static bool IsSlots(JsonElement v)
         {
@@ -355,8 +438,36 @@ namespace AbRig
 
         static void Compare(Side a, Side b)
         {
+            // Both files of one layer, and at the recogniser layer of one tick rate; there no
+            // `gate` to compare, and `config` may differ (it is the ref's).
+            bool layered = Layered(a);
+            if (layered != Layered(b))
+                throw new JoinedInput.Stop(
+                    2,
+                    "`layer` differs: "
+                        + a.Path
+                        + " "
+                        + (Raw(a.Header, "layer") ?? "(absent)")
+                        + ", "
+                        + b.Path
+                        + " "
+                        + (Raw(b.Header, "layer") ?? "(absent)")
+                );
+            if (layered)
+            {
+                string ta = a.Header.GetProperty("tickRate").GetRawText();
+                string tb = b.Header.GetProperty("tickRate").GetRawText();
+                if (!string.Equals(ta, tb, StringComparison.Ordinal))
+                    throw new JoinedInput.Stop(
+                        2,
+                        "`tickRate` differs: " + a.Path + " " + ta + ", " + b.Path + " " + tb
+                    );
+            }
+
             // `vary` first: under `parser` both sides scored one dump (F3), so it joins the keys.
             var keys = new List<string> { "vary", "manifest", "provenance", "gate", "evaluate" };
+            if (layered)
+                keys.Remove("gate");
             bool parser = a.Header.GetProperty("vary").GetString() == "parser";
             if (parser)
             {
@@ -421,8 +532,10 @@ namespace AbRig
         {
             var sb = new StringBuilder();
             string vary = a.Header.GetProperty("vary").GetString();
+            bool layered = Layered(a);
 
-            // 1. Header: corpus, provenance, the side varied and both identities, kill check, gate.
+            // 1. Header: corpus, provenance, the side varied and both identities, kill check, gate
+            // (at the recogniser layer: the layer, tick rate, configurations, the one-read note).
             sb.Append("# Joined report\n\n");
             if (Bool(a.Header, "evaluate") || Bool(b.Header, "evaluate"))
                 sb.Append("**HOLDOUT EVALUATION**\n\n");
@@ -434,7 +547,12 @@ namespace AbRig
             sb.Append("- Provenance: ")
                 .Append(a.Header.GetProperty("provenance").GetString())
                 .Append('\n');
-            sb.Append("- Side varied: ").Append(vary).Append('\n');
+            if (layered)
+                sb.Append("- Layer: recogniser\n");
+            sb.Append("- Side varied: ").Append(vary);
+            if (layered && vary == "parser")
+                sb.Append(" (the C# side: parser and recogniser together)");
+            sb.Append('\n');
             if (vary == "parser")
             {
                 foreach (Side s in new[] { a, b })
@@ -487,30 +605,55 @@ namespace AbRig
                 .Append(", B ")
                 .Append(Bool(b.Header, "pinned") ? "passed" : "not checked")
                 .Append('\n');
-            sb.Append("- Gate:");
-            bool first = true;
-            foreach (JsonProperty p in a.Header.GetProperty("gate").EnumerateObject())
+            if (layered)
             {
-                sb.Append(first ? " " : ", ")
-                    .Append(p.Name)
-                    .Append(' ')
-                    .Append(p.Value.GetRawText());
-                first = false;
+                sb.Append("- Tick rate: A ")
+                    .Append(a.Header.GetProperty("tickRate").GetRawText())
+                    .Append(" Hz, B ")
+                    .Append(b.Header.GetProperty("tickRate").GetRawText())
+                    .Append(" Hz\n");
+                foreach (Side s in new[] { a, b })
+                {
+                    sb.Append("- Configuration ").Append(Label(s)).Append(":\n");
+                    foreach (JsonProperty p in s.Header.GetProperty("config").EnumerateObject())
+                        sb.Append("  - ")
+                            .Append(p.Name)
+                            .Append('=')
+                            .Append(p.Value.GetString())
+                            .Append('\n');
+                }
+                sb.Append(
+                    "- Per-record positions may differ between runs by at most one decoder read.\n"
+                );
             }
-            sb.Append('\n');
+            else
+            {
+                sb.Append("- Gate:");
+                bool first = true;
+                foreach (JsonProperty p in a.Header.GetProperty("gate").EnumerateObject())
+                {
+                    sb.Append(first ? " " : ", ")
+                        .Append(p.Name)
+                        .Append(' ')
+                        .Append(p.Value.GetRawText());
+                    first = false;
+                }
+                sb.Append('\n');
+            }
 
-            // 2. Counts, A and B columns.
+            // 2. Counts, A and B columns (no not-scored row at the recogniser layer).
             int[] ca = Counts(a);
             int[] cb = Counts(b);
             sb.Append("\n## Counts\n\n| | A | B |\n|---|---|---|\n");
             for (int i = 0; i < CountLabels.Length; i++)
-                sb.Append("| ")
-                    .Append(CountLabels[i])
-                    .Append(" | ")
-                    .Append(ca[i])
-                    .Append(" | ")
-                    .Append(cb[i])
-                    .Append(" |\n");
+                if (!layered || i != NotScoredRow)
+                    sb.Append("| ")
+                        .Append(CountLabels[i])
+                        .Append(" | ")
+                        .Append(ca[i])
+                        .Append(" | ")
+                        .Append(cb[i])
+                        .Append(" |\n");
 
             // 3. Cases, in file order; `*` marks a flip.
             var flips = new List<int>();
@@ -538,20 +681,39 @@ namespace AbRig
                     .Append(" |\n");
             }
 
-            // 4. Not scored at this layer.
-            sb.Append("\n## Not scored at this layer\n\n");
-            bool listed = false;
-            for (int i = 0; i < a.Cases.Count; i++)
-                if (
-                    Disposition(a.Cases[i]) == "recogniser-layer"
-                    || Disposition(b.Cases[i]) == "recogniser-layer"
-                )
+            // 4. Not scored at this layer; at the recogniser layer, which scores every non-sealed
+            // case, the timing measures instead (*Timing measures*), never a flip.
+            if (layered)
+            {
+                sb.Append("\n## Timing\n\n");
+                sb.Append(
+                    "| case | A fires (s) | A delay (s) | A finals | A pending | B fires (s) | B delay (s) | B finals | B pending |\n"
+                );
+                sb.Append("|---|---|---|---|---|---|---|---|---|\n");
+                for (int i = 0; i < a.Cases.Count; i++)
                 {
-                    sb.Append("- ").Append(CaseName(a.Cases[i])).Append('\n');
-                    listed = true;
+                    sb.Append("| ").Append(CaseName(a.Cases[i]));
+                    AppendTiming(sb, a.Cases[i]);
+                    AppendTiming(sb, b.Cases[i]);
+                    sb.Append(" |\n");
                 }
-            if (!listed)
-                sb.Append("(none)\n");
+            }
+            else
+            {
+                sb.Append("\n## Not scored at this layer\n\n");
+                bool listed = false;
+                for (int i = 0; i < a.Cases.Count; i++)
+                    if (
+                        Disposition(a.Cases[i]) == "recogniser-layer"
+                        || Disposition(b.Cases[i]) == "recogniser-layer"
+                    )
+                    {
+                        sb.Append("- ").Append(CaseName(a.Cases[i])).Append('\n');
+                        listed = true;
+                    }
+                if (!listed)
+                    sb.Append("(none)\n");
+            }
 
             // 5. Flips, each with both sides' transcript and outcome (raw JSON).
             sb.Append("\n## Flips: ").Append(flips.Count).Append('\n');
@@ -594,6 +756,42 @@ namespace AbRig
                 .Append(Raw(rec, "extraFires") ?? "-")
                 .Append("`\n");
         }
+
+        // One side's timing cells: each fire's time and the delay in s (`0.000`), the finals
+        // count, the pending label (`pending, timed out` without a fire, `pending` with one);
+        // `-` for none, and for every cell of a sealed case.
+        static void AppendTiming(StringBuilder sb, JsonElement rec)
+        {
+            string fires = "-",
+                delay = "-",
+                finals = "-",
+                pending = "-";
+            if (Disposition(rec) == "scored")
+            {
+                var times = new List<string>();
+                foreach (JsonElement t in rec.GetProperty("fireTimes").EnumerateArray())
+                    times.Add(Seconds(t.GetDouble()));
+                if (times.Count > 0)
+                    fires = string.Join(", ", times);
+                JsonElement d = rec.GetProperty("delay");
+                if (d.ValueKind == JsonValueKind.Number)
+                    delay = Seconds(d.GetDouble());
+                finals = rec.GetProperty("finalCount").GetRawText();
+                if (Bool(rec, "pending"))
+                    pending = times.Count == 0 ? "pending, timed out" : "pending";
+            }
+            sb.Append(" | ")
+                .Append(fires)
+                .Append(" | ")
+                .Append(delay)
+                .Append(" | ")
+                .Append(finals)
+                .Append(" | ")
+                .Append(pending);
+        }
+
+        static string Seconds(double value) =>
+            value.ToString("0.000", CultureInfo.InvariantCulture);
 
         // correct, of which correct (no fire), wrong-slots, wrong-intent, missed, false-fire,
         // extra fires, not scored at this layer, sealed-skipped (CountLabels' order).
@@ -682,6 +880,9 @@ namespace AbRig
         static string Disposition(JsonElement rec) => rec.GetProperty("disposition").GetString();
 
         static bool Bool(JsonElement rec, string key) => rec.GetProperty(key).GetBoolean();
+
+        // A recogniser-layer file: its header has `layer`.
+        static bool Layered(Side s) => s.Header.TryGetProperty("layer", out _);
 
         static string Raw(JsonElement rec, string key) =>
             rec.TryGetProperty(key, out JsonElement v) ? v.GetRawText() : null;

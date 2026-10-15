@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The rig's --joined mode: sub-verb dispatch, the drive-check hook, option parsing, grammar-pin guard, kill check, scored-record writer, the timing check
+// Purpose:  The rig's --joined mode: sub-verb dispatch, the recogniser-stage hooks, option parsing, grammar-pin guard, kill check, scored-record and trace writer, the timing check
 // Layer:    Planning.AbRig
 // Owns:     Joined (internal static class)
 // Depends:  JoinedInput, JoinedScorer, JoinedReport, VoxrCommandParser, VoxrCommandDefinition, VoxrSlotDefinition, VoxrSlotMatch
@@ -9,9 +9,11 @@
 // (feat-joined-rig-recogniser Phase 1) runs JoinedRecogniser's scripted worlds, reached through
 // the DriveCheck hook it sets from a module initializer in a recogniser stage only; `timing`
 // (feat-joined-rig-recogniser Phase 2) checks schema-2 dump positions, and with two dumps
-// their agreement:
+// their agreement. `score --layer recogniser` (Phase 3) scores each case through a staged world,
+// reached through the ScoreRecogniser and RecogniserConfig hooks set beside DriveCheck, and
+// writes `trace-<side>.jsonl` beside the scored file; `--layer parser`, the default, is phase 1's:
 //
-//   --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]
+//   --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--layer parser|recogniser] [--pinned] [--evaluate]
 //   --joined report --a A --b B --out R
 //   --joined drive-check
 //   --joined timing --dump D [--dump-b D2]
@@ -54,7 +56,7 @@ namespace AbRig
         static string reading;
 
         const string ScoreUsage =
-            "usage: --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--pinned] [--evaluate]";
+            "usage: --joined score --dump D --manifest M --pin P --out O --side a|b --vary parser|decoder [--layer parser|recogniser] [--pinned] [--evaluate]";
         const string ReportUsage = "usage: --joined report --a A --b B --out R";
         const string DriveCheckUsage = "usage: --joined drive-check (a recogniser stage only)";
         const string TimingUsage = "usage: --joined timing --dump D [--dump-b D2]";
@@ -68,10 +70,22 @@ namespace AbRig
             int
         > DriveCheck;
 
+        // Set beside DriveCheck, for `score --layer recogniser`: one case through a staged world,
+        // and the staged recogniser's configuration with the tick rate (*Configuration*).
+        internal static Func<
+            JoinedInput.ManifestCase,
+            JoinedInput.DumpCase,
+            VoxrSlotDefinition[],
+            VoxrCommandDefinition[],
+            JoinedScorer.Outcome
+        > ScoreRecogniser;
+        internal static Func<(float, KeyValuePair<string, string>[])> RecogniserConfig;
+
         // `parser` is the default replay's (Program.cs), for the scorer; `grammarJson` is what
         // --grammar prints for the staged ref, which the guard compares with the pin; `commands`
         // are the parser's definitions, which the scorer's fire gate reads; `slots` and
-        // `commands` are what drive-check configures its staged recogniser with.
+        // `commands` are what drive-check and the recogniser layer configure the staged
+        // recogniser with.
         internal static int Run(
             string[] args,
             VoxrCommandParser parser,
@@ -85,7 +99,7 @@ namespace AbRig
                 int at = Array.IndexOf(args, "--joined");
                 string verb = at + 1 < args.Length ? args[at + 1] : null;
                 if (verb == "score")
-                    return Score(args, parser, grammarJson, commands);
+                    return Score(args, parser, grammarJson, slots, commands);
                 if (verb == "report")
                     return JoinedReport.Run(args);
                 if (verb == "drive-check")
@@ -136,6 +150,7 @@ namespace AbRig
             string[] args,
             VoxrCommandParser parser,
             string grammarJson,
+            VoxrSlotDefinition[] slots,
             VoxrCommandDefinition[] commands
         )
         {
@@ -143,16 +158,34 @@ namespace AbRig
                 evaluate;
             Dictionary<string, string> o = ParseOptions(args, out pinned, out evaluate);
             string outPath = o["--out"];
+            bool recogniser = o["--layer"] == "recogniser";
+            string tracePath = recogniser
+                ? Path.Combine(Path.GetDirectoryName(outPath), "trace-" + o["--side"] + ".jsonl")
+                : null;
 
-            // 1. No stale scored file survives a stop after the options parse; then every reader
-            // finishes first.
+            // 1. No stale scored file (nor, at the recogniser layer, trace) survives a stop after
+            // the options parse; then every reader finishes first.
             reading = outPath;
             if (File.Exists(outPath))
                 File.Delete(outPath);
+            if (recogniser)
+            {
+                reading = tracePath;
+                if (File.Exists(tracePath))
+                    File.Delete(tracePath);
+                reading = null;
+                if (ScoreRecogniser == null)
+                    throw new JoinedInput.Stop(
+                        2,
+                        "score --layer recogniser needs a recogniser stage: this stage has no JoinedRecogniser; stage with stage.sh <ref> <out> recogniser"
+                    );
+            }
             reading = "./STAGED_FROM";
             string[] stagedFrom = JoinedInput.SplitLines(File.ReadAllText("STAGED_FROM"));
             reading = o["--dump"];
             JoinedInput.Dump dump = JoinedInput.ReadDump(o["--dump"]);
+            if (recogniser && dump.Schema == 1)
+                throw new JoinedInput.Stop(2, o["--dump"] + ": schema 1, no positions");
             reading = o["--manifest"];
             JoinedInput.Manifest manifest = JoinedInput.ReadManifest(o["--manifest"]);
             reading = o["--pin"];
@@ -161,7 +194,7 @@ namespace AbRig
             JoinedInput.Join(dump, manifest, pin, pinned);
 
             // 2. Grammar-pin guard (F11): the staged ref's grammar is the pin's, ordinal.
-            string[] rigGrammar = ParseGrammar(grammarJson);
+            string[] rigGrammar = ParseGrammar(grammarJson, "grammar guard: the rig's grammar");
             int diff = FirstDifference(rigGrammar, pin.Grammar);
             if (diff >= 0)
                 throw new JoinedInput.Stop(
@@ -279,25 +312,42 @@ namespace AbRig
                 w.WriteString("manifest", manifest.Path);
                 w.WriteString("provenance", manifest.Provenance);
                 w.WriteBoolean("pinned", pinned);
-                w.WriteStartObject("gate");
-                w.WriteNumber("minScore", JoinedScorer.MinScore);
-                w.WriteNumber("minConfidence", JoinedScorer.MinConfidence);
-                w.WriteEndObject();
+                if (recogniser)
+                {
+                    // No rig gate at this layer: the staged recogniser's configuration and the
+                    // tick rate, read before any world (*Configuration*).
+                    (float tickRate, KeyValuePair<string, string>[] config) = RecogniserConfig();
+                    w.WriteString("layer", "recogniser");
+                    w.WriteStartObject("config");
+                    foreach (KeyValuePair<string, string> field in config)
+                        w.WriteString(field.Key, field.Value);
+                    w.WriteEndObject();
+                    w.WriteNumber("tickRate", tickRate);
+                }
+                else
+                {
+                    w.WriteStartObject("gate");
+                    w.WriteNumber("minScore", JoinedScorer.MinScore);
+                    w.WriteNumber("minConfidence", JoinedScorer.MinConfidence);
+                    w.WriteEndObject();
+                }
                 w.WriteBoolean("evaluate", evaluate);
                 w.WriteEndObject();
             }
             buffer.WriteByte((byte)'\n');
 
+            var trace = new StringBuilder();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
             {
-                // Under --evaluate a sealed case goes as unsealed (F7).
+                // Under --evaluate a sealed case goes as unsealed (F7); at the recogniser layer
+                // every other case is scored (F5).
                 string disposition;
                 if (c.Sealed && !evaluate)
                 {
                     disposition = "sealed";
                     sealedCount++;
                 }
-                else if (c.Layer == "recogniser")
+                else if (c.Layer == "recogniser" && !recogniser)
                 {
                     disposition = "recogniser-layer";
                     recogniserLayer++;
@@ -310,11 +360,36 @@ namespace AbRig
 
                 JoinedInput.DumpCase dumped = dumpByCase[c.Name];
                 JoinedScorer.Outcome s =
-                    disposition == "scored"
-                        ? JoinedScorer.Score(parser, commands, c, dumped)
-                        : null;
+                    disposition != "scored" ? null
+                    : recogniser ? ScoreRecogniser(c, dumped, slots, commands)
+                    : JoinedScorer.Score(parser, commands, c, dumped);
                 if (s != null)
                     classCounts[s.Class]++;
+
+                // *Guards at this layer*: the grammar the staged recogniser applied is the pin's.
+                if (s != null && recogniser)
+                {
+                    string label = "applied-grammar guard: case \"" + c.Name + "\"";
+                    string[] applied = ParseGrammar(
+                        s.AppliedGrammar,
+                        label + ": the applied grammar"
+                    );
+                    int at = FirstDifference(applied, pin.Grammar);
+                    if (at >= 0)
+                        throw new JoinedInput.Stop(
+                            2,
+                            label
+                                + ": the applied grammar differs from the pin's ("
+                                + pin.Path
+                                + ") at index "
+                                + at
+                                + ": applied "
+                                + Entry(applied, at)
+                                + ", pin "
+                                + Entry(pin.Grammar, at)
+                        );
+                    trace.Append(s.Trace);
+                }
 
                 using (var w = new Utf8JsonWriter(buffer, WriterOptions))
                 {
@@ -357,6 +432,19 @@ namespace AbRig
                             w.WriteString("slotCredit", "n/a");
                         w.WriteNumber("extraFires", s.ExtraFires);
                         w.WriteNumber("finalCount", s.FinalCount);
+                        // *Timing measures*, beside the class, never a flip.
+                        if (recogniser)
+                        {
+                            w.WriteStartArray("fireTimes");
+                            foreach (double t in s.FireTimes)
+                                w.WriteNumberValue(t);
+                            w.WriteEndArray();
+                            if (s.Delay.HasValue)
+                                w.WriteNumber("delay", s.Delay.Value);
+                            else
+                                w.WriteNull("delay");
+                            w.WriteBoolean("pending", s.Pending);
+                        }
                     }
                     w.WriteEndObject();
                 }
@@ -366,6 +454,14 @@ namespace AbRig
             reading = outPath;
             File.WriteAllBytes(outPath, buffer.ToArray());
             reading = null;
+
+            // The trace, after the scored file, so a stop leaves neither (*Trace*).
+            if (recogniser)
+            {
+                reading = tracePath;
+                File.WriteAllBytes(tracePath, new UTF8Encoding(false).GetBytes(trace.ToString()));
+                reading = null;
+            }
 
             // 6. The counts: dispositions, then the report's classes (correct = both correct-*).
             Console.Out.WriteLine("scored " + scored);
@@ -655,7 +751,7 @@ namespace AbRig
                     evaluate = true;
                     continue;
                 }
-                if (Array.IndexOf(ValueOptions, a) < 0)
+                if (Array.IndexOf(ValueOptions, a) < 0 && a != "--layer")
                     throw new JoinedInput.Stop(2, "unknown argument \"" + a + "\"");
                 if (options.ContainsKey(a))
                     throw new JoinedInput.Stop(2, a + " given twice");
@@ -667,6 +763,14 @@ namespace AbRig
             foreach (string option in ValueOptions)
                 if (!options.ContainsKey(option))
                     throw new JoinedInput.Stop(2, "missing " + option);
+            // `--layer` is optional: `parser`, phase 1's, unless given.
+            if (!options.ContainsKey("--layer"))
+                options.Add("--layer", "parser");
+            if (options["--layer"] != "parser" && options["--layer"] != "recogniser")
+                throw new JoinedInput.Stop(
+                    2,
+                    "--layer must be parser or recogniser, not \"" + options["--layer"] + "\""
+                );
             if (options["--side"] != "a" && options["--side"] != "b")
                 throw new JoinedInput.Stop(
                     2,
@@ -680,7 +784,8 @@ namespace AbRig
             return options;
         }
 
-        static string[] ParseGrammar(string grammarJson)
+        // `label` opens the stop's text, which names what was not an array of strings.
+        static string[] ParseGrammar(string grammarJson, string label)
         {
             using (JsonDocument doc = JsonDocument.Parse(grammarJson))
             {
@@ -699,10 +804,7 @@ namespace AbRig
                         return entries;
                 }
             }
-            throw new JoinedInput.Stop(
-                2,
-                "grammar guard: the rig's grammar JSON is not an array of strings"
-            );
+            throw new JoinedInput.Stop(2, label + " JSON is not an array of strings");
         }
 
         // The first index where the two differ ordinally (a length difference counts at the

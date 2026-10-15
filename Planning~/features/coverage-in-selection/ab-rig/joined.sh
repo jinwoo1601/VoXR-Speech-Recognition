@@ -8,28 +8,30 @@
 # feat-joined-rig-parser. Run from the project root in Git Bash, one of two shapes:
 #
 #   bash Planning~/features/coverage-in-selection/ab-rig/joined.sh --vary parser \
-#       --dump D --ref-a R --ref-b R2 [--manifest M] [--pin P] [--out O] [--evaluate]
+#       --dump D --ref-a R --ref-b R2 [--layer L] [--manifest M] [--pin P] [--out O] [--evaluate]
 #   bash Planning~/features/coverage-in-selection/ab-rig/joined.sh --vary decoder \
-#       --dump-a D --dump-b D2 --ref R [--manifest M] [--pin P] [--out O] [--evaluate]
+#       --dump-a D --dump-b D2 --ref R [--layer L] [--manifest M] [--pin P] [--out O] [--evaluate]
 #
-# A ref is a git ref or WORKTREE (stage.sh). Defaults: --manifest
-# Tests~/Fixtures/audio/manifest.json, --pin NativeBridge~/harness/expectations.json,
-# --out .scratch/joined. Varying one side per run is structural: the two shapes cannot
-# express both.
+# A ref is a git ref or WORKTREE (stage.sh). --layer is parser (phase 1's, the default) or
+# recogniser (feat-joined-rig-recogniser: each ref staged with stage.sh's `recogniser`
+# argument, each score given --layer recogniser, a trace-<side>.jsonl beside each scored
+# file). Defaults: --manifest Tests~/Fixtures/audio/manifest.json, --pin
+# NativeBridge~/harness/expectations.json, --out .scratch/joined. Varying one side per run is
+# structural: the two shapes cannot express both.
 #
 # Procedure. The operator makes each dump with the harness Command 3 built, re-run with
 # --dump <path>. Then this script:
 #   1. checks the arguments against the shape and that each dump, the manifest and the pin
 #      is a file (else `joined.sh: <problem>`, exit 2); creates the out dir and removes its
-#      scored-*.jsonl and report.md;
+#      scored-*.jsonl, trace-*.jsonl and report.md;
 #   2. stages each distinct ref (ref-a, or --ref, into <out>/stage-a; ref-b into
-#      <out>/stage-b unless equal) and builds it, all before any score (else
-#      `joined.sh: <ref>: stage failed` / `build failed`, exit 2);
+#      <out>/stage-b unless equal), with `recogniser` at that layer, and builds it, all
+#      before any score (else `joined.sh: <ref>: stage failed` / `build failed`, exit 2);
 #   3. scores each side in its stage, side a first, every path in drive-letter form:
 #      --vary parser, the one dump through ref-a (a) and ref-b (b), both pinned;
 #      --vary decoder, dump-a pinned (a) and dump-b unpinned (b) through the one ref.
 #      A score exit other than 0 (2 an input or guard stop, 3 the kill check) removes this
-#      run's scored files and is this script's exit; --evaluate goes to both scores;
+#      run's scored and trace files and is this script's exit; --evaluate goes to both scores;
 #   4. reports: `--joined report` in stage-a on the two scored files writes <out>/report.md
 #      and prints it (an exit other than 0 is this script's exit); then prints the scored
 #      and report paths.
@@ -42,7 +44,7 @@ die() {
   exit 2
 }
 
-VARY="" DUMP="" DUMP_A="" DUMP_B="" REF="" REF_A="" REF_B="" MANIFEST="" PIN="" OUT="" EVALUATE=""
+VARY="" DUMP="" DUMP_A="" DUMP_B="" REF="" REF_A="" REF_B="" MANIFEST="" PIN="" OUT="" EVALUATE="" LAYER=""
 
 # take <var> <option> <value>: each option once, with a value.
 take() {
@@ -61,12 +63,13 @@ while [ $# -gt 0 ]; do
       shift
       continue
       ;;
-    --vary | --dump | --dump-a | --dump-b | --ref | --ref-a | --ref-b | --manifest | --pin | --out)
+    --vary | --dump | --dump-a | --dump-b | --ref | --ref-a | --ref-b | --manifest | --pin | --out | --layer)
       [ $# -ge 2 ] || die "$opt needs a value" ;;
     *) die "unknown argument: $opt" ;;
   esac
   case "$opt" in
     --vary) take VARY "$opt" "$2" ;;
+    --layer) take LAYER "$opt" "$2" ;;
     --dump) take DUMP "$opt" "$2" ;;
     --dump-a) take DUMP_A "$opt" "$2" ;;
     --dump-b) take DUMP_B "$opt" "$2" ;;
@@ -101,6 +104,14 @@ case "$VARY" in
   *) die "--vary must be parser or decoder, not: $VARY" ;;
 esac
 
+# --layer: parser unless given; RECOGNISER is set only at the recogniser layer.
+LAYER="${LAYER:-parser}"
+case "$LAYER" in
+  parser) RECOGNISER="" ;;
+  recogniser) RECOGNISER=1 ;;
+  *) die "--layer must be parser or recogniser, not: $LAYER" ;;
+esac
+
 MANIFEST="${MANIFEST:-Tests~/Fixtures/audio/manifest.json}"
 PIN="${PIN:-NativeBridge~/harness/expectations.json}"
 OUT="${OUT:-.scratch/joined}"
@@ -111,7 +122,7 @@ done
 
 mkdir -p "$OUT"
 # `rm -rf` is blocked in this environment; `find -delete` is not (as stage.sh).
-find "$OUT" -maxdepth 1 \( -name 'scored-*.jsonl' -o -name report.md \) -delete
+find "$OUT" -maxdepth 1 \( -name 'scored-*.jsonl' -o -name 'trace-*.jsonl' -o -name report.md \) -delete
 
 # dotnet runs inside the stage, so every path it gets is absolute, in drive-letter form
 # where cygpath exists (as Tests~/Fixtures/generate.sh does): MSYS_NO_PATHCONV set or
@@ -128,7 +139,7 @@ abspath() {
 }
 
 stage() {
-  env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$1" "$2" || die "$1: stage failed"
+  env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$1" "$2" ${RECOGNISER:+recogniser} || die "$1: stage failed"
   (cd "$2" && dotnet build -v q --nologo) || die "$1: build failed"
 }
 
@@ -150,9 +161,10 @@ score() {
   local stage="$1" side="$2" dump="$3" rc=0
   shift 3
   (cd "$stage" && dotnet run --no-build -- --joined score --dump "$dump" --manifest "$MANIFEST_W" \
-    --pin "$PIN_W" --out "$OUT_W/scored-$side.jsonl" --side "$side" --vary "$VARY" "$@") || rc=$?
+    --pin "$PIN_W" --out "$OUT_W/scored-$side.jsonl" --side "$side" --vary "$VARY" \
+    ${RECOGNISER:+--layer recogniser} "$@") || rc=$?
   if [ "$rc" -ne 0 ]; then
-    find "$OUT" -maxdepth 1 -name 'scored-*.jsonl' -delete
+    find "$OUT" -maxdepth 1 \( -name 'scored-*.jsonl' -o -name 'trace-*.jsonl' \) -delete
     exit "$rc"
   fi
 }

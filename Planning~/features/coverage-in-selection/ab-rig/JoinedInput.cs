@@ -48,6 +48,11 @@ namespace AbRig
         {
             internal string Name;
 
+            // The `case` record's `samples` (the WAV's) and `sampleRate`: audio time is
+            // `consumed` / SampleRate, end of audio Samples / SampleRate (*The clock*).
+            internal long Samples;
+            internal long SampleRate;
+
             // Ordered `text`s of the case's `final:true` records, empty ones dropped.
             internal readonly List<string> Finals = new List<string>();
 
@@ -221,11 +226,16 @@ namespace AbRig
                                 where + ": case \"" + open.Name + "\" has no `case-end`"
                             );
                         string name = Str(rec, "case", where);
-                        Int(rec, "samples", where);
-                        Int(rec, "sampleRate", where);
+                        long samples = Int(rec, "samples", where);
+                        long sampleRate = Int(rec, "sampleRate", where);
                         if (!framed.Add(name))
                             throw new Stop(2, where + ": case \"" + name + "\" framed twice");
-                        open = new DumpCase { Name = name };
+                        open = new DumpCase
+                        {
+                            Name = name,
+                            Samples = samples,
+                            SampleRate = sampleRate,
+                        };
                         dump.Cases.Add(open);
                         nextSeq = 0;
                         lastConsumed = 0;
