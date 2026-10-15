@@ -45,3 +45,77 @@ Backlog row (`joined-rig.md` §6):
 3. The R5 human corpus and the R4 negative corpus themselves, and their manifests' marks — the maintainer, through the R5 and R4 work (design §7).
 4. Product docs — after G2, by the codex reconciler.
 5. `release` and `lab-next-level-probes`, held by the human.
+
+## 3. Why — the value it delivers
+
+This feature carries `Planning~/design-docs/automated-verification.md` §3 goals 1 and 2 (design rule 7, adr-0006) to the layer that decides what a player gets: `VoxrCommandRecogniser` owns the buffer window, eager flush, prefix hold, cooldown and pending timeout, all timed (adr-0002). The rig can then judge R11 (endpointer profile; kill criterion: rise in finals-per-utterance × buffer window vs endpointer time saved, measured in sample time — `Planning~/research/2026-09-05-next-level/03-critique-and-ranking.md:232`) and give R17 the timed partial stream it needs (`Planning~/research/2026-09-05-next-level/03-critique-and-ranking.md:238`); the split fixture gets a real score with phase 1's baseline to diff (adr-0005). Exact timing (JRP-1) makes a timed outcome attributable to one side rather than to the scheduler.
+
+## 4. Observable behaviour
+
+1. The operator runs the harness with `--dump`; its verdict and output are unchanged (16/16); the dump now carries each result's exact audio position and a per-case word-time origin.
+2. The operator runs the rig at the recogniser layer, in phase 1's two shapes — the C# side varied (one dump, two refs) or the decoder side varied (two dumps, one ref).
+3. The kill check runs as in phase 1; on a difference, no command-level numbers.
+4. Per case, the staged recogniser receives the dump's finals and partials in order at their audio times, its clock following the case's audio timeline, and the commands it fires are collected.
+5. The report keeps phase 1's shape (corpus, provenance, side varied, counts never netted, cases, flips) and adds: the recogniser configuration used, each fire's audio time, and per case finals count and end-of-audio→fire delay.
+
+## 5. Functional requirements
+
+**Ruled on 2026-10-15** by the maintainer, in session: forks A–G each at option (a) — every non-sealed case scored (A); phase 1's classes, first fire is the fire, pending-never-confirmed is missed shown "pending, timed out" (B); shipped component defaults, tick rate a provisional rig number (C); the recogniser is on the C# side with the parser, a reading of rule 10 (D); exact per run, reproducible in outcome (E); timing measures reported (F); Quest on-device check required at G2 (G); the rest settled as drafted.
+
+| #  | Requirement | Story | Priority | Acceptance check | Source |
+|----|-------------|-------|----------|------------------|--------|
+| F1 | The dump gives each result's audio position as the samples the decoder had consumed when it emitted (no ring-wide bracket), and each case's word times on a per-case origin; harness verdict and existing output unchanged. | S1 | Must | Command 3 green 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within its case's samples and never decreases within a case. | JRP-1; adr-0001; adr-0002 |
+| F2 | Reproducibility: two dumps of one build give the same recogniser-layer outcome for every case; per-record positions may differ between runs by at most one decoder read, and the report says so. | S1 | Must | Two `--dump` runs of one build, one ref: recogniser-layer run reports 0 flips. | adr-0005 (attribution) |
+| F3 | The staged recogniser is the shipped `VoxrCommandRecogniser` source at the ref under test, its behaviour unchanged; its clock follows the case's audio time; it is ticked at a stated rate. | S1 | Must | Built from `stage.sh` of a ref; a `main`-vs-`main` C#-side run reports 0 flips. | adr-0002 |
+| F4 | Finals and partials reach the recogniser in dump order at their audio times, through the paths the shipped speech recogniser delivers them on, so a ref whose recogniser consumes partials (R17) is measured with no rig change. | S1 | Must | A trace of one case lists every result delivered with its audio time, in dump order. | backlog row; adr-0002 |
+| F5 | Recogniser-layer scope: every non-sealed case is scored at the recogniser layer; a case marked recogniser-layer, reported "not scored" at the parser layer, gets a real class here. | S1 | Must | The split case lands in a class on the 16 fixtures. | adr-0005 split; rule 11 |
+| F6 | Classes per case: phase 1's classes and slot credit; the first fire is the case's fire, further fires are extra fires; a command that goes pending and is never confirmed counts as missed and is shown "pending, timed out". | S1 | Must | Read on the 16-fixture run; a seeded regression lands in its class. | adr-0003 |
+| F7 | Configuration: the recogniser runs at its shipped component defaults, staged with each ref, and the report names every value; the tick rate is a rig number, provisional → this feature's tuning record. | S1 | Must | The report lists the values; the architecture doc's tuning record holds the tick rate. | design §7; adr-0003 |
+| F8 | Timing measures: per case, finals count and end-of-audio→fire delay in audio time; shown beside the classes, never netted into them. | S1 | Must | Read on the 16-fixture run. | `Planning~/research/2026-09-05-next-level/03-critique-and-ranking.md:232` (R11 kill criterion) |
+| F9 | Phase 1's discipline holds at the recogniser layer: kill check, sealed/`--evaluate`, one side varied and named, every flip listed old/new. | S1 | Must | Phase 1's F2, F7 checks re-run at the recogniser layer. | adr-0005 |
+| F10 | Runnable by Claude from its own Windows-native shell: no Unity, no device, no WSL. | S1 | Must | Every G2 run made that way. | adr-0006 |
+| F11 | The parser-layer run is unchanged by this feature. | S1 | Must | Phase 1's `main`-vs-`main` run: 0 flips, same report on a new-schema dump. | adr-0002 |
+
+## 6. Non-functional requirements
+
+- **Performance:** a run never waits out audio time in wall-clock; audio time is simulated.
+- **Robustness at the input boundary:** a dump without exact timing (schema 1) is refused at the recogniser layer with a named stop (exit 2) and still read at the parser layer; phase 1's strict reading otherwise.
+- **Degraded dependencies:** a pinned-side decode error is exit 3 as phase 1. The bridge change alters no recognition output (Command 3 16/16; `expectations.json` unchanged) and the shipped C# consumer keeps working; on an ABI change the arm64 `.so` is rebuilt and committed.
+
+## 7. Non-goals / deferred
+
+- Any change to recognition, parser or recogniser behaviour (G0 Out 1).
+- R11's `model.conf` sweep and R17's contradiction-rate instrumentation (would-be `TryEagerCommit` verdicts) — those items' own work.
+- The Editor's managed C# pipeline (design rule 6); real-time pacing of the harness.
+- R5/R4 corpora; product docs; `release`, the lab.
+
+## 8. Dependencies & assumptions
+
+- `joined-rig-parser` merged (PR #177): dump, reader, scorer, report, marks.
+- Assumed: the recogniser's shipped source compiles outside Unity against stand-ins for the Unity types it uses (verified by the architecture doc).
+- Command 3's toolchain (MSVC, the Unity 6000.3.7f1 Android NDK/SDK) is present.
+
+## 9. Acceptance criteria (G2)
+
+- [ ] F1: Command 3 green, 16/16; two `--dump` runs of one build agree on every final's word times exactly; in each dump every result's audio position lies within its case's samples and never decreases within a case.
+- [ ] F2: two `--dump` runs of one build, one ref: the recogniser-layer run reports 0 flips.
+- [ ] F3: the staged recogniser built from `stage.sh` of a ref; a `main`-vs-`main` C#-side run reports 0 flips.
+- [ ] F4: a trace of one case lists every result delivered with its audio time, in dump order.
+- [ ] F5: the split case lands in a class on the 16 fixtures.
+- [ ] F6: the classes read on the 16-fixture run; a seeded regression lands in its class.
+- [ ] F7: the report lists the recogniser configuration values; the architecture doc's tuning record holds the tick rate.
+- [ ] F8: per case finals count and end-of-audio→fire delay read on the 16-fixture run, beside the classes, never netted into them.
+- [ ] F9: phase 1's F2, F7 checks re-run at the recogniser layer.
+- [ ] F10: every G2 run made from Claude's own Windows-native shell.
+- [ ] F11: phase 1's `main`-vs-`main` run: 0 flips, same report on a new-schema dump.
+- [ ] The `unity` binding's commands as triggered are green: Command 3 (bridge changed); Commands 1–2 if `Runtime/` changes; Command 4 if public API changes.
+- [ ] Human-only verification: the Quest on-device check after the bridge change.
+- [ ] Human-only verification: the human reads the 16-fixture recogniser-layer report and finds the split case and flips legible.
+
+## 10. Open questions
+
+Left to the architecture doc:
+
+1. How the staged recogniser stands in for `MonoBehaviour`, `Time` and the Unity asset types.
+2. The ABI route for the timing fields: inside the JSON payload (no signature change) or a new export.
+3. The tick rate's value (tuning record).

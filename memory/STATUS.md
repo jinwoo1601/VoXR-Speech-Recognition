@@ -5,7 +5,7 @@ updated: 2026-10-15
 ## Current
 
 - **`main` at the PR #177 merge (`feat-joined-rig-parser`, G2 2026-10-15); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161.
-- **`feat-joined-rig-recogniser` (feature, Full): stage G0 done 2026-10-15, JRP-1 bridge change in scope; next: `feature-requirement-doc` §3 on.**
+- **`feat-joined-rig-recogniser` (feature, Full): stage requirements done 2026-10-15 (F1–F11, forks A–G ruled), JRP-1 in scope; next: `architecture-doc`.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
