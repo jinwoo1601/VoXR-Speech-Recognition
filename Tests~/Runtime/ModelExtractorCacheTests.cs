@@ -3,13 +3,14 @@
 //           source-identity token and the archive hash behind it
 // Layer:    Tests.Runtime
 // Owns:     ModelExtractorCacheTests (public class)
-// Depends:  ModelExtractor, VoxrBridgeErrorCode
+// Depends:  ModelExtractor, VoxrBridgeErrorCode, EndpointerOverlay
 // ============================================================================
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Text;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
@@ -715,6 +716,82 @@ namespace VoXR.Tests.Runtime
                 "The rebuilt cache must carry a complete stamp again, so the next launch is "
                     + "cheap rather than repeating this."
             );
+        }
+
+        // The endpointer overlay rewrites conf/model.conf inside the cache and keeps a
+        // pristine copy beside the stamp. Validation checks four paths and the stamp is
+        // untouched, so an overlaid cache must still be served by both tiers — never
+        // re-extracted — and Model default must give back the archive's own bytes.
+
+        [UnityTest]
+        public IEnumerator OverlaidConf_Tier1ReExtract_KeepsCacheAndStamp() =>
+            OverlaidConfReExtract(tier1: true);
+
+        [UnityTest]
+        public IEnumerator OverlaidConf_Tier2ReExtract_KeepsCacheAndStamp() =>
+            OverlaidConfReExtract(tier1: false);
+
+        IEnumerator OverlaidConfReExtract(bool tier1)
+        {
+            const string archiveConf =
+                "--min-active-rows=200\n--endpoint.rule2.min-trailing-silence=0.5\n";
+            var source = new CountingArchiveSource(BuildModelArchive(archiveConf));
+
+            Task<string> ExtractOnce() =>
+                tier1 ? ExtractWithToken(source.Read, () => "token-a") : ExtractFrom(source.Read);
+
+            var first = ExtractOnce();
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+            string firstStamp = ReadStamp(path);
+
+            var applied = EndpointerOverlay.Apply(
+                path,
+                new EndpointerOverlay.Row("0.35", null, null)
+            );
+            Assert.IsNull(applied.Reason, "The tuned row must apply to the extracted conf.");
+
+            string sentinel = Path.Combine(path, "marker.txt");
+            File.WriteAllText(sentinel, "sentinel");
+
+            var second = ExtractOnce();
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.AreEqual(path, second.Result, "The cached path must be returned again.");
+            if (tier1)
+                Assert.AreEqual(
+                    1,
+                    source.Reads,
+                    "A matching token must serve the overlaid cache without reading the archive."
+                );
+            Assert.AreEqual(
+                firstStamp,
+                ReadStamp(path),
+                "The overlay must leave the stamp exactly as the extractor wrote it."
+            );
+            Assert.IsTrue(
+                File.Exists(sentinel),
+                "An overlaid conf must not cost a re-extraction; the sentinel proves the "
+                    + "cached directory survived."
+            );
+            StringAssert.Contains(
+                "--endpoint.rule2.min-trailing-silence=0.35",
+                ReadModelConf(path),
+                "The served cache must keep the tuned conf."
+            );
+
+            var restored = EndpointerOverlay.Apply(path, EndpointerOverlay.ModelDefault);
+            Assert.IsNull(restored.Reason, "Model default must apply.");
+            CollectionAssert.AreEqual(
+                Encoding.UTF8.GetBytes(archiveConf),
+                File.ReadAllBytes(Path.Combine(path, "conf", "model.conf")),
+                "Model default must restore the archive conf's own bytes."
+            );
+            Assert.IsEmpty(_errors, $"An overlaid cache hit must raise no error: [{ErrorSummary}]");
         }
 
         Task<string> Extract(byte[] archiveBytes) =>
