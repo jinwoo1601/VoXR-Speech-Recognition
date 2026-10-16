@@ -5,7 +5,7 @@ updated: 2026-10-16
 ## Current
 
 - **`main` at the PR #179 merge (`design-endpointer-profile`, G1 2026-10-16); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): stage requirements done 2026-10-16 (§1–§10, forks 1–4 ruled); next: `architecture-doc`.**
+- **`feat-endpointer-profile` (feature, Full): stage architecture done 2026-10-16 (8 phases ruled at PLAN); next: `phase-pickup` Phase 1 (ladder corpus).**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
