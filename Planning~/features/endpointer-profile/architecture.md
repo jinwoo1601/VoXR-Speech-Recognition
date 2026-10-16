@@ -148,6 +148,7 @@ Lowest-risk-first, retiring the riskiest unknown — whether any rule2 below 0.5
 - **Phase 7 — Default flip and re-pin.** `Automatic` in Continuous → the tuned preset; the reviewed re-pin; `doc-writer`: Command 3, the README, the CHANGELOG line. Green: Commands 1–2 (Tier B under the tuned default); Command 3 in its new form. *Discharges:* F6 (Continuous default), F10.
 - **Phase 8 — Human-only check on a Quest 3 (§9).** The adb-pulled conf after a tuned-default load; about ten commands under the tuned default, then "Model default". A fail blocks the flip: Phase 7 reverted, Phase 6's opt-in state stands (adr-0002 (A)). *Discharges:* F11; §8's arm64 conf assumption.
 - **Assets code cannot author:** the piper venv and voice, downloaded by `generate.sh`'s first run (:51, :54-58) — a human step, subagent downloads being refused; generation is offline after. `NativeBridge~/vendor/` if absent (human, per the harness README). Command 3's toolchain, .NET SDK 10, Unity 6000.4.7f1, the host. For Phase 8, a Quest 3 and the human.
+- Phase 1 — persisted plan (2026-10-16): [plan-1.md](plan-1.md)
 
 ## Risks, tradeoffs & open questions
 
