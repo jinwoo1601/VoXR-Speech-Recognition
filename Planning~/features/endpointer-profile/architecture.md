@@ -151,6 +151,7 @@ Lowest-risk-first, retiring the riskiest unknown — whether any rule2 below 0.5
 - Phase 1 — persisted plan (2026-10-16): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-10-16): [plan-2.md](plan-2.md)
 - Phase 3 — persisted plan (2026-10-16): [plan-3.md](plan-3.md)
+- Phase 4 — persisted plan (2026-10-16): [plan-4.md](plan-4.md)
 
 ## Risks, tradeoffs & open questions
 
