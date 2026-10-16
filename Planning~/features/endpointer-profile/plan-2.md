@@ -16,9 +16,9 @@
 
 ## Contracts and interfaces
 
-**Dispatch.** A, `code-writer`: Steps 1-4 in order, one tree; a stop ends A BLOCKED. Its brief grants per dispatch, as Phase 1's did, each command Steps 3-4 name (git reads only), Step 4 writing only under `$S`. B, `compile-check`: Step 5; C, `doc-writer`: Step 6; each once A ends unstopped. No git writes; Windows-native Git Bash, never WSL; text reports.
+**Dispatch.** A, `code-writer`: Steps 1-4 in order, one tree; a stop ends A BLOCKED. Its brief grants per dispatch each command Steps 3-4 name (git reads only), Step 4 writing only under `$S`. B, `compile-check`: Step 5; C, `doc-writer`: Step 6; each once A ends unstopped. No git writes; Git Bash, never WSL; text reports.
 
-**One change.** Step 3's PIN edit lands with Step 2's `PinKeys` edit: `ReadPin` (`JoinedInput.cs` :584-592) stops on an unknown key today, a missing one after. **On a stop** (Step 3) PIN stays uncommitted; the PM restores it (`git checkout --`) after the human's ruling, leaving harness and rig at exit 2 (no `modelConf`) until acted on.
+**One change.** Step 3's PIN edit lands with Step 2's `PinKeys` edit: `ReadPin` (`JoinedInput.cs` :584-592) stops on an unknown key today, a missing one after. **On a stop** (Step 3) PIN stays uncommitted; the PM restores it (`git checkout --`) after the human's ruling, leaving harness and rig at exit 2 (no `modelConf`).
 
 **Shapes.** Dump header: `modelConf` after `model`, CONF's exact text or `null`; `schema` stays 2. PIN: top-level `modelConf`, same text, written last.
 
@@ -33,10 +33,10 @@
 
 **Step 2 - rig.** `JoinedInput.cs`: `PinKeys` (:151) gains `"modelConf"`, required; `Pin` (:115-127) gains `ModelConf`, read in `ReadPin` (:594-600) by `Str` (its Stop 2). `Dump` (:86-96) gains `ModelConf`, read at :205-212: string -> text; null or absent -> null (not recorded); another kind -> Stop 2 in `Field`'s form (:744). `Joined.cs` kill check (:214-266), pinned, after `libvosk` (:225-232): `dump.ModelConf` != `pin.ModelConf` (ordinal, null included) adds the line, thrown with the rest (:264-265). `JoinedReport.cs`: each line from its scored file's `dumpHeader.modelConf` (read as :576-577); rule lines = `\n`-split lines whose trimmed text begins `--endpoint.rule`, in order, `; `-joined; none -> the hash alone. `HeaderKeys`, `RecogniserHeaderKeys` (:34, :67), the differs loop (:575-601) unchanged.
 
-**Step 3 - pin write.** From `NativeBridge~/`: Command 3's desktop configure and build lines, then its harness line plus `--write-baseline`, then that line as is: exit 0, 37/37. Check: `git diff HEAD -- harness/expectations.json` adds `modelConf` alone (`libvosk` gains its comma); no `expectedFinals` moved; CRLF throughout (`grep -c $'\r$'` equals `wc -l`). **Stop:** any other hunk, a moved final or a red re-run -> PIN left as the harness wrote it, BLOCKED for the human's ruling; never a re-pin or a restore.
+**Step 3 - pin write.** From `NativeBridge~/`: Command 3's desktop configure and build lines, then its harness line plus `--write-baseline`, then that line as is: exit 0, 37/37. Check: `git diff HEAD -- harness/expectations.json` adds `modelConf` alone (`libvosk` gains its comma); no `expectedFinals` moved; CRLF throughout (`grep -U -c $'\r$'` equals `wc -l`). **Stop:** any other hunk, a moved final or a red re-run -> PIN left as the harness wrote it, BLOCKED for the human's ruling; never a re-pin or a restore.
 
-**Step 4 - green probes**, in order, one Git Bash invocation from the project root, echoing each exit. Set `S=.scratch/endpointer-profile-phase-2 HX=NativeBridge~/build-windows/bin/vosk-bridge-harness.exe V=NativeBridge~/vendor/vosk-model-small-en-us-0.15 F=Tests~/Fixtures/audio/tts P=NativeBridge~/harness/expectations.json J=Planning~/features/coverage-in-selection/ab-rig/joined.sh`. `$S` present: BLOCKED before 4a (a leftover `model-r2` nests the copy; no `rm -rf`). A probe off its check stops Step 4 there, BLOCKED with its output; no later probe runs.
-- a. `"$HX" --model "$V" --fixtures "$F" --manifest "$P" --dump $S/a.jsonl`: exit 0. `head -n 1 $S/a.jsonl | grep -c '"model":"[^"]*","modelConf":'` prints 1; `[ "$(head -n 1 $S/a.jsonl | grep -o '"modelConf":"[^"]*"')" = "\"modelConf\":\"$(awk '{printf "%s\\n", $0}' "$V/conf/model.conf")\"" ] && echo equal` prints `equal`.
+**Step 4 - green probes**, in order, one Git Bash invocation from the project root, echoing each exit; no `\\` (the Bash tool collapses it). Set `S=.scratch/endpointer-profile-phase-2 HX=NativeBridge~/build-windows/bin/vosk-bridge-harness.exe V=NativeBridge~/vendor/vosk-model-small-en-us-0.15 F=Tests~/Fixtures/audio/tts P=NativeBridge~/harness/expectations.json J=Planning~/features/coverage-in-selection/ab-rig/joined.sh`. `$S` present: BLOCKED before 4a (a leftover `model-r2` nests the copy; no `rm -rf`). A probe off its check stops Step 4 there, BLOCKED with its output; no later probe runs.
+- a. `"$HX" --model "$V" --fixtures "$F" --manifest "$P" --dump $S/a.jsonl`: exit 0. `head -n 1 $S/a.jsonl | grep -c '"model":"[^"]*","modelConf":'` prints 1; `python3 -c "import json;print(json.loads(open('$S/a.jsonl','rb').readline())['modelConf']==open('$V/conf/model.conf','rb').read().decode())"` prints `True`.
 - b. `cp -r "$V" $S/model-r2 && sed -i 's/^--endpoint.rule2.min-trailing-silence=0.5$/--endpoint.rule2.min-trailing-silence=0.35/' $S/model-r2/conf/model.conf`; `"$HX" --model $S/model-r2 --fixtures "$F" --manifest "$P"`: exit 2, stderr names `$S/model-r2/conf/model.conf`.
 - c. `cp "$P" $S/pin-r2.json`; `"$HX" --model $S/model-r2 --fixtures "$F" --manifest $S/pin-r2.json --write-baseline --dump $S/b.jsonl`: exit 0 (scratch pin only).
 - d. `bash "$J" --vary decoder --dump-a $S/a.jsonl --dump-b $S/b.jsonl --ref WORKTREE --out $S/joined` (standing pin, parser layer): exit 0; `$S/joined/report.md` has `- Kill check: A passed, B not checked`, its two `- Model conf` lines differing in hash and rule2 line.
@@ -94,6 +94,6 @@ None; a stop opens one.
 - m (4d): the vendor dump's finals are PIN's, all 37 (determinism): kill check passes.
 - o (3): the diff is `modelConf` and the `libvosk` comma only, CRLF tree unchanged under the user's `core.autocrlf` (no `.gitattributes`).
 - r (4b): M2 fires before `vosk_bridge_init` and the dump's open.
-- s (4a): `awk`'s `printf "%s\\n"` emits a literal `\n` per line (nlohmann's escape); `$(...)` drops no real newline.
+- s (4a): the backslash-free check reaches bash as written; its JSON parse un-escapes nlohmann's `\n`: exact.
 - t (4f): `git show "HEAD:$P"` takes `~` literally after `:`, writes the raw blob.
 - u (4): one invocation (two 37-case `--dump` runs, two cold `stage.sh` + `dotnet build`) fits the Bash call's time cap.

@@ -364,5 +364,6 @@
         "yes",
         "zero"
     ],
-    "libvosk": "0.3.45 (Alphacephei vosk-win64 prebuilt)"
+    "libvosk": "0.3.45 (Alphacephei vosk-win64 prebuilt)",
+    "modelConf": "--min-active=200\n--max-active=3000\n--beam=10.0\n--lattice-beam=2.0\n--acoustic-scale=1.0\n--frame-subsampling-factor=3\n--endpoint.silence-phones=1:2:3:4:5:6:7:8:9:10\n--endpoint.rule2.min-trailing-silence=0.5\n--endpoint.rule3.min-trailing-silence=0.75\n--endpoint.rule4.min-trailing-silence=1.0\n"
 }

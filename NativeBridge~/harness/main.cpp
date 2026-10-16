@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <optional>
 #include <set>
 #include <string>
 #include <thread>
@@ -181,6 +183,16 @@ int RunHarness(int argc, char** argv) {
     if (model_dir.empty() || fixtures_dir.empty() || manifest_path.empty())
         return Fail("--model, --fixtures and --manifest are all required");
 
+    // The decoded model's conf, read as exact bytes (the pin compares them);
+    // a conf that cannot be opened is absent.
+    const std::string conf_path = model_dir + "/conf/model.conf";
+    std::optional<std::string> conf;
+    {
+        std::ifstream cf(conf_path, std::ios::binary);
+        if (cf)
+            conf = std::string(std::istreambuf_iterator<char>(cf), std::istreambuf_iterator<char>());
+    }
+
     std::ifstream mf(manifest_path);
     if (!mf)
         return Fail("cannot open manifest: " + manifest_path);
@@ -208,6 +220,16 @@ int RunHarness(int argc, char** argv) {
     if (!manifest.contains("libvosk") || !manifest["libvosk"].is_string() ||
         manifest["libvosk"].get<std::string>().empty())
         return Fail("manifest 'libvosk' pin missing (record the provisioned libvosk version): " + manifest_path);
+    // The conf pin: decode only at the pinned conf; only --write-baseline
+    // writes it, and it has no null form.
+    if (!write_baseline) {
+        if (!manifest.contains("modelConf") || !manifest["modelConf"].is_string())
+            return Fail("manifest 'modelConf' pin missing or not a string (record " + conf_path + " with --write-baseline): " + manifest_path);
+        if (!conf || *conf != manifest["modelConf"].get<std::string>())
+            return Fail("model conf " + conf_path + " is absent or differs from the manifest 'modelConf' pin: " + manifest_path);
+    } else if (!conf) {
+        return Fail("cannot pin 'modelConf': model conf " + conf_path + " is absent (the pin has no null form): " + manifest_path);
+    }
     for (const auto& c : manifest["cases"]) {
         if (!c.is_object() || !c.contains("file") || !c["file"].is_string())
             return Fail("every manifest case needs a string 'file': " + manifest_path);
@@ -261,6 +283,10 @@ int RunHarness(int argc, char** argv) {
         header["manifest"] = manifest_path;
         header["fixtures"] = fixtures_dir;
         header["model"] = model_dir;
+        if (conf)
+            header["modelConf"] = *conf;
+        else
+            header["modelConf"] = nullptr;
         header["gain"] = manifest["gain"];
         header["libvosk"] = manifest["libvosk"];
         header["grammar"] = manifest["grammar"];
@@ -356,6 +382,8 @@ int RunHarness(int argc, char** argv) {
             c["expectedFinals"] = r.actual;
         outcomes.push_back(std::move(r));
     }
+    if (write_baseline)
+        manifest["modelConf"] = *conf; // present: validation refused an absent conf
 
     vosk_bridge_destroy();
 

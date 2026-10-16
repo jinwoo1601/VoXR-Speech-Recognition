@@ -49,6 +49,7 @@ Output: a JSON report (per-fixture expected/actual/pass plus a summary). Exit co
 Guards that make a green run meaningful (all exit 2 when violated):
 
 - The decode-regime pins `gain`, `grammar`, and `libvosk` are **required** manifest keys — a run without them (e.g. a free decode) would silently invalidate the baseline.
+- The `modelConf` pin, the exact text of `<model>/conf/model.conf`, is a **required** manifest key and must equal the decoded model's conf, checked before any decode — a conf that is absent or different is refused naming the conf. Only `--write-baseline` writes it.
 - A manifest with zero cases is refused (no vacuous greens).
 - Every `.wav` in the fixtures directory must have a manifest entry (corpus-drift guard — the mirror of Tier B's `EveryCommittedWav_IsListedInTheManifest`).
 

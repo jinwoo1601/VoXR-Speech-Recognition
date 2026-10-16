@@ -230,6 +230,17 @@ namespace AbRig
                             + dump.Libvosk
                             + "\""
                     );
+                if (!string.Equals(dump.ModelConf, pin.ModelConf, StringComparison.Ordinal))
+                    failing.Add(
+                        "kill check: header `modelConf`: expected sha256 "
+                            + JoinedReport.ConfSha12(pin.ModelConf)
+                            + ", actual "
+                            + (
+                                dump.ModelConf == null
+                                    ? "not recorded"
+                                    : "sha256 " + JoinedReport.ConfSha12(dump.ModelConf)
+                            )
+                    );
                 int g = FirstDifference(dump.Grammar, pin.Grammar);
                 if (g >= 0)
                     failing.Add(

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -605,6 +606,12 @@ namespace AbRig
                 .Append(", B ")
                 .Append(Bool(b.Header, "pinned") ? "passed" : "not checked")
                 .Append('\n');
+            foreach (Side s in new[] { a, b })
+                sb.Append("- Model conf ")
+                    .Append(Label(s))
+                    .Append(": ")
+                    .Append(ModelConf(s.Header.GetProperty("dumpHeader")))
+                    .Append('\n');
             if (layered)
             {
                 sb.Append("- Tick rate: A ")
@@ -871,6 +878,29 @@ namespace AbRig
             foreach (JsonElement f in finals.EnumerateArray())
                 parts.Add(f.GetString());
             return string.Join(" | ", parts);
+        }
+
+        // A conf's identity: SHA-256 of its UTF-8 bytes, the first 12 lowercase hex digits.
+        internal static string ConfSha12(string conf) =>
+            Convert
+                .ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(conf)))
+                .Substring(0, 12);
+
+        // A dump header's `modelConf`: `sha256 <12 hex>` then its `--endpoint.rule` lines in
+        // order, `; `-joined; `not recorded` when the header has none.
+        static string ModelConf(JsonElement dumpHeader)
+        {
+            if (
+                !dumpHeader.TryGetProperty("modelConf", out JsonElement v)
+                || v.ValueKind != JsonValueKind.String
+            )
+                return "not recorded";
+            string conf = v.GetString();
+            var parts = new List<string> { "sha256 " + ConfSha12(conf) };
+            foreach (string line in conf.Split('\n'))
+                if (line.Trim().StartsWith("--endpoint.rule", StringComparison.Ordinal))
+                    parts.Add(line.Trim());
+            return string.Join("; ", parts);
         }
 
         static string Label(Side s) => s.Header.GetProperty("side").GetString() == "a" ? "A" : "B";

@@ -92,6 +92,7 @@ namespace AbRig
             internal double Gain;
             internal string Libvosk;
             internal string[] Grammar;
+            internal string ModelConf; // the header's `modelConf`; null = not recorded
             internal readonly List<DumpCase> Cases = new List<DumpCase>();
         }
 
@@ -118,6 +119,7 @@ namespace AbRig
             internal double Gain;
             internal string Libvosk;
             internal string[] Grammar;
+            internal string ModelConf;
 
             // file -> expectedFinals, in the pin's case order.
             internal readonly Dictionary<string, string[]> Cases = new Dictionary<string, string[]>(
@@ -148,7 +150,15 @@ namespace AbRig
             "layer",
         };
 
-        static readonly string[] PinKeys = { "_comment", "cases", "gain", "grammar", "libvosk" };
+        static readonly string[] PinKeys =
+        {
+            "_comment",
+            "cases",
+            "gain",
+            "grammar",
+            "libvosk",
+            "modelConf",
+        };
 
         // --- dump -------------------------------------------------------------------------
 
@@ -208,6 +218,12 @@ namespace AbRig
                     dump.Gain = Num(rec, "gain", where);
                     dump.Libvosk = Str(rec, "libvosk", where);
                     dump.Grammar = StrArray(rec, "grammar", where);
+                    // `modelConf`: the conf's text; null or absent = not recorded.
+                    if (
+                        rec.TryGetProperty("modelConf", out JsonElement modelConf)
+                        && modelConf.ValueKind != JsonValueKind.Null
+                    )
+                        dump.ModelConf = Str(rec, "modelConf", where);
                     Int(rec, "ringCapacity", where);
                     dump.Header = rec;
                     continue;
@@ -597,6 +613,7 @@ namespace AbRig
                 Gain = Num(root, "gain", path),
                 Libvosk = Str(root, "libvosk", path),
                 Grammar = StrArray(root, "grammar", path),
+                ModelConf = Str(root, "modelConf", path),
             };
 
             int index = 0;
