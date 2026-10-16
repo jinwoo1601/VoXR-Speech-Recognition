@@ -8,9 +8,11 @@
 # feat-joined-rig-parser. Run from the project root in Git Bash, one of two shapes:
 #
 #   bash Planning~/features/coverage-in-selection/ab-rig/joined.sh --vary parser \
-#       --dump D --ref-a R --ref-b R2 [--layer L] [--manifest M] [--pin P] [--out O] [--evaluate]
+#       --dump D --ref-a R --ref-b R2 [--layer L] [--buffer time|eager --window S] \
+#       [--manifest M] [--pin P] [--out O] [--evaluate]
 #   bash Planning~/features/coverage-in-selection/ab-rig/joined.sh --vary decoder \
-#       --dump-a D --dump-b D2 --ref R [--layer L] [--manifest M] [--pin P] [--out O] [--evaluate]
+#       --dump-a D --dump-b D2 --ref R [--layer L] [--buffer time|eager --window S] \
+#       [--manifest M] [--pin P] [--out O] [--evaluate]
 #
 # A ref is a git ref or WORKTREE (stage.sh). --layer is parser (phase 1's, the default) or
 # recogniser (feat-joined-rig-recogniser: each ref staged with stage.sh's `recogniser`
@@ -27,6 +29,9 @@
 #   2. stages each distinct ref (ref-a, or --ref, into <out>/stage-a; ref-b into
 #      <out>/stage-b unless equal), with `recogniser` at that layer, and builds it, all
 #      before any score (else `joined.sh: <ref>: stage failed` / `build failed`, exit 2);
+#      --buffer and --window (endpointer-profile, both or neither, recogniser layer only) go
+#      to stage.sh, which edits the staged recogniser's initializers `bufferWindow = 0.5f`
+#      to the window and, for eager, `eagerFlushOnCompleteMatch = false` to true;
 #   3. scores each side in its stage, side a first, every path in drive-letter form:
 #      --vary parser, the one dump through ref-a (a) and ref-b (b), both pinned;
 #      --vary decoder, dump-a pinned (a) and dump-b unpinned (b) through the one ref.
@@ -44,7 +49,7 @@ die() {
   exit 2
 }
 
-VARY="" DUMP="" DUMP_A="" DUMP_B="" REF="" REF_A="" REF_B="" MANIFEST="" PIN="" OUT="" EVALUATE="" LAYER=""
+VARY="" DUMP="" DUMP_A="" DUMP_B="" REF="" REF_A="" REF_B="" MANIFEST="" PIN="" OUT="" EVALUATE="" LAYER="" BUFFER="" WINDOW=""
 
 # take <var> <option> <value>: each option once, with a value.
 take() {
@@ -63,13 +68,15 @@ while [ $# -gt 0 ]; do
       shift
       continue
       ;;
-    --vary | --dump | --dump-a | --dump-b | --ref | --ref-a | --ref-b | --manifest | --pin | --out | --layer)
+    --vary | --dump | --dump-a | --dump-b | --ref | --ref-a | --ref-b | --manifest | --pin | --out | --layer | --buffer | --window)
       [ $# -ge 2 ] || die "$opt needs a value" ;;
     *) die "unknown argument: $opt" ;;
   esac
   case "$opt" in
     --vary) take VARY "$opt" "$2" ;;
     --layer) take LAYER "$opt" "$2" ;;
+    --buffer) take BUFFER "$opt" "$2" ;;
+    --window) take WINDOW "$opt" "$2" ;;
     --dump) take DUMP "$opt" "$2" ;;
     --dump-a) take DUMP_A "$opt" "$2" ;;
     --dump-b) take DUMP_B "$opt" "$2" ;;
@@ -112,6 +119,11 @@ case "$LAYER" in
   *) die "--layer must be parser or recogniser, not: $LAYER" ;;
 esac
 
+# --buffer and --window: both or neither, at the recogniser layer; stage.sh checks the values.
+[ -z "$BUFFER" ] || [ -n "$WINDOW" ] || die "--buffer needs --window"
+[ -z "$WINDOW" ] || [ -n "$BUFFER" ] || die "--window needs --buffer"
+[ -z "$BUFFER" ] || [ -n "$RECOGNISER" ] || die "--buffer and --window need --layer recogniser, not: parser"
+
 MANIFEST="${MANIFEST:-Tests~/Fixtures/audio/manifest.json}"
 PIN="${PIN:-NativeBridge~/harness/expectations.json}"
 OUT="${OUT:-.scratch/joined}"
@@ -139,7 +151,8 @@ abspath() {
 }
 
 stage() {
-  env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$1" "$2" ${RECOGNISER:+recogniser} || die "$1: stage failed"
+  env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$1" "$2" ${RECOGNISER:+recogniser} \
+    ${BUFFER:+--buffer "$BUFFER" --window "$WINDOW"} || die "$1: stage failed"
   (cd "$2" && dotnet build -v q --nologo) || die "$1: build failed"
 }
 

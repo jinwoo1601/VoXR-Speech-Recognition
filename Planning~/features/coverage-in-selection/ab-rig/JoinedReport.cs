@@ -14,7 +14,11 @@
 // names in order. Any defect is a stop, exit 2, naming the file and line or the difference,
 // and leaves no report. Counts sit side by side, never totalled or netted. A recogniser-layer
 // file (feat-joined-rig-recogniser Phase 3) has `layer`, `config` and `tickRate` for `gate`
-// and per scored case the timing keys; both files of one layer and one tick rate.
+// and per scored case the timing keys; both files of one layer and one tick rate. A
+// recogniser-layer report under `vary` decoder (endpointer-profile Phase 3, *Kill criteria in
+// the report*) ends in `## Sweep measures`: the buffer setup and W, finals per utterance, S,
+// KC1 and KC2; there a config lacking `bufferWindow` or `eagerFlushOnCompleteMatch`, or the
+// two sides' configs differing in either, is a stop, exit 2.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -742,7 +746,150 @@ namespace AbRig
                     sb.Append("  - B: `").Append(Transcript(b.Cases[i])).Append("`\n");
                 }
             }
+
+            // 7. Recogniser layer, decoder side only: the sweep measures.
+            if (layered && vary == "decoder")
+                AppendSweep(sb, a, b);
             return sb.ToString();
+        }
+
+        // *Sweep measures*, cases paired by index: the buffer setup and W off both configs;
+        // per side the mean finals per utterance over scored cases, and Δf, B − A; S, the mean
+        // A delay − B delay over cases correct on both sides with a delay on both (n, printed);
+        // KC1, pass when Δf × W ≤ S, unrounded, not evaluated when n is 0; KC2, every case
+        // scored on both sides whose space-joined finals differ, any one a STOP.
+        static void AppendSweep(StringBuilder sb, Side a, Side b)
+        {
+            string window = SweepConfig(a, b, "bufferWindow");
+            string eager = SweepConfig(a, b, "eagerFlushOnCompleteMatch");
+            double w = double.Parse(window, CultureInfo.InvariantCulture);
+
+            double mA = MeanFinals(a);
+            double mB = MeanFinals(b);
+            double df = mB - mA;
+
+            double sum = 0;
+            int n = 0;
+            var kc2 = new List<int>();
+            for (int i = 0; i < a.Cases.Count; i++)
+            {
+                JsonElement ra = a.Cases[i];
+                JsonElement rb = b.Cases[i];
+                if (Disposition(ra) != "scored" || Disposition(rb) != "scored")
+                    continue;
+                JsonElement da = ra.GetProperty("delay");
+                JsonElement db = rb.GetProperty("delay");
+                if (
+                    Correct(ra)
+                    && Correct(rb)
+                    && da.ValueKind == JsonValueKind.Number
+                    && db.ValueKind == JsonValueKind.Number
+                )
+                {
+                    sum += da.GetDouble() - db.GetDouble();
+                    n++;
+                }
+                if (!string.Equals(SpaceJoined(ra), SpaceJoined(rb), StringComparison.Ordinal))
+                    kc2.Add(i);
+            }
+            double s = n > 0 ? sum / n : 0;
+
+            sb.Append("\n## Sweep measures\n\n");
+            sb.Append("- Buffer: ")
+                .Append(eager == "true" ? "eager commit" : "time-driven")
+                .Append(", W = ")
+                .Append(Seconds(w))
+                .Append(" s\n");
+            sb.Append("- Finals per utterance A: ")
+                .Append(Seconds(mA))
+                .Append("; B: ")
+                .Append(Seconds(mB))
+                .Append("; Δf: ")
+                .Append(Seconds(df))
+                .Append('\n');
+            sb.Append("- S: ")
+                .Append(n > 0 ? Seconds(s) : "n/a")
+                .Append(" s over ")
+                .Append(n)
+                .Append(" cases correct on both sides\n");
+            sb.Append("- KC1 (Δf × W ≤ S): ")
+                .Append(
+                    n == 0 ? "not evaluated"
+                    : df * w <= s ? "pass"
+                    : "fail"
+                )
+                .Append('\n');
+            if (kc2.Count == 0)
+            {
+                sb.Append("- KC2: none\n");
+                return;
+            }
+            sb.Append("- KC2: STOP — ").Append(kc2.Count).Append(" case(s)\n");
+            foreach (int i in kc2)
+                sb.Append("  - ")
+                    .Append(CaseName(a.Cases[i]))
+                    .Append(": A \"")
+                    .Append(SpaceJoined(a.Cases[i]))
+                    .Append("\" → B \"")
+                    .Append(SpaceJoined(b.Cases[i]))
+                    .Append("\"\n");
+        }
+
+        // A `config` key's text, present on both sides and equal, else a stop (R3).
+        static string SweepConfig(Side a, Side b, string key)
+        {
+            foreach (Side s in new[] { a, b })
+                if (!s.Header.GetProperty("config").TryGetProperty(key, out _))
+                    throw new JoinedInput.Stop(
+                        2,
+                        "Sweep measures: " + s.Path + ": config has no " + key
+                    );
+            string ra = a.Header.GetProperty("config").GetProperty(key).GetRawText();
+            string rb = b.Header.GetProperty("config").GetProperty(key).GetRawText();
+            if (!string.Equals(ra, rb, StringComparison.Ordinal))
+                throw new JoinedInput.Stop(
+                    2,
+                    "Sweep measures: config "
+                        + key
+                        + " differs: "
+                        + a.Path
+                        + " "
+                        + ra
+                        + ", "
+                        + b.Path
+                        + " "
+                        + rb
+                );
+            return a.Header.GetProperty("config").GetProperty(key).GetString();
+        }
+
+        // The mean `finalCount` over a side's scored cases.
+        static double MeanFinals(Side s)
+        {
+            double total = 0;
+            int count = 0;
+            foreach (JsonElement rec in s.Cases)
+                if (Disposition(rec) == "scored")
+                {
+                    total += rec.GetProperty("finalCount").GetInt32();
+                    count++;
+                }
+            return total / count;
+        }
+
+        static bool Correct(JsonElement rec)
+        {
+            string cls = rec.GetProperty("class").GetString();
+            return cls == "correct-fire" || cls == "correct-no-fire";
+        }
+
+        // The finals space-joined (KC2 compares and prints these).
+        static string SpaceJoined(JsonElement rec)
+        {
+            var parts = new List<string>();
+            foreach (JsonElement f in rec.GetProperty("finals").EnumerateArray())
+                parts.Add(f.GetString());
+            return string.Join(" ", parts);
         }
 
         static void AppendFlipSide(StringBuilder sb, string label, JsonElement rec)

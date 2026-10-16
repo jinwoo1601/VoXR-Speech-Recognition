@@ -1,13 +1,14 @@
 # Phase 3 — persisted plan (2026-10-16)
 
+Fix pass 2 (2026-10-16, human-ruled): gate check 3 found claim a false; Step 1 now `sed -b -i`.
 **Phase 3 - Rig sweep machinery**, unsplit, serial, no units: F4 (machinery); *Buffer setups*, *Kill criteria in the report*. RIG=`Planning~/features/coverage-in-selection/ab-rig/`; REC=`Runtime/Commands/VoxrCommandRecogniser.cs`; `$S`=`.scratch/endpointer-profile-phase-3`; live lines. No binding command.
 **Out of scope:** the sweep, `confgen`, overlay, presets, flip, `stage.sh`'s closure (Phases 4-8); `Joined.cs`, `JoinedInput.cs`; `Runtime/`; product docs; CHANGELOG; the reconcile.
 
 **Readings** (within the register's text):
-- R1. Each *edited* initializer must match exactly once — `time` checks and edits `bufferWindow = 0.5f;` alone; `eager` checks and edits both.
-- R2. `correct-no-fire` has no `delay`: S averages over cases `correct` on both sides with a `delay` on both, n their count, printed; n = 0: S `n/a`, KC1 `not evaluated` (never a pass).
+- R1. Each *edited* initializer matches exactly once: `time` edits `bufferWindow = 0.5f;` alone, `eager` both.
+- R2. `correct-no-fire` has no `delay`: S averages over cases `correct`, with a `delay`, on both sides; n their count, printed; n = 0: S `n/a`, KC1 `not evaluated` (never a pass).
 - R3. W is the scored headers' `config.bufferWindow`; it and `config.eagerFlushOnCompleteMatch` present and equal across A and B (one stage), else a named report stop (exit 2).
-- R4. KC2 STOP is report text, not an exit code (Phase 5: the human reads it); exit codes unchanged.
+- R4. KC2 STOP is report text (Phase 5: the human reads it); exit codes unchanged.
 
 ## Files to change
 
@@ -17,7 +18,7 @@
 | RIG `JoinedReport.cs` | modify: Step 3 | F4; *Kill criteria* |
 | `$S/` probe files | create, untracked | Step 4 |
 
-The three code files stay CRLF. Probe files only under `$S/` and an outside temp dir.
+RIG's three files stay CRLF; probes only in `$S/` and an outside temp dir.
 
 ## Contracts and interfaces
 
@@ -25,7 +26,7 @@ The three code files stay CRLF. Probe files only under `$S/` and an outside temp
 
 **Step 1 - `stage.sh`.**
 - Usage :4, `USAGE` :12: `stage.sh <git-ref|WORKTREE> <outdir> [recogniser [--buffer time|eager --window <s>]]`. Arg 3's rule (:15-19) stands; args 4-7 need `recogniser` and both flags, once each, either order; `--buffer` `time` or `eager`; `--window` `<digits>` or `<digits>.<digits>` (`2.` rejected); else `$USAGE` on stderr, exit 2.
-- After the copy loop (:64-71), before :81: `grep -F -c` (`|| true`) counts `$OUT/VoxrCommandRecogniser.cs` lines holding `bufferWindow = 0.5f;`, then for `eager` `eagerFlushOnCompleteMatch = false;`. Not 1: stderr `stage.sh: initializer '<text>' matches <n> times in <ref>'s VoxrCommandRecogniser.cs`, exit 2. Then `sed -i`, literal, `.` escaped, no `^`/`$` (CR stays): `0.5f;` to `<s>f;` in that text; for `eager`, `false;` to `true;` in the other. Each new text re-counted: not 1, the same stop.
+- After the copy loop (:64-71), before :81: `grep -F -c` (`|| true`) counts `$OUT/VoxrCommandRecogniser.cs` lines holding `bufferWindow = 0.5f;`, then for `eager` `eagerFlushOnCompleteMatch = false;`. Not 1: stderr `stage.sh: initializer '<text>' matches <n> times in <ref>'s VoxrCommandRecogniser.cs`, exit 2. Then `sed -b -i` (Git Bash sed's text mode strips CR), literal, `.` escaped, no `^`/`$`: `0.5f;` to `<s>f;` in that text; for `eager`, `false;` to `true;` in the other. Each new text re-counted: not 1, the same stop.
 - After :89, before `cat` (:90), appended to `STAGED_FROM`: `edit: bufferWindow = 0.5f -> <s>f` (`--window 2.0`: `-> 2.0f`), then for `eager` `edit: eagerFlushOnCompleteMatch = false -> true`.
 - Without the flags the stage is byte-for-byte today's.
 
@@ -45,7 +46,7 @@ R3's stop, in `Render` before the write (`Run` :157-160): a side lacking either 
 
 **Step 4 - green** (`compile-check`; project root). Rules: (a) the Bash tool collapses `\\` to `\`: probe commands backslash-free; Python in `$S/*.py`, run `python3 -I`; (b) Git Bash `grep -c $'\r$'` prints 0 on CRLF: count CR in Python; (c) a probe runs only the plan's checks, nothing nested in `"$(...)"`. One Bash call per check, opening `P` = `S=.scratch/endpointer-profile-phase-3 R=Planning~/features/coverage-in-selection/ab-rig A=.scratch/endpointer-profile-phase-2/a.jsonl V="bash $R/joined.sh --vary decoder --dump-a $A --ref WORKTREE --dump-b" C="python3 -I $S/check.py";`.
 
-Probe files, written first (`mkdir -p $S`), each printing `ok` or its misses, exit 0 or 1:
+Probe files, written first (`mkdir -p $S`), each prints `ok` or its misses, exit 0 or 1:
 - `$S/check.py setup <b> <w>`: `$S/<b>-<w>/report.md` has twice `  - bufferWindow=<0.5|2>` and `  - eagerFlushOnCompleteMatch=<true iff eager>`, and ends in Step 3's lines: W `0.500`/`2.000`, `Δf: 0.000`, S `0.000` over n ≥ 1, KC1 `pass`, `KC2: none`; its `stage-a/STAGED_FROM` has Step 1's edit lines.
 - `check.py endings`: `$S/eager-2.0/stage-a/VoxrCommandRecogniser.cs` vs REC, split at `\n`: equal line counts, only lines 72 and 79 differ, equal `\r` counts; RIG's three files: CR count = line count.
 - `check.py kc2`: `$S/kc2/report.md` has `- KC2: STOP — 1 case(s)` then `  - cease_fire.wav: A "cease fire" → B "cease resume"`.
@@ -62,7 +63,7 @@ Checks:
 6. `P $V $A --layer recogniser --buffer time --out $S/guard; echo "exit $?"; $V $A --layer parser --buffer time --window 0.5 --out $S/guard; echo "exit $?"; $V $A --layer recogniser --window 0.5 --out $S/guard; echo "exit $?"`: `exit 2` thrice: Step 2's `--buffer needs --window`, its `parser` die, `--window needs --buffer`.
 7. `P $V .scratch/endpointer-profile-phase-2/b.jsonl --layer recogniser --out $S/real; echo "exit $?"; $C real`: `exit 0`, `ok`.
 
-**Stop rules.** A red check returns to `code-writer` (fix pass), never an edit to `Runtime/` or the Phase 2 dumps. `a.jsonl`'s pinned kill check failing (exit 3): stop and report; regenerating A is Command 3 `--dump` (`.claude/bindings/unity.md`), the PM's call.
+**Stop rules.** A red check returns to `code-writer` (fix pass), never edits `Runtime/` or the Phase 2 dumps. `a.jsonl`'s pinned kill check failing (exit 3): stop and report; regenerating A is Command 3 `--dump` (`.claude/bindings/unity.md`), the PM's call.
 
 ## Trade-offs
 
@@ -83,14 +84,13 @@ None; a stop opens one.
 
 ## Blast radius
 
-- `stage.sh`'s existing calls are unchanged; `ablate.py` (:139-140) reads `STAGED_FROM` line 1 alone.
-- Recogniser-layer decoder reports gain a last section; parser-shape reports do not.
-- A recogniser-layer decoder report whose config lacks either key now exits 2.
+- Existing `stage.sh` calls unchanged; `ablate.py` (:139-140) reads `STAGED_FROM` line 1 alone.
+- Recogniser-layer decoder reports gain a last section, or exit 2 if config lacks either key; parser-shape reports do not.
 - `--buffer` under `--vary parser` edits both refs' stages alike (one side still varies, rule 10).
 
 ## Runtime claims
 
-- a (1): `grep -F -c` counts CRLF lines; literal `sed -i` keeps CR (check 3).
+- a (1): `grep -F -c` counts CRLF lines; `sed -b -i` keeps CR where plain `sed -i` strips it (Git Bash GNU sed 4.9; check 3).
 - b (2): `joined.sh` accepts one dump as A and B.
 - c (4.2): `a.jsonl` passes the standing pin's kill check.
 - d (4.2): W = 2.0 runs reach the horizon without a pending stop (exit 2).
