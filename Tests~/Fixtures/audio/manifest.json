@@ -182,6 +182,370 @@
             "description": "Command split by a mid-utterance pause; exercises buffer-window behavior. Expectation provisional until Phase 4 calibration (requirements OQ6)."
         },
         {
+            "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap200ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "set heading two",
+                "seven zero"
+            ],
+            "gapSeconds": 0.2,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P1, rung 0.2 s gap (effective-pause band < 0.25 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap300ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "set heading two",
+                "seven zero"
+            ],
+            "gapSeconds": 0.3,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P1, rung 0.3 s gap (effective-pause band 0.25-0.35 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap400ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "set heading two",
+                "seven zero"
+            ],
+            "gapSeconds": 0.4,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P1, rung 0.4 s gap (effective-pause band 0.35-0.5 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap600ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "set heading two",
+                "seven zero"
+            ],
+            "gapSeconds": 0.6,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P1, rung 0.6 s gap (effective-pause band > 0.5 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap200ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading two seven zero",
+                "mark one five"
+            ],
+            "gapSeconds": 0.2,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" },
+                { "name": "elevation", "value": "one five" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P2, rung 0.2 s gap (effective-pause band < 0.25 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap300ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading two seven zero",
+                "mark one five"
+            ],
+            "gapSeconds": 0.3,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" },
+                { "name": "elevation", "value": "one five" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P2, rung 0.3 s gap (effective-pause band 0.25-0.35 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap400ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading two seven zero",
+                "mark one five"
+            ],
+            "gapSeconds": 0.4,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" },
+                { "name": "elevation", "value": "one five" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P2, rung 0.4 s gap (effective-pause band 0.35-0.5 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap600ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading two seven zero",
+                "mark one five"
+            ],
+            "gapSeconds": 0.6,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" },
+                { "name": "elevation", "value": "one five" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P2, rung 0.6 s gap (effective-pause band > 0.5 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap200ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading one",
+                "eight zero"
+            ],
+            "gapSeconds": 0.2,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "one eight zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P3, rung 0.2 s gap (effective-pause band < 0.25 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap300ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading one",
+                "eight zero"
+            ],
+            "gapSeconds": 0.3,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "one eight zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P3, rung 0.3 s gap (effective-pause band 0.25-0.35 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap400ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading one",
+                "eight zero"
+            ],
+            "gapSeconds": 0.4,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "one eight zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P3, rung 0.4 s gap (effective-pause band 0.35-0.5 s)."
+        },
+        {
+            "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap600ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "orient heading one",
+                "eight zero"
+            ],
+            "gapSeconds": 0.6,
+            "peak": 0.2,
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "one eight zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set P3, rung 0.6 s gap (effective-pause band > 0.5 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_launch_missiles_target_hotel_one_gap300ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "launch missiles target",
+                "hotel one"
+            ],
+            "gapSeconds": 0.3,
+            "peak": 0.2,
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "weapon", "value": "missiles" },
+                { "name": "target", "value": "hotel one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M1, rung 0.3 s gap (effective-pause band < 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_launch_missiles_target_hotel_one_gap600ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "launch missiles target",
+                "hotel one"
+            ],
+            "gapSeconds": 0.6,
+            "peak": 0.2,
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "weapon", "value": "missiles" },
+                { "name": "target", "value": "hotel one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M1, rung 0.6 s gap (effective-pause band < 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_launch_missiles_target_hotel_one_gap900ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "launch missiles target",
+                "hotel one"
+            ],
+            "gapSeconds": 0.9,
+            "peak": 0.2,
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "weapon", "value": "missiles" },
+                { "name": "target", "value": "hotel one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M1, rung 0.9 s gap (effective-pause band > 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_fall_back_from_target_bravo_two_gap300ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "fall back from",
+                "target bravo two"
+            ],
+            "gapSeconds": 0.3,
+            "peak": 0.2,
+            "expectedIntent": "retreat_from_target",
+            "expectedSlots": [
+                { "name": "target", "value": "bravo two" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M2, rung 0.3 s gap (effective-pause band < 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_fall_back_from_target_bravo_two_gap600ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "fall back from",
+                "target bravo two"
+            ],
+            "gapSeconds": 0.6,
+            "peak": 0.2,
+            "expectedIntent": "retreat_from_target",
+            "expectedSlots": [
+                { "name": "target", "value": "bravo two" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M2, rung 0.6 s gap (effective-pause band < 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_fall_back_from_target_bravo_two_gap900ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "fall back from",
+                "target bravo two"
+            ],
+            "gapSeconds": 0.9,
+            "peak": 0.2,
+            "expectedIntent": "retreat_from_target",
+            "expectedSlots": [
+                { "name": "target", "value": "bravo two" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M2, rung 0.9 s gap (effective-pause band > 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_approach_target_alpha_one_gap300ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "approach",
+                "target alpha one"
+            ],
+            "gapSeconds": 0.3,
+            "peak": 0.2,
+            "expectedIntent": "approach_target",
+            "expectedSlots": [
+                { "name": "target", "value": "alpha one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M3, rung 0.3 s gap (effective-pause band < 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_approach_target_alpha_one_gap600ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "approach",
+                "target alpha one"
+            ],
+            "gapSeconds": 0.6,
+            "peak": 0.2,
+            "expectedIntent": "approach_target",
+            "expectedSlots": [
+                { "name": "target", "value": "alpha one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M3, rung 0.6 s gap (effective-pause band < 0.75 s)."
+        },
+        {
+            "file": "audio/tts/ladder_m_approach_target_alpha_one_gap900ms.wav",
+            "category": "ladder",
+            "layer": "recogniser",
+            "segments": [
+                "approach",
+                "target alpha one"
+            ],
+            "gapSeconds": 0.9,
+            "peak": 0.2,
+            "expectedIntent": "approach_target",
+            "expectedSlots": [
+                { "name": "target", "value": "alpha one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause ladder set M3, rung 0.9 s gap (effective-pause band > 0.75 s)."
+        },
+        {
             "file": "audio/tts/silence_negative.wav",
             "category": "silence",
             "silenceSeconds": 3.0,

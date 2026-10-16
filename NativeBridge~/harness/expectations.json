@@ -93,6 +93,137 @@
             "file": "split_close_distance_safe_range_target_hotel_one.wav"
         },
         {
+            "expectedFinals": [
+                "set heading two seven zero"
+            ],
+            "file": "ladder_p_set_heading_two_seven_zero_gap200ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "set heading two seven zero"
+            ],
+            "file": "ladder_p_set_heading_two_seven_zero_gap300ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "set heading two seven zero"
+            ],
+            "file": "ladder_p_set_heading_two_seven_zero_gap400ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "set heading two",
+                "seven zero"
+            ],
+            "file": "ladder_p_set_heading_two_seven_zero_gap600ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading two seven zero mark one five"
+            ],
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap200ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading two seven zero mark one five"
+            ],
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap300ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading two seven zero mark one five"
+            ],
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap400ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading two seven zero mark one five"
+            ],
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap600ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading one eight zero"
+            ],
+            "file": "ladder_p_orient_heading_one_eight_zero_gap200ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading one eight zero"
+            ],
+            "file": "ladder_p_orient_heading_one_eight_zero_gap300ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading one eight zero"
+            ],
+            "file": "ladder_p_orient_heading_one_eight_zero_gap400ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "orient heading one",
+                "eight zero"
+            ],
+            "file": "ladder_p_orient_heading_one_eight_zero_gap600ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "launch missiles target hotel one"
+            ],
+            "file": "ladder_m_launch_missiles_target_hotel_one_gap300ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "launch missiles target hotel one"
+            ],
+            "file": "ladder_m_launch_missiles_target_hotel_one_gap600ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "launch missiles target",
+                "hotel one"
+            ],
+            "file": "ladder_m_launch_missiles_target_hotel_one_gap900ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "fall back from target bravo two"
+            ],
+            "file": "ladder_m_fall_back_from_target_bravo_two_gap300ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "fall back from target bravo two"
+            ],
+            "file": "ladder_m_fall_back_from_target_bravo_two_gap600ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "fall back from",
+                "target bravo two"
+            ],
+            "file": "ladder_m_fall_back_from_target_bravo_two_gap900ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "approach target alpha one"
+            ],
+            "file": "ladder_m_approach_target_alpha_one_gap300ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "approach target alpha one"
+            ],
+            "file": "ladder_m_approach_target_alpha_one_gap600ms.wav"
+        },
+        {
+            "expectedFinals": [
+                "approach",
+                "target alpha one"
+            ],
+            "file": "ladder_m_approach_target_alpha_one_gap900ms.wav"
+        },
+        {
             "expectedFinals": [],
             "file": "silence_negative.wav"
         }
