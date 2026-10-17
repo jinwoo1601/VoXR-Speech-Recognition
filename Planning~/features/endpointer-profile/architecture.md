@@ -171,6 +171,7 @@ Lowest-risk-first, retiring the riskiest unknown — whether any rule2 below 0.5
 - Phase 5b — persisted plan (2026-10-17, follow-up sweep): [plan-5b.md](plan-5b.md)
 - Phase 6 — persisted plan (2026-10-17): [plan-6.md](plan-6.md)
 - Phase 7 — persisted plan (2026-10-17): [plan-7.md](plan-7.md)
+- Phase 8 — persisted plan (2026-10-17): [plan-8.md](plan-8.md)
 
 ## Risks, tradeoffs & open questions
 
