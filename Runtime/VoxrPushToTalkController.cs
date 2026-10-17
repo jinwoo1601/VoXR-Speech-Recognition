@@ -59,6 +59,7 @@ namespace VoXR
 
                 var previous = _listeningMode;
                 _listeningMode = value;
+                HandOffMode();
 
                 // Explicit null checks below, never `?.`: _speechRecogniser is a
                 // UnityEngine.Object, and only the overloaded operator sees a *destroyed*
@@ -77,6 +78,7 @@ namespace VoXR
 
                         if (_speechRecogniser != null)
                         {
+                            HandOffMode();
                             _speechRecogniser.StartRecognition();
                             _onTalkStarted?.Invoke();
                         }
@@ -109,6 +111,7 @@ namespace VoXR
             if (_wantRecognising) return;
 
             _wantRecognising = true;
+            HandOffMode();
             _speechRecogniser.StartRecognition();
             _onTalkStarted?.Invoke();
         }
@@ -132,10 +135,19 @@ namespace VoXR
             _onTalkEnded?.Invoke();
         }
 
+        // Before OnEnable, so a load begun there already carries this controller's mode.
+        void Awake()
+        {
+            HandOffMode();
+        }
+
         void Start()
         {
             if (_initialiseOnStart && _speechRecogniser != null)
+            {
+                HandOffMode();
                 _speechRecogniser.Initialise();
+            }
         }
 
         void OnEnable()
@@ -151,6 +163,7 @@ namespace VoXR
 
                 if (_speechRecogniser != null)
                 {
+                    HandOffMode();
                     _speechRecogniser.StartRecognition();
                     _onTalkStarted?.Invoke();
                 }
@@ -161,7 +174,10 @@ namespace VoXR
             // Resuming an intent that predates this enable: silent, so a disable/enable
             // cycle (or the Quest home overlay) does not re-fire OnTalkStarted.
             if (_wantRecognising && _speechRecogniser != null)
+            {
+                HandOffMode();
                 _speechRecogniser.StartRecognition();
+            }
         }
 
         void OnDisable()
@@ -182,7 +198,10 @@ namespace VoXR
             else
             {
                 if (_wantRecognising && !_speechRecogniser.IsRecognising)
+                {
+                    HandOffMode();
                     _speechRecogniser.StartRecognition();
+                }
             }
         }
 
@@ -194,7 +213,32 @@ namespace VoXR
                 _speechRecogniser.StopRecognition();
         }
 
-        internal VoxrSpeechRecogniser SpeechRecogniser { set => _speechRecogniser = value; }
+        // A recogniser with no controller loads as Continuous, so the hint goes back with it.
+        void OnDestroy()
+        {
+            if (_speechRecogniser != null)
+                _speechRecogniser.ListeningModeHint = VoxrListeningMode.Continuous;
+        }
+
+        // The recogniser resolves an Automatic endpointer profile against this mode at load.
+        // An explicit null check, never `?.`, for the reason the ListeningMode setter gives.
+        void HandOffMode()
+        {
+            if (_speechRecogniser != null)
+                _speechRecogniser.ListeningModeHint = _listeningMode;
+        }
+
+        internal VoxrSpeechRecogniser SpeechRecogniser
+        {
+            set
+            {
+                if (_speechRecogniser != null && _speechRecogniser != value)
+                    _speechRecogniser.ListeningModeHint = VoxrListeningMode.Continuous;
+
+                _speechRecogniser = value;
+                HandOffMode();
+            }
+        }
         internal VoxrCommandRecogniser CommandRecogniser
         {
             set => _commandRecogniser = value;
@@ -212,7 +256,11 @@ namespace VoXR
         // setter's start/stop and events, so a test can author Continuous before OnEnable runs.
         internal VoxrListeningMode InitialMode
         {
-            set => _listeningMode = value;
+            set
+            {
+                _listeningMode = value;
+                HandOffMode();
+            }
         }
     }
 }

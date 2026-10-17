@@ -581,5 +581,112 @@ namespace VoXR.Tests.Runtime
             );
             Assert.AreEqual("set_mode", received.Value.Intent);
         }
+
+        // -------- Listening-mode hint (endpointer-profile) --------
+
+        // The recogniser resolves an Automatic endpointer profile against the hint at load,
+        // so every route that can begin a load must find the controller's mode there.
+
+        [Test]
+        public void Hint_NoController_Continuous()
+        {
+            var go = new GameObject("NoControllerRecogniser");
+            try
+            {
+                var speech = go.AddComponent<VoxrSpeechRecogniser>();
+
+                Assert.AreEqual(
+                    VoxrListeningMode.Continuous,
+                    speech.ListeningModeHint,
+                    "A recogniser no controller drives loads as Continuous"
+                );
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Hint_Awake_HandsOff()
+        {
+            var go = new GameObject("AwakeHandOffPTT");
+            go.SetActive(false);
+            try
+            {
+                var speech = go.AddComponent<VoxrSpeechRecogniser>();
+                var controller = go.AddComponent<VoxrPushToTalkController>();
+                controller.SpeechRecogniser = speech;
+                controller.InitialiseOnStart = false;
+
+                speech.ListeningModeHint = VoxrListeningMode.Continuous;
+                go.SetActive(true);
+
+                Assert.AreEqual(
+                    VoxrListeningMode.PushToTalk,
+                    speech.ListeningModeHint,
+                    "Awake must hand the mode over before any OnEnable can begin a load"
+                );
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Hint_ModeSetter_HandsOff()
+        {
+            Assume.That(_speech.ListeningModeHint, Is.EqualTo(VoxrListeningMode.PushToTalk));
+
+            _controller.ListeningMode = VoxrListeningMode.Continuous;
+            Assert.AreEqual(VoxrListeningMode.Continuous, _speech.ListeningModeHint);
+
+            _controller.ListeningMode = VoxrListeningMode.PushToTalk;
+            Assert.AreEqual(
+                VoxrListeningMode.PushToTalk,
+                _speech.ListeningModeHint,
+                "A mode change must reach the next load"
+            );
+        }
+
+        [Test]
+        public void Hint_InitialMode_HandsOff()
+        {
+            Assume.That(_speech.ListeningModeHint, Is.EqualTo(VoxrListeningMode.PushToTalk));
+
+            _controller.InitialMode = VoxrListeningMode.Continuous;
+
+            Assert.AreEqual(VoxrListeningMode.Continuous, _speech.ListeningModeHint);
+        }
+
+        [Test]
+        public void Hint_Swap_ResetsOld()
+        {
+            Assume.That(_speech.ListeningModeHint, Is.EqualTo(VoxrListeningMode.PushToTalk));
+
+            var counting = UseCountingRecogniser();
+
+            Assert.AreEqual(
+                VoxrListeningMode.Continuous,
+                _speech.ListeningModeHint,
+                "A recogniser the controller let go of loads as Continuous again"
+            );
+            Assert.AreEqual(VoxrListeningMode.PushToTalk, counting.ListeningModeHint);
+        }
+
+        [Test]
+        public void Hint_OnDestroy_Continuous()
+        {
+            Assume.That(_speech.ListeningModeHint, Is.EqualTo(VoxrListeningMode.PushToTalk));
+
+            Object.DestroyImmediate(_controller);
+
+            Assert.AreEqual(
+                VoxrListeningMode.Continuous,
+                _speech.ListeningModeHint,
+                "A recogniser whose controller is gone loads as Continuous"
+            );
+        }
     }
 }

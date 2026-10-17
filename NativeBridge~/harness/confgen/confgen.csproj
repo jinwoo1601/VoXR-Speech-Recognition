@@ -11,5 +11,7 @@
     <Compile Include="Program.cs" />
     <!-- Linked, never copied: the conf the harness decodes is the one the package writes. -->
     <Compile Include="../../../Runtime/EndpointerOverlay.cs" Link="EndpointerOverlay.cs" />
+    <Compile Include="../../../Runtime/VoxrEndpointerProfile.cs" Link="VoxrEndpointerProfile.cs" />
+    <Compile Include="../../../Runtime/VoxrListeningMode.cs" Link="VoxrListeningMode.cs" />
   </ItemGroup>
 </Project>

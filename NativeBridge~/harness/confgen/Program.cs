@@ -3,17 +3,20 @@
 //           through the package's own EndpointerOverlay source
 // Layer:    NativeBridge.Harness.Confgen
 // Owns:     Program (internal static class)
-// Depends:  EndpointerOverlay
+// Depends:  EndpointerOverlay, VoxrEndpointerProfile, VoxrListeningMode
 // ============================================================================
 //
 // Usage:
-//   confgen --model <dir> --out <dir> --rule2 <v> [--rule3 <v>] [--rule4 <v>]
+//   confgen --model <dir> --out <dir> (--profile <name> [--mode Continuous|PushToTalk] | --rule2 <v> [--rule3 <v>] [--rule4 <v>])
 //
 // Copies --model to --out when --out does not exist (an existing --out is the cached
 // path and is not copied over), applies the row to --out's conf/model.conf, and prints
 // "sha256 <64 lowercase hex>" of the resulting conf followed by its --endpoint.rule
-// lines. Each value is ASCII [0-9]+(.[0-9]+)?. Exit 0 on success; 1 when the copy
-// fails or the row is not applied; 2 on a usage problem, before anything is written.
+// lines. The row is the preset --profile resolves to in --mode (default Continuous),
+// as the recogniser resolves it at load, or the --rule values. A name is an exact
+// enum member name; each value is ASCII [0-9]+(.[0-9]+)?. Exit 0 on success; 1 when
+// the copy fails or the row is not applied; 2 on a usage problem, before anything is
+// written.
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -25,9 +28,18 @@ namespace VoXR.Confgen
     internal static class Program
     {
         const string UsageLine =
-            "usage: confgen --model <dir> --out <dir> --rule2 <v> [--rule3 <v>] [--rule4 <v>]";
+            "usage: confgen --model <dir> --out <dir> (--profile <name> [--mode Continuous|PushToTalk] | --rule2 <v> [--rule3 <v>] [--rule4 <v>])";
 
-        static readonly string[] Flags = { "--model", "--out", "--rule2", "--rule3", "--rule4" };
+        static readonly string[] Flags =
+        {
+            "--model",
+            "--out",
+            "--rule2",
+            "--rule3",
+            "--rule4",
+            "--profile",
+            "--mode",
+        };
 
         static int Main(string[] args)
         {
@@ -51,18 +63,54 @@ namespace VoXR.Confgen
                 values[flag] = args[++i];
             }
 
-            for (int flag = 0; flag < 3; flag++)
+            for (int flag = 0; flag < 2; flag++)
             {
                 if (values[flag] == null)
                     return Usage($"missing flag {Flags[flag]}");
             }
 
-            for (int flag = 2; flag < Flags.Length; flag++)
+            bool profileGiven = values[5] != null;
+            bool rulesGiven = values[2] != null || values[3] != null || values[4] != null;
+
+            if (profileGiven && rulesGiven)
+                return Usage("--profile and --rule2/--rule3/--rule4 are exclusive");
+
+            if (!profileGiven && !rulesGiven)
+                return Usage("missing flag --profile or --rule2");
+
+            if (rulesGiven && values[2] == null)
+                return Usage("--rule3 and --rule4 need --rule2");
+
+            if (values[6] != null && !profileGiven)
+                return Usage("--mode needs --profile");
+
+            for (int flag = 2; flag < 5; flag++)
             {
                 if (values[flag] != null && !EndpointerOverlay.IsDecimal(values[flag]))
                     return Usage(
                         $"{Flags[flag]} value '{values[flag]}' is not a non-negative decimal"
                     );
+            }
+
+            // Exact member names only: an integer, or a name in another case, is refused.
+            EndpointerOverlay.Row row = null;
+            if (profileGiven)
+            {
+                if (Array.IndexOf(Enum.GetNames(typeof(VoxrEndpointerProfile)), values[5]) < 0)
+                    return Usage($"--profile '{values[5]}' is not a profile name");
+
+                var mode = VoxrListeningMode.Continuous;
+                if (values[6] != null)
+                {
+                    if (Array.IndexOf(Enum.GetNames(typeof(VoxrListeningMode)), values[6]) < 0)
+                        return Usage($"--mode '{values[6]}' is not a listening mode name");
+
+                    mode = Enum.Parse<VoxrListeningMode>(values[6]);
+                }
+
+                row = EndpointerOverlay
+                    .Resolve(Enum.Parse<VoxrEndpointerProfile>(values[5]), mode)
+                    .Row;
             }
 
             string model = values[0];
@@ -94,7 +142,9 @@ namespace VoXR.Confgen
                 }
             }
 
-            var row = new EndpointerOverlay.Row(values[2], values[3], values[4]);
+            if (row == null)
+                row = new EndpointerOverlay.Row(values[2], values[3], values[4]);
+
             EndpointerOverlay.ApplyResult result = EndpointerOverlay.Apply(outFull, row);
 
             // A row that was not applied fails the run: a sweep must never decode the

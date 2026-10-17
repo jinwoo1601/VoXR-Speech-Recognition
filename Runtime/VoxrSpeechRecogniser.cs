@@ -2,7 +2,8 @@
 // Purpose:  MonoBehaviour orchestrating VOSK speech recognition lifecycle and result dispatch
 // Layer:    Runtime
 // Owns:     VoxrSpeechRecogniser (public MonoBehaviour)
-// Depends:  VoxrResult, VoxrWord, VoxrBridgeErrorCode, EditorMicBackend, BridgeNative, ModelExtractor
+// Depends:  VoxrResult, VoxrWord, VoxrBridgeErrorCode, EditorMicBackend, BridgeNative, ModelExtractor,
+//           EndpointerOverlay, VoxrEndpointerProfile, VoxrListeningMode
 // ============================================================================
 using System;
 using System.Collections;
@@ -21,6 +22,12 @@ namespace VoXR
     {
         [SerializeField]
         string modelRelativePath = "vosk-model-small-en-us-0.15";
+
+        [Tooltip(
+            "Endpointer preset, applied at model load; Automatic lets the listening mode decide."
+        )]
+        [SerializeField]
+        VoxrEndpointerProfile endpointerProfile = VoxrEndpointerProfile.Automatic;
 
         [SerializeField]
         float sampleRate = 16000f;
@@ -63,6 +70,11 @@ namespace VoXR
         bool _bridgeAvailable = true;
         bool _initialising;
         bool _isRecognising;
+
+        // The listening mode an Automatic endpointer profile resolves against at load.
+        // VoxrPushToTalkController hands its mode over; with no controller it stays
+        // Continuous.
+        internal VoxrListeningMode ListeningModeHint { get; set; } = VoxrListeningMode.Continuous;
 
 #if UNITY_EDITOR_WIN
         EditorMicBackend _editorBackend;
@@ -203,6 +215,11 @@ namespace VoXR
             // past the check above (#57).
             s_bridgeOwner = this;
             bool claimHeld = false;
+            // Resolved before the first await, so the load uses the mode it began in.
+            EndpointerOverlay.Resolution profile = EndpointerOverlay.Resolve(
+                endpointerProfile,
+                ListeningModeHint
+            );
 
             _initialising = true;
             try
@@ -222,6 +239,18 @@ namespace VoXR
                 // owner, the one state in which every guard here is inert (#57).
                 if (!OwnsBridge)
                     return;
+
+                // Synchronous, so the ownership re-check above still holds; both backends
+                // below read the conf it leaves. Never throws.
+                EndpointerOverlay.ApplyResult applied = EndpointerOverlay.Apply(
+                    modelPath,
+                    profile.Row
+                );
+                string line = EndpointerOverlay.LogLine(profile.Preset, profile.Label, applied);
+                if (applied.Reason == null)
+                    Debug.Log(line);
+                else
+                    Debug.LogWarning(line);
 
 #if UNITY_EDITOR_WIN
                 _editorBackend = new EditorMicBackend();

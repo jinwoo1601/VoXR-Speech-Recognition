@@ -52,6 +52,9 @@ SOURCES=(
   Runtime/Commands/VoxrMatchDiagnostics.cs
   Runtime/VoxrResult.cs
 )
+# Staged only when the ref has them (endpointer-profile, *The rig*), so a pre-feature ref
+# still stages; SOURCES still stops on a missing file.
+OPTIONAL=()
 
 # The recogniser stage's closure. Not staged: Runtime/Native/BridgeNative.cs and
 # Runtime/ModelExtractor.cs (the rig's stand-ins take their place); EditorMicBackend.cs,
@@ -75,6 +78,11 @@ if [ "$LAYER" = "recogniser" ]; then
     Runtime/VoxrJsonParser.cs
     Runtime/VoxrGrammarValidator.cs
   )
+  OPTIONAL=(
+    Runtime/EndpointerOverlay.cs
+    Runtime/VoxrEndpointerProfile.cs
+    Runtime/VoxrListeningMode.cs
+  )
 fi
 
 # `rm -rf` is blocked in this environment; `find -delete` is not.
@@ -86,6 +94,17 @@ for src in "${SOURCES[@]}"; do
   if [ "$REF" = "WORKTREE" ]; then
     cp "$REPO/$src" "$dest"
   else
+    git -C "$REPO" show "$REF:$src" > "$dest"
+  fi
+done
+
+for src in "${OPTIONAL[@]}"; do
+  dest="$OUT/$(basename "$src")"
+  if [ "$REF" = "WORKTREE" ]; then
+    if [ -f "$REPO/$src" ]; then
+      cp "$REPO/$src" "$dest"
+    fi
+  elif git -C "$REPO" cat-file -e "$REF:$src" 2>/dev/null; then
     git -C "$REPO" show "$REF:$src" > "$dest"
   fi
 done

@@ -1,11 +1,13 @@
 // ============================================================================
-// Purpose:  Rewriting the endpoint trailing-silence keys of an extracted model's
-//           conf/model.conf from a pristine copy of the archive's own conf and a row,
-//           through atomic writes — Unity-free, so confgen compiles it unedited
+// Purpose:  Resolving an endpointer preset and rewriting the endpoint trailing-silence
+//           keys of an extracted model's conf/model.conf from a pristine copy of the
+//           archive's own conf and the preset's row, through atomic writes, and composing
+//           the load-time log line — Unity-free, so confgen compiles it unedited
 // Layer:    Runtime
 // Owns:     EndpointerOverlay (internal static class), EndpointerOverlay.Row (internal
-//           sealed class), EndpointerOverlay.ApplyResult (internal sealed class)
-// Depends:  (none)
+//           sealed class), EndpointerOverlay.ApplyResult (internal sealed class),
+//           EndpointerOverlay.Resolution (internal sealed class)
+// Depends:  VoxrEndpointerProfile, VoxrListeningMode
 // ============================================================================
 using System;
 using System.IO;
@@ -39,14 +41,98 @@ namespace VoXR
             public readonly string ConfPath,
                 Reason;
 
-            public ApplyResult(string confPath, string reason)
+            // The effective conf's values, each null when its key is absent or the conf
+            // could not be read.
+            public readonly string Rule2,
+                Rule3,
+                Rule4;
+
+            public ApplyResult(string confPath, string reason, byte[] effectiveConf)
             {
                 ConfPath = confPath;
                 Reason = reason;
+
+                string[] values = KeyValues(effectiveConf);
+                Rule2 = values[0];
+                Rule3 = values[1];
+                Rule4 = values[2];
+            }
+        }
+
+        // A preset resolved for one load: the preset applied, its row, and why it was chosen.
+        internal sealed class Resolution
+        {
+            public readonly VoxrEndpointerProfile Preset;
+            public readonly Row Row;
+            public readonly string Label;
+
+            public Resolution(VoxrEndpointerProfile preset, Row row, string label)
+            {
+                Preset = preset;
+                Row = row;
+                Label = label;
             }
         }
 
         internal static readonly Row ModelDefault = new Row(null, null, null);
+        internal static readonly Row Responsive = new Row("0.45", null, null);
+
+        // The preset table. Automatic, and any value the enum does not define, has no row:
+        // the listening mode decides.
+        internal static Row RowOf(VoxrEndpointerProfile profile)
+        {
+            switch (profile)
+            {
+                case VoxrEndpointerProfile.ModelDefault:
+                    return ModelDefault;
+                case VoxrEndpointerProfile.Responsive:
+                    return Responsive;
+                default:
+                    return null;
+            }
+        }
+
+        // An explicit choice wins in either mode; otherwise the mode's default applies.
+        internal static Resolution Resolve(VoxrEndpointerProfile choice, VoxrListeningMode mode)
+        {
+            Row row = RowOf(choice);
+            if (row != null)
+                return new Resolution(choice, row, "explicit choice");
+
+            if (mode == VoxrListeningMode.PushToTalk)
+                return new Resolution(
+                    VoxrEndpointerProfile.ModelDefault,
+                    ModelDefault,
+                    "Push-to-talk default"
+                );
+
+            // Continuous: Phase 7's flip site, where the tuned preset becomes the default.
+            return new Resolution(
+                VoxrEndpointerProfile.ModelDefault,
+                ModelDefault,
+                "Continuous default"
+            );
+        }
+
+        // One line per load. A missing value reads "absent" (Kaldi's default applies); a
+        // row not applied keeps the values the decoder reads and names the reason.
+        internal static string LogLine(
+            VoxrEndpointerProfile preset,
+            string label,
+            ApplyResult result
+        )
+        {
+            string line =
+                $"[VoxrSpeechRecogniser] Endpointer profile {preset} ({label}): "
+                + $"rule2={result.Rule2 ?? "absent"} "
+                + $"rule3={result.Rule3 ?? "absent"} "
+                + $"rule4={result.Rule4 ?? "absent"}";
+
+            if (result.Reason != null)
+                line += $" — not applied: {result.Reason} ({result.ConfPath})";
+
+            return line;
+        }
 
         internal const string ArchiveCopyFileName = ".voxr-archive-model.conf";
         internal const string TempSuffix = ".voxr-tmp";
@@ -59,6 +145,9 @@ namespace VoXR
         // Throws on invalid bytes and writes no preamble, so a valid conf decodes and
         // re-encodes byte for byte — a leading BOM included, as the U+FEFF it decodes to.
         static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
+
+        // Never throws: an invalid sequence decodes to U+FFFD, and the key lines are ASCII.
+        static readonly UTF8Encoding LenientUtf8 = new UTF8Encoding(false, false);
 
         const char ByteOrderMark = '﻿';
 
@@ -227,7 +316,7 @@ namespace VoXR
         {
             string confPath = Path.Combine(modelDir, "conf", "model.conf");
             if (!File.Exists(confPath))
-                return new ApplyResult(confPath, "no conf/model.conf");
+                return new ApplyResult(confPath, "no conf/model.conf", null);
 
             string copyPath = Path.Combine(modelDir, ArchiveCopyFileName);
             string tempPath = null;
@@ -254,7 +343,7 @@ namespace VoXR
                     tempPath = null;
                 }
 
-                return new ApplyResult(confPath, reason);
+                return new ApplyResult(confPath, reason, effective);
             }
             catch (Exception e)
             {
@@ -268,8 +357,45 @@ namespace VoXR
                     // Best-effort cleanup
                 }
 
-                return new ApplyResult(confPath, $"IO failure: {e.Message}");
+                // The decoder reads whatever is on disk, so the values come from it.
+                byte[] onDisk = null;
+                try
+                {
+                    onDisk = File.ReadAllBytes(confPath);
+                }
+                catch
+                {
+                    // Best-effort read: an unreadable conf reports no values
+                }
+
+                return new ApplyResult(confPath, $"IO failure: {e.Message}", onDisk);
             }
+        }
+
+        // The rule2, rule3 and rule4 values of a conf, each null when its key is absent or
+        // conf is null. A key's last occurrence wins, as Kaldi reads it; values trimmed.
+        static string[] KeyValues(byte[] conf)
+        {
+            string[] values = new string[Keys.Length];
+            if (conf == null)
+                return values;
+
+            string text = LenientUtf8.GetString(conf);
+            if (text.Length > 0 && text[0] == ByteOrderMark)
+                text = text.Substring(1);
+
+            foreach (string line in text.Split('\n'))
+            {
+                string trimmed = line.Trim();
+                for (int k = 0; k < Keys.Length; k++)
+                {
+                    string prefix = Keys[k] + "=";
+                    if (trimmed.StartsWith(prefix, StringComparison.Ordinal))
+                        values[k] = trimmed.Substring(prefix.Length).Trim();
+                }
+            }
+
+            return values;
         }
 
         // A crash leaves the old file or the new one, never a truncated or missing target.
