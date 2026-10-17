@@ -5,7 +5,7 @@ updated: 2026-10-17
 ## Current
 
 - **`main` at the PR #179 merge (`design-endpointer-profile`, G1 2026-10-16); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): Phase 6 built 2026-10-17 (gate PASS: EditMode 230, PlayMode 715, 37/37, DocCheck 66/66); next: `phase-pickup` Phase 7.**
+- **`feat-endpointer-profile` (feature, Full): Phase 7 planned 2026-10-17 (`plan-7.md`, validated full, fixes applied); next: `implement` Phase 7.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
