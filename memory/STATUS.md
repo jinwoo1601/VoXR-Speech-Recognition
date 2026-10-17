@@ -5,7 +5,7 @@ updated: 2026-10-17
 ## Current
 
 - **`main` at the PR #179 merge (`design-endpointer-profile`, G1 2026-10-16); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): Phase 5 sweep run 2026-10-17, gate PASS, no eligible candidate; tuning ruling 1: second sweep at rule2 0.45, 0.4 (`plan-5b.md`, validated); next: `implement` Phase 5b.**
+- **`feat-endpointer-profile` (feature, Full): Phase 5 sweep run 2026-10-17, gate PASS, no eligible candidate; Phase 5b (0.45, 0.4) gate PASS: rule2 0.45 eligible, 0.4 not; BLOCKED: the human's tuning ruling 2 (preset count, names, values).**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
