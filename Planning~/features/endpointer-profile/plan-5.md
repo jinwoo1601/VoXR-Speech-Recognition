@@ -59,7 +59,7 @@ Each call opens `X` = `N=NativeBridge~; S=.scratch/endpointer-profile-phase-5; V
 **After the build.**
 1. The PM proposes the tuning from the table: eligible candidates, preset names, an M-rung reason for any rule3/rule4 sweep the evidence shows.
 2. The human rules: preset count, names, values, any rule3/rule4 follow-up. No eligible candidate: the flip is blocked pending the human (Phase 5 row).
-3. A rule3/rule4 sweep the ruling justifies is planned at that ruling (its own fix pass on this plan): a `--rule2` value as `confgen` requires (`Program.cs` :54-58), its own file-name tag so no Step 3 name collides, its *Sweep record* rows naming rule3/rule4 in the `rule2 (B)` cell.
+3. A rule3/rule4 sweep the ruling justifies is planned at that ruling (its own fix pass on this plan): a `--rule2` value as `confgen` requires (`Program.cs` :54-58), its own file-name tag so no Step 3 name collides, its *Sweep record* rows naming rule3/rule4 in the `rule2 (B)` cell. The rule2 follow-up the 2026-10-17 ruling chose is planned in `plan-5b.md`.
 4. `architect-reconcile` records the *Sweep record* and the *Tuning record*.
 
 ## Trade-offs
