@@ -106,10 +106,10 @@ namespace VoXR
                     "Push-to-talk default"
                 );
 
-            // Continuous: Phase 7's flip site, where the tuned preset becomes the default.
+            // Continuous: the tuned preset, Responsive, is the default (adr-0002).
             return new Resolution(
-                VoxrEndpointerProfile.ModelDefault,
-                ModelDefault,
+                VoxrEndpointerProfile.Responsive,
+                Responsive,
                 "Continuous default"
             );
         }

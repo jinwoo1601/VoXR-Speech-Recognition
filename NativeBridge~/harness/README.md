@@ -8,7 +8,7 @@ What it verifies: bridge *logic* against a real Windows libvosk 0.3.45, the same
 
 Everything lands in `NativeBridge~/vendor/` (gitignored, never committed). Run each code block below from the project root in Git Bash; each block returns there when it ends.
 
-1. **Toolchain**: Visual Studio 2022 Community with the x64 C++ tools (the "Desktop development with C++" workload), at its default path `C:/Program Files/Microsoft Visual Studio/2022/Community`; Unity 6000.3.7f1 with Android Build Support, whose SDK ships the cmake 3.22.1 the build command uses by absolute path. The shell is Git Bash.
+1. **Toolchain**: Visual Studio 2022 Community with the x64 C++ tools (the "Desktop development with C++" workload), at its default path `C:/Program Files/Microsoft Visual Studio/2022/Community`; Unity 6000.3.7f1 with Android Build Support, whose SDK ships the cmake 3.22.1 the build command uses by absolute path; the .NET SDK 10 (`dotnet` on PATH) for `confgen`. The shell is Git Bash.
 2. **libvosk** — Alphacephei's Windows prebuilt, pinned **0.3.45** (must match `expectations.json`'s `libvosk` pin; a different version is a conscious re-baseline). Download, check the zip's SHA-256, then extract:
    ```bash
    mkdir -p NativeBridge~/vendor && cd NativeBridge~/vendor
@@ -32,7 +32,7 @@ Everything lands in `NativeBridge~/vendor/` (gitignored, never committed). Run e
 From the project root, in Git Bash — this line is copied verbatim from Command 3 of the `unity` verification binding (`.claude/bindings/unity.md`), which is its source:
 
 ```bash
-cd NativeBridge~ && ls -d 'C:/Program Files/Microsoft Visual Studio/2022/Community' 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' >/dev/null && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --preset windows-x64 '-DCMAKE_GENERATOR_INSTANCE=C:/Program Files/Microsoft Visual Studio/2022/Community' && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --build --preset windows-x64 && ./build-windows/bin/vosk-bridge-harness.exe --model vendor/vosk-model-small-en-us-0.15 --fixtures "../Tests~/Fixtures/audio/tts" --manifest harness/expectations.json
+cd NativeBridge~ && ls -d 'C:/Program Files/Microsoft Visual Studio/2022/Community' 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' >/dev/null && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --preset windows-x64 '-DCMAKE_GENERATOR_INSTANCE=C:/Program Files/Microsoft Visual Studio/2022/Community' && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --build --preset windows-x64 && dotnet build harness/confgen/confgen.csproj --artifacts-path build-confgen && dotnet build-confgen/bin/confgen/debug/confgen.dll --model vendor/vosk-model-small-en-us-0.15 --out vendor/overlaid/continuous-default --profile Automatic --mode Continuous && ./build-windows/bin/vosk-bridge-harness.exe --model vendor/overlaid/continuous-default --fixtures "../Tests~/Fixtures/audio/tts" --manifest harness/expectations.json
 ```
 
 What each part does:
@@ -40,6 +40,7 @@ What each part does:
 - `ls -d` checks the toolchain paths first — the VS 2022 Community instance and Unity's `cmake.exe` — and fails naming any that has moved.
 - The first `cmake.exe` call configures with preset `windows-x64` (the "Visual Studio 17 2022" generator, x64), pinned to the VS 2022 Community instance by `CMAKE_GENERATOR_INSTANCE`.
 - The second `cmake.exe` call builds Release.
+- `dotnet build` builds `confgen`; `confgen --profile Automatic --mode Continuous` writes the Continuous default's model copy to `vendor/overlaid/continuous-default`, which the harness decodes.
 - Then the harness runs from `build-windows/bin/`, beside the vendor DLLs the configure copies there.
 
 The command behaves the same with or without `MSYS_NO_PATHCONV`. It begins with `cd NativeBridge~`, so wrapping it in `( … )` leaves your shell at the project root. The preset selects the **stub** capture backend (`VOSK_BRIDGE_CAPTURE=stub` — no JNI, no Android anywhere) and builds the harness (`VOSK_BRIDGE_BUILD_HARNESS=ON`).
@@ -59,14 +60,14 @@ Fixture WAVs must be 48 kHz mono 16-bit PCM (the corpus format) — anything els
 
 `expectedFinals` per fixture are the **raw bridge-level transcripts** (Vosk `[unk]` tokens included), which deliberately differ from the parser-level expectations in `Tests~/Fixtures/audio/manifest.json` — see the `_comment` in the file. The grammar (verbatim `GenerateGrammarJson` output), AGC gain (−18 dB, the device value), and libvosk version are pinned in-file because the baseline is only meaningful under the exact decode regime that produced it.
 
-**Re-baselining** (after corpus regeneration or a libvosk bump) is a conscious, reviewed step, per the Tier B F7-amendment policy. From `NativeBridge~/`:
+**Re-baselining** (after corpus regeneration, a libvosk bump, or a change to the Continuous default's conf) is a conscious, reviewed step, per the Tier B F7-amendment policy. From `NativeBridge~/`:
 
 ```bash
-./build-windows/bin/vosk-bridge-harness.exe --model ... --fixtures ... \
+./build-windows/bin/vosk-bridge-harness.exe --model vendor/overlaid/continuous-default --fixtures ... \
   --manifest harness/expectations.json --write-baseline
 ```
 
-then review the `expectations.json` diff against the corpus manifest's intents before committing. A transcript divergence on the Windows build (exit 1 against the committed baseline) is not a re-baselining occasion: it stops for the human's ruling and is never re-pinned.
+then review the `expectations.json` diff against the corpus manifest's intents before committing. In that review, `modelConf` changes in the rule lines alone, and a moved `expectedFinals` keeps its joined words (segmentation only); otherwise the human rules. A transcript divergence on the Windows build (exit 1 against the committed baseline) is not a re-baselining occasion: it stops for the human's ruling and is never re-pinned.
 
 ## Notes
 

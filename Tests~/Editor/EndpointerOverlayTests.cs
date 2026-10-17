@@ -482,7 +482,7 @@ namespace VoXR.Tests.Editor
         }
 
         [Test]
-        public void Resolve_AutoContinuous_ModelDefault()
+        public void Resolve_AutoContinuous_Responsive()
         {
             foreach (
                 VoxrEndpointerProfile choice in new[]
@@ -494,8 +494,8 @@ namespace VoXR.Tests.Editor
             {
                 var resolution = EndpointerOverlay.Resolve(choice, VoxrListeningMode.Continuous);
 
-                Assert.AreEqual(VoxrEndpointerProfile.ModelDefault, resolution.Preset);
-                Assert.AreSame(EndpointerOverlay.ModelDefault, resolution.Row);
+                Assert.AreEqual(VoxrEndpointerProfile.Responsive, resolution.Preset);
+                Assert.AreSame(EndpointerOverlay.Responsive, resolution.Row);
                 Assert.AreEqual("Continuous default", resolution.Label);
             }
         }

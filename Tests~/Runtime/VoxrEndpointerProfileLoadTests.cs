@@ -97,8 +97,8 @@ namespace VoXR.Tests.Runtime
             SetProfile(VoxrEndpointerProfile.Automatic);
             LogAssert.Expect(
                 LogType.Log,
-                "[VoxrSpeechRecogniser] Endpointer profile ModelDefault (Continuous default): "
-                    + "rule2=0.5 rule3=0.75 rule4=1.0"
+                "[VoxrSpeechRecogniser] Endpointer profile Responsive (Continuous default): "
+                    + "rule2=0.45 rule3=0.75 rule4=1.0"
             );
 
             var init = _speech.InitialiseAsync();
@@ -106,10 +106,18 @@ namespace VoXR.Tests.Runtime
                 yield return null;
             AssertInitialised();
 
+            // The archive's lines, the rule2 line alone carrying the preset's value.
+            string[] expected = File.ReadAllLines(CopyPath);
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (expected[i].StartsWith(EndpointerOverlay.Rule2Key + "="))
+                    expected[i] = EndpointerOverlay.Rule2Key + "=0.45";
+            }
+
             CollectionAssert.AreEqual(
-                File.ReadAllBytes(CopyPath),
-                File.ReadAllBytes(ConfPath),
-                "The default in this phase is Model default: the archive's own conf."
+                expected,
+                File.ReadAllLines(ConfPath),
+                "The Continuous default is Responsive: the archive's conf, rule2 at 0.45."
             );
         }
 
