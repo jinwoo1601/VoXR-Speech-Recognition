@@ -3,7 +3,7 @@ type: requirements
 feature: endpointer-profile
 topic: endpointer-profile
 status: draft
-updated: 2026-10-16
+updated: 2026-10-17
 sources:
   - Planning~/design-docs/endpointer-profile.md
   - Planning~/design-docs/endpointer-profile/decisions/adr-0001-runtime-overlay.md
@@ -14,7 +14,7 @@ sources:
 
 # feat-endpointer-profile — requirements
 
-Track **Full**. Design `endpointer-profile` (`Planning~/design-docs/endpointer-profile.md`), locked at G1 2026-10-16, merged as PR #179. Depends on no feature.
+Track **Full**. Design `endpointer-profile` (`Planning~/design-docs/endpointer-profile.md`), locked at G1 2026-10-16, merged as PR #179. Depends on no feature. **Amended 2026-10-17** (re-lock on `design-endpointer-profile-quest-bar`, the maintainer, in session; re-locked at G1 2026-10-17): §9's Quest 3 bar reads "not perceptibly later, sooner where perceptible", with eager commit on for both runs, since a time-driven buffer window masks the saving (design §3, "The buffer masks the saving").
 
 ## 1. User story
 
@@ -102,7 +102,7 @@ This is the largest latency cut available with no native code: the endpointer is
 ## 9. Acceptance criteria (G2)
 
 - [ ] Every Must in §5 (F1–F12) checked.
-- [ ] Human-only verification, on a Quest 3, Continuous mode: (1) after a load under the tuned default, the extracted `conf/model.conf` pulled by adb shows the tuned values; (2) about 10 commands spoken naturally, a few with a hesitation, under the tuned default and then under "Model default": under tuned every command fires its intended intent with no extra split and no changed words (session log), and the maintainer judges that fires come sooner. A fail blocks the flip (adr-0002, option A).
+- [ ] Human-only verification, on a Quest 3, Continuous mode: (1) after a load under the tuned default, the extracted `conf/model.conf` pulled by adb shows the tuned values; (2) about 10 commands spoken naturally, a few with a hesitation, under the tuned default and then under "Model default", each with eager commit on (design §3, "The buffer masks the saving"): under tuned every command fires its intended intent with no extra split and no changed words (session log), and the maintainer judges that fires are not perceptibly later, sooner where perceptible. A fail blocks the flip (adr-0002, option A).
 - [ ] The `unity` binding's Commands 1, 2 and 3 green (Command 3 runs because the harness changes).
 
 ## 10. Open questions
