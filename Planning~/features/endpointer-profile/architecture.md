@@ -106,27 +106,42 @@ Every word is in the grammar the harness pins (`expectations.json` :101-235); th
 
 ### Sweep record (F4)
 
-Side A is the archive's own conf (rule2 0.5, the first sweep point); one row per recogniser-layer run on the 16 fixtures plus the ladder. Not yet run (Phase 5).
+Side A is the archive's own conf (rule2 0.5, the first sweep point); one row per recogniser-layer run on the 16 fixtures plus the ladder. Side A is `.scratch/endpointer-profile-phase-5/a.jsonl`, dumped fresh by Phase 5 (2026-10-17) and passing the standing pin's kill check in every run. The first eight rows are Phase 5's (`plan-5.md`, rule2 0.35 and 0.25). After Phase 5 found no eligible candidate (both fail KC1 at W 2.0), the maintainer ruled on 2026-10-17 (tuning ruling 1), on the PM's recommendation, a second rule2 sweep at milder values; the next eight rows are Phase 5b's (`plan-5b.md`, rule2 0.45 and 0.4, the same side A). The first sweep is the requirements' `rule2 ∈ {0.5, 0.35, 0.25}`. Tuning ruling 2 (2026-10-17), on these rows, is in the *Tuning record*.
 
 | rule2 (B) | Buffer | W (s) | Finals/utt A → B | S (s) | KC1 | KC2 |
 |---|---|---|---|---|---|---|
-| 0.35 | time-driven | 0.5 | | | | |
-| 0.35 | time-driven | 2.0 | | | | |
-| 0.35 | eager | 0.5 | | | | |
-| 0.35 | eager | 2.0 | | | | |
-| 0.25 | time-driven | 0.5 | | | | |
-| 0.25 | time-driven | 2.0 | | | | |
-| 0.25 | eager | 0.5 | | | | |
-| 0.25 | eager | 2.0 | | | | |
+| 0.35 | time-driven | 0.500 | 1.135 → 1.216 | 0.136 | pass | none |
+| 0.35 | time-driven | 2.000 | 1.135 → 1.216 | 0.130 | fail | none |
+| 0.35 | eager commit | 0.500 | 1.135 → 1.216 | 0.136 | pass | none |
+| 0.35 | eager commit | 2.000 | 1.135 → 1.216 | 0.130 | fail | none |
+| 0.25 | time-driven | 0.500 | 1.135 → 1.270 | 0.238 | pass | none |
+| 0.25 | time-driven | 2.000 | 1.135 → 1.270 | 0.244 | fail | none |
+| 0.25 | eager commit | 0.500 | 1.135 → 1.270 | 0.238 | pass | none |
+| 0.25 | eager commit | 2.000 | 1.135 → 1.270 | 0.244 | fail | none |
+| 0.45 | time-driven | 0.500 | 1.135 → 1.162 | 0.068 | pass | none |
+| 0.45 | time-driven | 2.000 | 1.135 → 1.162 | 0.069 | pass | none |
+| 0.45 | eager commit | 0.500 | 1.135 → 1.162 | 0.068 | pass | none |
+| 0.45 | eager commit | 2.000 | 1.135 → 1.162 | 0.069 | pass | none |
+| 0.4 | time-driven | 0.500 | 1.135 → 1.189 | 0.079 | pass | none |
+| 0.4 | time-driven | 2.000 | 1.135 → 1.189 | 0.083 | fail | none |
+| 0.4 | eager commit | 0.500 | 1.135 → 1.189 | 0.079 | pass | none |
+| 0.4 | eager commit | 2.000 | 1.135 → 1.189 | 0.083 | fail | none |
+
+Eligibility (four KC1 (Δf × W ≤ S) pass, every KC2 none), per candidate:
+
+- rule2 0.35: not eligible — KC1 pass, fail, pass, fail; KC2 none, none, none, none
+- rule2 0.25: not eligible — KC1 pass, fail, pass, fail; KC2 none, none, none, none
+- rule2 0.45: eligible — KC1 pass, pass, pass, pass; KC2 none, none, none, none
+- rule2 0.4: not eligible — KC1 pass, fail, pass, fail; KC2 none, none, none, none
 
 ### Tuning record
 
 | Preset | rule2 | rule3, rule4 | Evidence |
 |---|---|---|---|
 | Model default | the archive's own | the archive's own | adr-0003 |
-| tuned — count, names provisional → the tuning pass | provisional → the tuning pass | the archive's own unless the record names evidence | *Sweep record*; the human's ruling |
+| Responsive | 0.45 | the archive's own | *Sweep record* 0.45 rows (plan-5b); tuning ruling 2, 2026-10-17 |
 
-A candidate is eligible when its four KC1 verdicts pass and KC2 lists no case; the tuning pass proposes, the human rules. rule3 and rule4 are swept only on a measured reason the record names; rule1 and rule5 never (rule 2).
+A candidate is eligible when its four KC1 verdicts pass and KC2 lists no case; the tuning pass proposes, the human rules. rule3 and rule4 are swept only on a measured reason the record names; rule1 and rule5 never (rule 2). Tuning ruling 2 (2026-10-17, the maintainer): one tuned preset, "Responsive", rule2 0.45 (eligible; 0.4 is not, KC1 failing at W 2.0), rule3 and rule4 the archive's own (no measured reason to move them); it is the Continuous default at the flip (adr-0002).
 
 ## Non-functional realization
 
