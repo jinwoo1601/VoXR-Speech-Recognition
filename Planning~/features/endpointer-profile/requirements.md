@@ -14,7 +14,7 @@ sources:
 
 # feat-endpointer-profile — requirements
 
-Track **Full**. Design `endpointer-profile` (`Planning~/design-docs/endpointer-profile.md`), locked at G1 2026-10-16, merged as PR #179. Depends on no feature. **Amended 2026-10-17** (re-lock on `design-endpointer-profile-quest-bar`, the maintainer, in session): §9's Quest 3 bar reads "not perceptibly later, sooner where perceptible", with eager commit on in both builds, since a time-driven buffer window masks the saving (design §3, "The buffer masks the saving").
+Track **Full**. Design `endpointer-profile` (`Planning~/design-docs/endpointer-profile.md`), locked at G1 2026-10-16, merged as PR #179. Depends on no feature. **Amended 2026-10-17** (re-lock on `design-endpointer-profile-quest-bar`, the maintainer, in session; re-locked at G1 2026-10-17): §9's Quest 3 bar reads "not perceptibly later, sooner where perceptible", with eager commit on for both runs, since a time-driven buffer window masks the saving (design §3, "The buffer masks the saving").
 
 ## 1. User story
 
