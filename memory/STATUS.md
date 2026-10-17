@@ -5,7 +5,7 @@ updated: 2026-10-17
 ## Current
 
 - **`main` at the PR #179 merge (`design-endpointer-profile`, G1 2026-10-16); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): Phase 4 built 2026-10-17 (overlay core and `confgen`; gate green, EditMode 218, PlayMode 706); next: `phase-pickup` Phase 5.**
+- **`feat-endpointer-profile` (feature, Full): Phase 5 planned 2026-10-17 (sweep and tuning pass, `plan-5.md`, validated); next: `implement` Phase 5.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
