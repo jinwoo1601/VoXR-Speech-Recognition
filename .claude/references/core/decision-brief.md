@@ -6,7 +6,7 @@
      Anything not written here does not exist for the agent.
      One brief may name several targets and stays at most about 8,000
      characters (the delegation contract's ## The brief (down)).
-     Common fields per .claude/references/core/delegation-contract.md, then the doc-writer extensions. -->
+     Common fields per .claude/references/core/brief-fields.md, then the doc-writer extensions. -->
 
 ## Task
 

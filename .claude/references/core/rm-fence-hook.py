@@ -7,27 +7,53 @@
 """Claude Code `PreToolUse` hook on `Bash`: the rm fence, which finds each `rm`
 and `rmdir` in a call, its target words and the working directory each one runs
 in, and stops a delete whose target lies outside the project, its trees,
-`.scratch/` and the temp folder.
+`.scratch/`, the temp folders and the job folder.
 
 Standard library only, and never an import of `harness.py`, for the agent
 guard's reason: the hook runs under whatever interpreter the platform starts.
 
 A quote-aware prescan lifts nested text out of the command - command and
 process substitutions, each replaced by one sentinel word, and heredoc bodies,
-removed - and the rest is tokenized by the vc guard's tokenizer and walked
-segment by segment: parentheses, piped or backgrounded brace groups and
-backgrounded and-or lists scope the working directory and the variables, a `cd`
+removed; a `cygpath` of one word, or a `mktemp`, stands for the path it prints,
+and `${NAME:-WORD}` for NAME's value where NAME is set and not empty - and
+the rest is tokenized by the vc guard's tokenizer and walked segment by segment:
+parentheses, piped or backgrounded brace groups and backgrounded and-or lists scope the working directory and the variables, a `cd`
 moves the directory, assignments and `export` set variables, and an `rm` or
 `rmdir` yields a delete; a function body's deletes and the names it sets are
-unpinned. Nested text is searched with the same reader,
-never trusted: a delete found in it has one unpinned target. Paths are read in
-Windows form through `ntpath`; a spelling the reader cannot normalize is None.
+unpinned, and after a loop's `done` the directory and the names its body may
+change are unknown. Nested text is searched with the same reader,
+never trusted: a delete found in it has one unpinned target; a runner's text is
+nested text - a shell's or `su`'s `-c` operand, a shell's past `xargs`, `eval`'s
+and `ssh`'s command words, a here-string a runner receives, and the words
+written into a `>(...)` a runner reads. A heredoc body under a quoted delimiter
+word is data unless a runner receives it, as its receiver's command word or down
+the pipe or compound command its receiver hands it to, or through a `>(...)` in
+those segments - an unresolvable command word and a function the call defines
+counting as runners there - and its `rm` words leave the surplus; one under an unquoted word is data only to a note-writer (`cat`,
+`tee`) in a call no runner receives. The command word is
+read past the wrapper words, `timeout`, `nice` and `stdbuf` with their options
+among them, and a call holding no `rm` word is not walked. Paths
+are read in Windows form through `ntpath`; a spelling the reader cannot
+normalize is None.
+
+The class rules are gated by a surplus: the call's `rm` words, counted over the
+outer text and every lifted piece, a data heredoc body's aside, outnumbering the
+`rm` and `rmdir` command words the top-level walk read. A `tally` threaded
+through the top-level walk and every nested one gathers that read count, the
+`rm` words of the top-level data heredoc bodies, the first segment whose command
+word is a runner, and whether a top-level segment chains the call; `nested` marks a
+walk of nested text, which adds nothing to the count. With a surplus, Rule 2
+keeps each command word the walk cannot resolve to a literal name as a delete of
+its segment that does not chain the call, and Rule 3, when any walk saw a runner,
+adds one delete listing the first runner's segment; without one, Rule 2's deletes
+are dropped and the call reads as before the class rules.
 
 The fence roots are the project root named by argv[1], its `.scratch`, the trees
 roots read from the bindings file the manifest's `bindings` filler names for
-`trees`, `core`'s by default, and the `TMP` and `TEMP` folders; each is real-path resolved and a drive root dropped. A target
-is real-path resolved, a glob tested match by match, and is inside only when it
-lies strictly beneath a root. No target outside is silence; outside targets ask,
+`trees`, `core`'s by default, and the `TMP`, `TEMP` and `CLAUDE_JOB_DIR` folders; each is real-path resolved and a drive root dropped. A target
+is real-path resolved, a glob tested match by match, its expansion bounded by a
+walk budget in time, and is inside only when it lies strictly beneath a root.
+No target outside is silence; outside targets ask,
 every one listed, when every segment of the call is a delete, and deny otherwise.
 The exit is 0 always: the one broad handler, in `main`, turns any error into an
 ask, as stdin it cannot read is, since a delete passed unchecked is the wrong side.
@@ -41,23 +67,51 @@ import os
 import re
 import shlex
 import sys
+import threading
+import time
 
 PUNCTUATION = "();<>|&\n"
 REDIRECTS = frozenset(("<", ">", ">>", "<<", "<<<", ">&", "<&", "&>", "&>>", ">|", "<>"))
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 WRAPPERS = frozenset(("command", "exec", "time", "nohup", "then", "do", "else", "!",
-                      "if", "elif", "while", "until"))
+                      "if", "elif", "while", "until", "builtin", "noglob"))
 RESERVED = frozenset(("then", "do", "else", "!", "if", "elif", "while", "until", "time"))
 ENV_VALUED = frozenset(("-u", "--unset", "-C", "--chdir", "-S", "--split-string"))
 SUDO_VALUED = frozenset(("-u", "--user", "-g", "--group", "-C", "--close-from", "-D", "--chdir",
                          "-h", "--host", "-p", "--prompt", "-r", "--role", "-t", "--type",
                          "-U", "--other-user", "-T", "--command-timeout", "-R", "--chroot"))
-SHELLS = frozenset(("sh", "bash", "dash", "zsh"))
+TIMEOUT_VALUED = frozenset(("-s", "--signal", "-k", "--kill-after"))
+NICE_VALUED = frozenset(("-n", "--adjustment"))
+STDBUF_VALUED = frozenset(("-i", "-o", "-e"))
+# The shells: each reads a `-c` operand, and a body it receives, as commands.
+SHELLS = frozenset(("sh", "bash", "dash", "zsh", "ksh", "mksh", "ash"))
+# The runners, Rule 3's list: each runs text it is given, anywhere in the call.
+RUNNERS = SHELLS | frozenset(("cmd", "pwsh", "powershell", "eval", "su", "ssh", "source", ".",
+                              "xargs"))
+# The note-writers: the closed list of receivers that keep a heredoc body data.
+NOTE_WRITERS = frozenset(("cat", "tee"))
+# The options that take a separate value, of `xargs` and of `ssh`.
+XARGS_VALUED = frozenset(("-a", "-d", "-E", "-I", "-L", "-n", "-P", "-s", "--arg-file",
+                          "--delimiter", "--eof", "--replace", "--max-lines", "--max-args",
+                          "--max-procs", "--max-chars", "--process-slot-var"))
+SSH_VALUED = frozenset(("-B", "-b", "-c", "-D", "-E", "-e", "-F", "-I", "-i", "-J", "-L", "-l",
+                        "-m", "-O", "-o", "-P", "-p", "-Q", "-R", "-S", "-W", "-w"))
+OUTPUT_REDIRECTS = frozenset((">", ">>", ">|", "&>", "&>>"))
+# A heredoc operator fused into another operator's token, its receiver unnamed.
+FUSED_HEREDOC = re.compile(r"(?<!<)<<(?!<)")
 MKTEMP_OPTIONS = re.compile(r"-[dqu]+|--directory|--quiet|--dry-run")
+# The `cygpath` options whose output stands for its one operand.
+CYGPATH_OPTIONS = re.compile(r"-[uwma]+")
 SENTINEL = re.compile(r"\x01(\d+)\x02")
 APPEND = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\+=")
+# A brace list or range, read by `expand` and by Rule 2.
+BRACE = re.compile(r"\{[^{}]*(?:,|\.\.)[^{}]*\}")
 PLACEHOLDER = "rm-fence-mktemp-placeholder"
 MATCH_CAP = 1000
+# The name of a Rule 2 delete: an unresolvable command word, listed from that word on.
+RULE_2 = "rule 2"
+# The walk budget, in seconds, of a call's pattern expansions: provisional, the tuning pass's.
+WALK_BUDGET = 5.0
 
 
 def parse_payload(data):
@@ -68,7 +122,7 @@ def parse_payload(data):
     """
     try:
         document = json.loads(data)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     return document if isinstance(document, dict) else None
 
@@ -107,10 +161,23 @@ def command_name(token):
     return name[:-len(".exe")] if name.endswith(".exe") else name
 
 
+def rm_words(text):
+    """The `rm` and `rmdir` words of `text`, in text order: the text split at
+    whitespace, the operator characters, `=` and the backtick, each part with its
+    quotes removed read through `command_name`; empty for none."""
+    words = []
+    for part in re.split(r"[\s;&|()<>=`]+", text):
+        name = command_name(part.replace("'", "").replace('"', ""))
+        if name in ("rm", "rmdir"):
+            words.append(name)
+    return words
+
+
 def command_start(segment):
     """The index of the segment's command word: past leading assignments, past
-    redirections, and past the wrapper words, `sudo` and `env`, each with the
-    options after it."""
+    redirections, and past the wrapper words, `builtin` and `noglob` among them,
+    `sudo`, `env`, `timeout`, `nice` and `stdbuf`, each with the options after it,
+    and `timeout` with its duration."""
     index = 0
     while index < len(segment):
         token = segment[index]
@@ -127,12 +194,31 @@ def command_start(segment):
             valued = ENV_VALUED
         elif name == "sudo":
             valued = SUDO_VALUED
+        elif name == "busybox":
+            valued = frozenset()
+        elif name == "timeout":
+            valued = TIMEOUT_VALUED
+        elif name == "nice":
+            valued = NICE_VALUED
+        elif name == "stdbuf":
+            valued = STDBUF_VALUED
         else:
             break
         index += 1
         while index < len(segment) and (segment[index].startswith("-")
                                         or (name == "env" and ASSIGNMENT.match(segment[index]))):
             index += 2 if segment[index] in valued else 1
+        if name == "timeout" and index < len(segment):
+            index += 1
+    return index
+
+
+def past_options(words, valued):
+    """The index of the first word in `words` that is not an option, each option
+    in `valued` taking the word after it."""
+    index = 0
+    while index < len(words) and words[index].startswith("-"):
+        index += 2 if words[index] in valued else 1
     return index
 
 
@@ -201,11 +287,14 @@ def restore(word, pieces):
 
 def prescan(command):
     """(outer, pieces, mktemp, unbalanced): the command with nested text lifted out,
-    each piece as (written, inner), the mktemp assignments as piece index to name,
-    and whether the nesting or the quoting is unbalanced. A comment, outside quotes
-    at a word start and not inside an open `${`, `$[`, `$((` or `[[`, is dropped up
-    to its newline. A command that already holds a
-    sentinel character is returned whole and unbalanced."""
+    each piece as (written, inner, literal) - literal None for a substitution, and
+    for a heredoc body True when its delimiter word holds any quoting, else False -
+    the mktemp assignments as piece index to name,
+    and whether the nesting or the quoting is unbalanced. A comment - a `#` outside
+    quotes at a word start - is dropped up to its newline unless `${`, `$[` or `[[`
+    is written before it in the outer text, closed or not; a `$((` is lifted whole,
+    as a substitution is, so a `#` inside it stays in its piece. A command that
+    already holds a sentinel character is returned whole and unbalanced."""
     if "\x01" in command or "\x02" in command:
         return command, [], {}, True
     outer, pieces, mktemp, pending = [], [], {}, []
@@ -291,7 +380,7 @@ def prescan(command):
                         and all(MKTEMP_OPTIONS.fullmatch(word) for word in words[1:])):
                     mktemp[len(pieces)] = assigned.group(1)
             outer.append("\x01%d\x02" % len(pieces))
-            pieces.append((written, inner))
+            pieces.append((written, inner, None))
             continue
         if quote is None and command.startswith("<<<", index):
             outer.append("<<<")
@@ -303,7 +392,7 @@ def prescan(command):
             index += 3 if tabs else 2
             while index < length and command[index] in " \t":
                 index += 1
-            word_start, delimiter, word_quote = index, [], None
+            word_start, delimiter, word_quote, literal = index, [], None, False
             while index < length:
                 letter = command[index]
                 if word_quote is not None:
@@ -312,9 +401,10 @@ def prescan(command):
                     else:
                         delimiter.append(letter)
                 elif letter in "'\"":
-                    word_quote = letter
+                    word_quote, literal = letter, True
                 elif letter == "\\":
                     delimiter.append(command[index + 1:index + 2])
+                    literal = True
                     index += 1
                 elif letter in " \t\n;&|()<>":
                     break
@@ -323,12 +413,12 @@ def prescan(command):
                 index += 1
             outer.append(command[start:index])
             if index > word_start:
-                pending.append(("".join(delimiter), tabs))
+                pending.append(("".join(delimiter), tabs, literal))
             continue
         if quote is None and character == "\n" and pending:
             outer.append("\n")
             index += 1
-            for delimiter, tabs in pending:
+            for delimiter, tabs, literal in pending:
                 start, body_end = index, length
                 while index < length:
                     newline = command.find("\n", index)
@@ -339,7 +429,7 @@ def prescan(command):
                         body_end, index = index, after
                         break
                     index = after
-                pieces.append((command[start:index], command[start:body_end]))
+                pieces.append((command[start:index], command[start:body_end], literal))
             pending = []
             continue
         outer.append(character)
@@ -349,22 +439,79 @@ def prescan(command):
 
 
 def expand(word, variables):
-    """`word` with `$NAME` and `${NAME}` replaced from `variables`, or None for a
-    sentinel, an extended pattern, a brace list or range, an absent name, or any
-    other `$` left. Glob characters stay."""
+    """`word` with `$NAME`, `${NAME}` and `${NAME:-WORD}` replaced from
+    `variables`, the last by NAME's value, or None for a sentinel, an extended
+    pattern, a brace list or range, an absent name, a `${NAME:-WORD}` whose NAME is
+    empty, or any other `$` left. Glob characters stay."""
     if "\x01" in word or "\x02" in word:
         return None
     if any(opener in word for opener in ("@(", "!(", "+(", "?(", "*(")):
         return None
-    if re.search(r"\{[^{}]*(?:,|\.\.)[^{}]*\}",
-                 re.sub(r"\$\{[A-Za-z_][A-Za-z0-9_]*\}", "", word)):
+    if BRACE.search(re.sub(r"\$\{[A-Za-z_][A-Za-z0-9_]*\}", "", word)):
         return None
-    reference = r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))"
+    reference = r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)(:-[^{}]*)?\}|([A-Za-z_][A-Za-z0-9_]*))"
     if "$" in re.sub(reference, "", word):
         return None
-    if any((braced or bare) not in variables for braced, bare in re.findall(reference, word)):
+    for braced, default, bare in re.findall(reference, word):
+        if (braced or bare) not in variables or (default and not variables[braced]):
+            return None
+    return re.sub(reference, lambda match: variables[match.group(1) or match.group(3)], word)
+
+
+def pin_text(inner, environ, mktemp_only=False):
+    """The text the substitution `inner` stands for, or None: for `cygpath` with
+    `CYGPATH_OPTIONS` and one operand, that operand, its names braced, or the pin
+    of the `mktemp` substitution it is whole; for `mktemp`, a fresh name in its
+    folder - the `-p`/`--tmpdir` folder, else the template's, else `temp_root`'s
+    with no template or with `-t` - the template's own folder joined beneath it.
+    No pin for an unbalanced inner text, a word holding an operator, a sentinel
+    other than that operand, an unknown option, a second template, or no temp
+    root where one is needed; `mktemp_only` refuses `cygpath`."""
+    outer, pieces, _mktemp, unbalanced = prescan(inner)
+    words = tokenize(outer)
+    if unbalanced or not words or any(character in PUNCTUATION
+                                      for word in words for character in word):
         return None
-    return re.sub(reference, lambda match: variables[match.group(1) or match.group(2)], word)
+    if words[0] == "cygpath" and not mktemp_only:
+        operand = words[-1]
+        if (len(words) < 3 or operand.startswith("-")
+                or not all(CYGPATH_OPTIONS.fullmatch(word) for word in words[1:-1])):
+            return None
+        whole = SENTINEL.fullmatch(operand)
+        if whole and int(whole.group(1)) < len(pieces):
+            written, nested, _literal = pieces[int(whole.group(1))]
+            return pin_text(nested, environ, True) if written.startswith(("$(", "`")) else None
+        if "\x01" in operand or "\x02" in operand:
+            return None
+        return re.sub(r"\$([A-Za-z_][A-Za-z0-9_]*)", r"${\1}", operand)
+    if words[0] != "mktemp":
+        return None
+    folder, template, temp, index = None, None, False, 1
+    while index < len(words):
+        word = words[index]
+        if "\x01" in word or "\x02" in word:
+            return None
+        if MKTEMP_OPTIONS.fullmatch(word) or re.fullmatch(r"-[dqut]+", word):
+            temp = temp or (not word.startswith("--") and "t" in word)
+        elif word in ("-p", "--tmpdir", "--suffix"):
+            index += 1
+            if index >= len(words):
+                return None
+            if word != "--suffix":
+                folder = words[index]
+        elif word.startswith(("--tmpdir=", "--suffix=")):
+            if word.startswith("--tmpdir="):
+                folder = word.split("=", 1)[1]
+        elif word.startswith("-") or template is not None:
+            return None
+        else:
+            template = word
+        index += 1
+    if folder is None:
+        folder = temp_root(environ) if template is None or temp else ""
+        if folder is None:
+            return None
+    return ntpath.join(folder, ntpath.dirname(template or ""), PLACEHOLDER)
 
 
 def delete_targets(name, arguments):
@@ -398,32 +545,135 @@ def delete_targets(name, arguments):
     return widened
 
 
-def nested_deletes(text):
-    """The name of the first delete in nested text, read with fresh state, or None."""
-    deletes, _chained = walk(text, None, {})
-    return deletes[0][0] if deletes else None
+def nested_deletes(text, shell=False, tally=None):
+    """The name of the first delete in nested text that is not a Rule 2 one, else
+    `RULE_2` when Rule 2's are all it holds, read with fresh state as a nested walk,
+    `tally` threaded in, or None; `shell` True when a runner receives the text: a
+    `RUNNERS` word, or a heredoc receiver not in `NOTE_WRITERS`."""
+    deletes, _chained = walk(text, None, {}, shell, tally, True)
+    names = [delete[0] for delete in deletes if delete[0] != RULE_2]
+    if names:
+        return names[0]
+    return RULE_2 if deletes else None
 
 
-def walk(command, cwd, variables):
+def expanded_deletes(body, tally=None):
+    """The name of the first delete inside the command substitutions an unquoted
+    heredoc body expands, or None: quotes in the body are literal, and a backslash
+    escapes the character after it. A body the prescan cannot lift a substitution
+    from is searched whole."""
+    index, fallback = 0, None
+    while index < len(body):
+        if body[index] == "\\":
+            index += 2
+            continue
+        if body.startswith("$(", index) or body[index] == "`":
+            pieces = prescan(body[index:])[1]
+            if not pieces:
+                return nested_deletes(body, tally=tally) or fallback
+            written, inner, _literal = pieces[0]
+            found = nested_deletes(inner, tally=tally)
+            if found == RULE_2:
+                fallback = RULE_2
+            elif found is not None:
+                return found
+            index += len(written)
+            continue
+        index += 1
+    return fallback
+
+
+def walk(command, cwd, variables, shell=False, tally=None, nested=False):
     """(deletes, chained): each delete as (name, targets, working dir), each target
     as (word, expansion or None), the working dir None where it is unknown; chained
-    is True when any outer segment is not an `rm` or `rmdir`."""
+    is True when any outer segment is not an `rm` or `rmdir`. `shell` True when a
+    runner receives the command - a `RUNNERS` word, or a heredoc receiver not in
+    `NOTE_WRITERS`; a call that feeds a runner, the runner as `command_start`
+    finds it, or is fed to one, reads its nested text as runner-received,
+    once the walk knows it. Searched as commands: a shell's or `su`'s `-c`
+    operands, a shell's past `xargs`, `eval`'s and `ssh`'s command words joined, a
+    here-string a runner receives, and the other words of a segment writing into a
+    `>(...)` a runner reads. A heredoc body under a quoted delimiter word is searched
+    only where a runner receives it: `shell`, a receiver that is a runner,
+    unresolvable or a function defined earlier in the call, or whose segment holds a
+    `>(...)` whose command word is a runner or unresolvable, a fused heredoc
+    operator, or a body handed down a pipe or out of a group, a loop or a compound
+    command in a call that holds any such word. An
+    assignment value, a `cd` operand and a delete target led by a `$(...)` or
+    backtick substitution read it as its `pin_text`.
+
+    The command word is read after `expand`, as written where it cannot expand. With
+    `tally`, a mapping of `runner`, `read`, `chained` and `data` updated in place and
+    threaded into every nested walk, `data` gathering the top-level walk's data
+    heredoc bodies' `rm` words, Rule 2 applies: a command word whose last component,
+    unless exactly `[` or `[[`, still holds a `$`, a sentinel, a glob character or a
+    brace list or range is a `RULE_2` delete of the segment from that word on, and
+    `decide` keeps it only on a surplus. The first segment whose command word is a
+    runner records that segment, from the word on, as `runner` (Rule 3); `nested`
+    False marks the top-level walk, whose `rm` and `rmdir` command words add to `read`
+    and whose chaining segments, an unresolvable one aside, and escaped-quote
+    fallback set `chained`. With no tally, the walk reads as before Rules 2 and 3."""
     seed = dict(variables)
     variables = dict(variables)
     directory = to_path(cwd, None, seed) if isinstance(cwd, str) else None
     outer, pieces, mktemp, _unbalanced = prescan(command)
-    holding = [nested_deletes(inner) for _written, inner in pieces]
-    deletes, chained, reached = [], False, set()
+    deletes, chained, reached, feeds_shell, deferred = [], False, set(), shell, {}
+    body_runs, runner_seen, handed = shell, False, False
+
+    def pin(word):
+        """`word` with a `$(...)` or backtick substitution at its start replaced by
+        its `pin_text`, else as written."""
+        whole = SENTINEL.match(word)
+        if whole is None or int(whole.group(1)) >= len(pieces):
+            return word
+        written, inner, _literal = pieces[int(whole.group(1))]
+        text = pin_text(inner, seed) if written.startswith(("$(", "`")) else None
+        return word if text is None else text + word[whole.end():]
+
+    def resolve(word):
+        """(name, unresolved): the command word `word` after `expand`, as written
+        where it cannot expand, read through `command_name`, and True when its last
+        component, unless exactly `[` or `[[`, still holds a `$`, a sentinel, a glob
+        character or a brace list or range."""
+        text = expand(word, variables)
+        text = word if text is None else text
+        last = re.split(r"[\\/]", text)[-1]
+        return command_name(text), last not in ("[", "[[") and (
+            is_pattern(last) or "$" in last or "\x01" in last
+            or BRACE.search(last) is not None)
+
+    def reads_runner(segment):
+        """True when a word of the segment holds a `>(...)` whose command word is a
+        runner or unresolvable."""
+        for token in segment:
+            for match in SENTINEL.finditer(token):
+                number = int(match.group(1))
+                if number < len(pieces) and pieces[number][0].startswith(">("):
+                    reader = tokenize(pieces[number][1])
+                    start = command_start(reader)
+                    if start < len(reader):
+                        found, unknown = resolve(reader[start])
+                        if found in RUNNERS or unknown:
+                            return True
+        return False
 
     def touch(name):
-        """In a loop, unpin each target naming `name` recorded since the loop began;
-        in an open function body, add the name to the body's names."""
+        """In a loop, unpin each target naming `name` recorded since the loop began -
+        `$NAME`, or `${NAME` followed by any character not of a name, in the word or
+        in the inner text of a substitution it holds; in an open function body, add
+        the name to the body's names."""
         if looped:
-            naming = re.compile(r"\$(?:\{%s\}|%s(?![A-Za-z0-9_]))"
-                                % (re.escape(name), re.escape(name)))
+            loop_names.add(name)
+            naming = re.compile(r"\$\{?%s(?![A-Za-z0-9_])" % re.escape(name))
+
+            def names(word):
+                """True when `word`, or a substitution's inner text it holds, names it."""
+                inners = [pieces[int(match.group(1))][1] for match in SENTINEL.finditer(word)
+                          if int(match.group(1)) < len(pieces)]
+                return any(naming.search(text) for text in [word] + inners)
             for at in range(loop_start, len(deletes)):
                 found, targets, working_dir = deletes[at]
-                deletes[at] = (found, [(word, None if naming.search(word) else expansion)
+                deletes[at] = (found, [(word, None if names(word) else expansion)
                                        for word, expansion in targets], working_dir)
         if body is not None:
             body["names"].add(name)
@@ -445,7 +695,7 @@ def walk(command, cwd, variables):
                 variables[name] = ntpath.join(root, PLACEHOLDER)
             touch(name)
             return
-        expanded = expand(value, variables)
+        expanded = expand(pin(value), variables)
         if expanded is None or re.search(r"[$*?\[\s]", expanded):
             variables.pop(name, None)
         else:
@@ -457,7 +707,9 @@ def walk(command, cwd, variables):
             name = command_name(word.replace("'", "").replace('"', ""))
             if word and name in ("rm", "rmdir"):
                 deletes.append((name, [(word, None)], None))
-        chained = True
+        chained, feeds_shell, body_runs = True, True, True
+        if tally is not None and not nested:
+            tally["chained"] = True
     else:
         segments, breaks = [[]], [""]
         for token in tokenize(outer):
@@ -468,6 +720,7 @@ def walk(command, cwd, variables):
                 segments[-1].append(token)
         breaks.append("")
         stack, looped, loop_start, body, pending = [], False, 0, None, None
+        loop_moved, loop_names, restores, functions = False, set(), [], set()
         heads, ends = 0, 0
         pairable = not (re.search(r"""['"#]|=\(|[@!+?*]\(|\(\(|\[\[""", outer)
                         or re.search(r"\\[\s;&|()<>]", outer)
@@ -501,27 +754,38 @@ def walk(command, cwd, variables):
             """`text` without parentheses, braces and newlines."""
             return re.sub(r"[(){}\n]", "", text)
 
-        def backgrounded(p):
-            """True when the and-or list from segment p ends at `&`, followed into
-            each group or parenthesis it opens, whose separators do not end it."""
+        def terminator(p):
+            """The location (position, offset) of the `&` ending the and-or list from
+            segment p, followed into each group or parenthesis it opens, whose
+            separators do not end it, or None when the list does not end at `&`."""
             depth, joined = 0, False
             while True:
                 text, following = after(p)
-                for mark in re.findall(r"&&|\|\||\|&|[(){};&|\n]", text):
+                for match in re.finditer(r"&&|\|\||\|&|[(){};&|\n]", text):
+                    mark = match.group(0)
                     if mark in ("(", "{"):
                         depth += 1
                     elif mark in (")", "}"):
                         depth -= 1
                         if depth < 0:
-                            return False
+                            return None
                     elif depth == 0 and mark == "&":
-                        return True
+                        q, offset = p + 1, match.start()
+                        while offset >= len(breaks[q]):
+                            offset -= len(breaks[q])
+                            q += 1
+                        return q, offset
                     elif depth == 0 and (mark == ";" or (mark == "\n" and not joined)):
-                        return False
+                        return None
                     joined = mark in ("&&", "||", "|", "|&") or (joined and mark == "\n")
                 if following >= len(segments):
-                    return False
+                    return None
                 p, joined = following, False
+
+        def backgrounded(p):
+            """True when the and-or list from segment p ends at `&`, followed into
+            each group or parenthesis it opens, whose separators do not end it."""
+            return terminator(p) is not None
 
         def definition(p):
             """The location (position, offset) of the `{` or `(` opening the body of
@@ -548,7 +812,9 @@ def walk(command, cwd, variables):
         def moving():
             """A `cd`, `pushd` or `popd`: in a loop, the directory of each delete
             recorded since the loop began is unknown; in a function body, it moved."""
+            nonlocal loop_moved
             if looped:
+                loop_moved = True
                 for at in range(loop_start, len(deletes)):
                     found, targets, _working_dir = deletes[at]
                     deletes[at] = (found, targets, None)
@@ -572,6 +838,8 @@ def walk(command, cwd, variables):
                 forget(name)
 
         for position, segment in enumerate(segments):
+            if FUSED_HEREDOC.search(breaks[position]):
+                feeds_shell = body_runs = True
             for offset, character in enumerate(breaks[position]):
                 if character in "({":
                     piped = character == "{" and run(before(position)) in ("|", "|&")
@@ -592,11 +860,20 @@ def walk(command, cwd, variables):
                     _opener, saved, kept, piped = stack.pop()
                     if piped or run(after(position - 1)[0]) in ("|", "&", "|&"):
                         directory, variables = saved, kept
+                    else:
+                        ending = terminator(position)
+                        if ending is not None:
+                            restores.append((ending, saved, kept))
                     close()
+                elif character == "&":
+                    for location, saved, kept in reversed(restores):
+                        if location == (position, offset):
+                            directory, variables = saved, kept
             if not segment:
                 continue
+            opening = definition(position)
             if body is None and pending is None:
-                pending = definition(position)
+                pending = opening
             subshell = (run(after(position)[0]) in ("|", "&", "|&")
                         or run(before(position)) in ("|", "|&") or backgrounded(position))
             index = command_start(segment)
@@ -606,16 +883,66 @@ def walk(command, cwd, variables):
                 index += command_start(segment[index:])
             if not looped and any(word in ("do", "while", "until") for word in segment[:index]):
                 looped, loop_start = True, len(deletes)
+                loop_moved = False
+                loop_names.clear()
             heads += sum(word in ("for", "select", "while", "until") for word in segment)
-            name = command_name(segment[index]) if index < len(segment) else ""
+            if index < len(segment):
+                name, unresolved = resolve(segment[index])
+            else:
+                name, unresolved = "", False
+            if tally is not None and tally["runner"] is None and name in RUNNERS:
+                tally["runner"] = restore(" ".join(segment[index:]), pieces)
             arguments = segment[index + 1:]
+            feeds_shell = feeds_shell or name in RUNNERS or (
+                "<<" in segment and name not in NOTE_WRITERS)
+            receives = (name in RUNNERS or unresolved or name in functions
+                        or reads_runner(segment))
+            runner_seen = runner_seen or receives
+            if opening is not None:
+                functions.add(command_name(segment[-1]))
+            if "<<" in segment:
+                body_runs = body_runs or receives
+                handed = (handed or name in ("", "done", "fi", "esac")
+                          or run(after(position)[0]) in ("|", "|&"))
             for token in segment:
                 for match in SENTINEL.finditer(token):
                     number = int(match.group(1))
                     if number < len(pieces):
                         reached.add(number)
-                        if holding[number] is not None:
-                            deletes.append((holding[number], [(match.group(0), None)], None))
+                        deferred[len(deletes)] = number
+                        deletes.append((None, [(match.group(0), None)], None))
+            if name in RUNNERS:
+                for at, token in enumerate(segment[:-1]):
+                    if token == "<<<":
+                        word = segment[at + 1]
+                        found = nested_deletes(restore(word, pieces), True, tally)
+                        if found is not None:
+                            deletes.append((found, [(word, None)], None))
+            for at, token in enumerate(segment[:-1]):
+                whole = SENTINEL.fullmatch(segment[at + 1])
+                if (token in OUTPUT_REDIRECTS and whole and int(whole.group(1)) < len(pieces)
+                        and pieces[int(whole.group(1))][0].startswith(">(")):
+                    reader = tokenize(pieces[int(whole.group(1))][1])
+                    start = command_start(reader)
+                    if start < len(reader) and command_name(reader[start]) in RUNNERS:
+                        words, scan = [], 0
+                        while scan < len(arguments):
+                            if arguments[scan] in REDIRECTS:
+                                scan += 2
+                            else:
+                                words.append(arguments[scan])
+                                scan += 1
+                        if words:
+                            text = " ".join(words)
+                            found = nested_deletes(restore(text, pieces), True, tally)
+                            if found is not None:
+                                deletes.append((found, [(text, None)], None))
+                        break
+            shelled = arguments if name in SHELLS or name == "su" else []
+            if name == "xargs":
+                past = past_options(arguments, XARGS_VALUED)
+                if past < len(arguments) and command_name(arguments[past]) in SHELLS:
+                    shelled = arguments[past + 1:]
             if not name:
                 words, scan = [], 0
                 while scan < len(segment):
@@ -645,7 +972,7 @@ def walk(command, cwd, variables):
                     directory = (to_path(variables["HOME"], None, seed)
                                  if "HOME" in variables else None)
                 else:
-                    value = expand(operand, variables)
+                    value = expand(pin(operand), variables)
                     directory = (None if value is None
                                  else to_path(value, None if looped else directory, seed))
                 moving()
@@ -660,24 +987,44 @@ def walk(command, cwd, variables):
                     elif ASSIGNMENT.match(word):
                         assign(word)
             elif name in ("rm", "rmdir"):
-                deletes.append((name, [(word, expand(word, variables))
+                deletes.append((name, [(word, expand(pin(word), variables))
                                        for word in delete_targets(name, arguments)],
                                 directory))
-            elif name in SHELLS and any(re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", word)
-                                        for word in arguments):
-                start = next(offset for offset, word in enumerate(arguments)
+                if tally is not None and not nested:
+                    tally["read"] += 1
+            elif any(re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", word) for word in shelled):
+                start = next(offset for offset, word in enumerate(shelled)
                              if re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", word))
-                for word in arguments[start + 1:]:
+                for word in shelled[start + 1:]:
                     if word.startswith("-"):
                         continue
-                    found = nested_deletes(restore(word, pieces))
+                    found = nested_deletes(restore(word, pieces), True, tally)
                     if found is not None:
                         deletes.append((found, [(word, None)], None))
             else:
+                if unresolved and tally is not None:
+                    deletes.append((RULE_2, [(" ".join(segment[index:]), None)], directory))
+                if name == "eval" and arguments:
+                    text = " ".join(arguments)
+                    found = nested_deletes(restore(text, pieces), True, tally)
+                    if found is not None:
+                        deletes.append((found, [(text, None)], None))
+                if name == "ssh":
+                    remote = arguments[past_options(arguments, SSH_VALUED) + 1:]
+                    if remote:
+                        text = " ".join(remote)
+                        found = nested_deletes(restore(text, pieces), True, tally)
+                        if found is not None:
+                            deletes.append((found, [(text, None)], None))
                 for word in arguments:
                     named = re.match(r"([A-Za-z_]\w*)(\+?=|$)", word)
                     if named:
                         forget(named.group(1))
+            if looped and segment[0] == "done":
+                if loop_moved:
+                    directory = None
+                for touched in loop_names:
+                    variables.pop(touched, None)
             if (looped and pairable and segment[0] == "done" and blank(segment[1:])
                     and not re.search(r"[()]", before(position) + after(position)[0])):
                 ends += 1
@@ -685,9 +1032,27 @@ def walk(command, cwd, variables):
                     looped, heads, ends = False, 0, 0
             if name not in ("rm", "rmdir"):
                 chained = True
+                if tally is not None and not nested and not unresolved:
+                    tally["chained"] = True
         close(True)
-    for number, found in enumerate(holding):
-        if found is not None and number not in reached:
+    body_runs = body_runs or (handed and runner_seen)
+    for at, number in deferred.items():
+        _found, targets, working_dir = deletes[at]
+        deletes[at] = (nested_deletes(pieces[number][1], feeds_shell, tally), targets,
+                       working_dir)
+    deletes = [delete for delete in deletes if delete[0] is not None]
+    for number, (_written, inner, literal) in enumerate(pieces):
+        if number in reached:
+            continue
+        if literal is None or (not literal and feeds_shell) or (literal and body_runs):
+            found = nested_deletes(inner, feeds_shell or body_runs, tally)
+        elif literal:
+            found = None
+            if tally is not None and not nested:
+                tally["data"] += len(rm_words(inner))
+        else:
+            found = expanded_deletes(inner, tally)
+        if found is not None:
             deletes.append((found, [("\x01%d\x02" % number, None)], None))
     return deletes, chained
 
@@ -751,7 +1116,7 @@ def trees_file(root, fallback):
             document = json.load(handle)
     except FileNotFoundError:
         document = {}
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         document = None
     if isinstance(document, dict):
         filler = document.get("bindings")
@@ -807,13 +1172,13 @@ def trees_roots(root):
 
 def fence_roots(root, environ):
     """The fence roots' keys, in order - the project, its `.scratch`, the trees
-    roots, `TMP` and `TEMP` - each real-path resolved, a drive root dropped, each
-    key once."""
+    roots, `TMP`, `TEMP` and the job folder `CLAUDE_JOB_DIR` names, whole - each
+    real-path resolved, a drive root dropped, each key once."""
     candidates = []
     if root is not None:
         candidates.extend((root, ntpath.join(root, ".scratch")))
     candidates.extend(trees_roots(root))
-    for name in ("TMP", "TEMP"):
+    for name in ("TMP", "TEMP", "CLAUDE_JOB_DIR"):
         if name in environ:
             path = to_path(environ[name], None, environ)
             if path is not None:
@@ -826,16 +1191,42 @@ def fence_roots(root, environ):
     return keys
 
 
-def matches(path, limit):
+def is_pattern(path):
+    """True when `path` holds a glob character: `*`, `?` or `[`."""
+    return any(character in path for character in "*?[")
+
+
+def matches(path, limit, deadline=None):
     """The paths a target stands for: a pattern's matches, sorted, or the pattern
     itself when nothing matches; any other path alone. A pattern is expanded only
     within `limit` matches: None when the limit is below zero or the pattern
-    matches more than `limit` paths."""
-    if not any(character in path for character in "*?["):
+    matches more than `limit` paths. With a deadline, a `time.monotonic` value, the
+    expansion runs on a worker joined until then, and a deadline passed, a worker
+    still running, or one ended with no result gives None."""
+    if not is_pattern(path):
         return [path]
     if limit < 0:
         return None
-    found = list(itertools.islice(glob.iglob(path), limit + 1))
+    if deadline is None:
+        found = list(itertools.islice(glob.iglob(path), limit + 1))
+    else:
+        left = deadline - time.monotonic()
+        if left <= 0:
+            return None
+        slot = []
+
+        def expansion():
+            """Store the pattern's bounded expansion in the slot; an error leaves it empty."""
+            try:
+                slot.append(list(itertools.islice(glob.iglob(path), limit + 1)))
+            except (OSError, ValueError, RecursionError):
+                pass
+        worker = threading.Thread(target=expansion, daemon=True)
+        worker.start()
+        worker.join(left)
+        if worker.is_alive() or not slot:
+            return None
+        found = slot[0]
     if len(found) > limit:
         return None
     return sorted(found) or [path]
@@ -862,18 +1253,29 @@ def decide(payload, root, environ):
         return "ask", READ_REASON % "tool_input.command is not a string"
     command = tool_input["command"]
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else None
+    outer, pieces, _mktemp, unbalanced = prescan(command)
+    count = len(rm_words(outer)) + sum(len(rm_words(inner))
+                                       for _written, inner, _literal in pieces)
+    if not count:
+        return None
     variables = {}
-    for name in ("TEMP", "TMP", "HOME"):
+    for name in ("TEMP", "TMP", "HOME", "CLAUDE_JOB_DIR"):
         if name in environ:
             path = to_path(environ[name], None, environ)
             if path is not None:
                 variables[name] = path
-    deletes, chained = walk(command, cwd, variables)
+    tally = {"runner": None, "read": 0, "chained": False, "data": 0}
+    deletes, chained = walk(command, cwd, variables, tally=tally)
+    if count - tally["data"] > tally["read"]:
+        chained = tally["chained"]
+        if tally["runner"] is not None:
+            deletes.append(("rm", [(tally["runner"], None)], None))
+    else:
+        deletes = [delete for delete in deletes if delete[0] != RULE_2]
     if not deletes:
         return None
-    _outer, pieces, _mktemp, unbalanced = prescan(command)
     roots = fence_roots(root, environ)
-    listed, budget = [], MATCH_CAP
+    listed, budget, deadline = [], MATCH_CAP, None
     for _name, targets, working_dir in deletes:
         for word, expansion in targets:
             path = None
@@ -882,7 +1284,9 @@ def decide(payload, root, environ):
             if path is None:
                 listed.append(restore(word, pieces) + " (unresolved)")
                 continue
-            found = matches(path, budget)
+            if is_pattern(path) and deadline is None:
+                deadline = time.monotonic() + WALK_BUDGET
+            found = matches(path, budget, deadline)
             if found is None:
                 listed.append(restore(word, pieces) + " (unresolved)")
                 budget = -1

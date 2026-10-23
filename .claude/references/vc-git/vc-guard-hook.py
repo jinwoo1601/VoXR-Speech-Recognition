@@ -74,7 +74,7 @@ def parse_payload(data):
     """The hook payload as a mapping, or None for stdin the guard cannot read."""
     try:
         document = json.loads(data)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     return document if isinstance(document, dict) else None
 

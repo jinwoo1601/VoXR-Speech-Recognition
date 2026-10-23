@@ -16,7 +16,7 @@ sources:
 
 <!-- OPENING (one paragraph): what this feature builds, the requirements it realizes, and the one governing architectural driver — often a non-functional row the platform makes load-bearing — that shapes the design below. -->
 
-<!-- LITE FEATURE: `## User story` and `## Context & scope` stay first, as G0 wrote them, and `## Context & scope` is not repeated below (`.claude/references/core/feature-lite.md` `## The three placements`); the design sections cite the locked design and hold only what it does not state; where a comment below names requirement rows, the backlog row's criteria stand (`.claude/references/core/feature-lite.md` `## The acceptance source`). -->
+<!-- LITE FEATURE: A lite doc is `## User story`, `## Context & scope`, `## What this implements`, `## Decision register`, `## Build plan` (its rows and plan links), `## As-built deltas` and `## Related`, in that order, and no other section. `## User story` and `## Context & scope` stay first, as G0 wrote them, and `## Context & scope` is not repeated below (`.claude/references/core/feature-lite.md` `## The three placements`); `## What this implements` and `## Decision register` cite the locked design and hold only what it does not state; a lite doc's non-functionals and risks stay in the locked design it cites, since lite means the design fixed every choice, and `## As-built deltas` records drift; where a comment below names requirement rows, the backlog row's criteria stand (`.claude/references/core/feature-lite.md` `## The acceptance source`). -->
 
 ## What this implements
 
@@ -36,15 +36,13 @@ sources:
 
 - **<Decision A — short name>.** <Chosen approach.> *Why:* <rationale — the requirement or constraint it serves>. *Rejected:* <the alternative and why it loses>.
 
-## Components & responsibilities
+## Seams
 
-<!-- Each type, module or object with ONE clear responsibility, and how they collaborate. Cite intended and real paths plus symbols. Treat as drift-prone. -->
+<!-- Only the seams between components — what crosses each and the runtime flow across them, each end cited by path and symbol — never per function, that detail being the plans'. Treat as drift-prone. -->
 
-- `<TypeOrFile>` — <role>. Cite: `<path>` (`Symbol`).
+- **<Component> → <component>.** <what crosses, and when>. Cite: `<path>` (`Symbol`) at each end.
 
-## Data contract & runtime flow
-
-<!-- The data crossing the seams (events, schemas, per-step structures, serialized and persisted state) AND the runtime flow: what happens per request, per step, lifecycle placement, state machine. A reader should trace an operation end to end from here. -->
+**Flow:** <one operation traced across the seams, end to end>.
 
 ## Non-functional realization
 
@@ -68,11 +66,11 @@ sources:
 
 **The `## As-built deltas` charter.** This section is about the plan, and the plan lives in the plan files this document links: four kinds of entry are **admitted** here, two are **amended into `## Decision register`** in place with a dated line instead, a fact the landed tree has made false in an always-current section is **corrected in place** where it stands, and every other kind is **routed** to a home that already receives it — the session's dated note, `memory/<YYYY-MM-DD>.md`; the cross-session state the `board` binding names, `memory/STATUS.md` where none is bound; or the lessons file, `memory/notes-for-future-features.md`. No new home is built for what is routed out.
 
-**Admitted**, each a statement about the plan: (1) divergence between the persisted plan and the tree as built, with the ruling that settled it; (2) "built as planned" confirmations, which are a real result; (3) citation re-pointing, plan-time line numbers read against the landed tree; (4) post-G2 addenda from unrelated later work, carrying their date.
+**Admitted**, each a statement about the plan, a few lines each, the detail in the session's dated note: (1) divergence between the persisted plan and the tree as built, with the ruling that settled it; (2) "built as planned" confirmations, which are a real result; (3) citation re-pointing, plan-time line numbers read against the landed tree; (4) post-G2 addenda from unrelated later work, carrying their date.
 
 **Amended into `## Decision register`**, in place and carrying the amendment's date, in the form `**Amended YYYY-MM-DD:**` appended to the decision it extends: a ruling that extends a decision this document already carries, and a trap or do-not-undo notice for a later maintainer. Both are design rationale, and the register is the one section carried forward into the product surface the `product-docs` binding names; filed here instead, a decision would reach that surface without the category later added to it.
 
-**Corrected in place**, by the reconcile pass: a fact the landed tree has made false in an always-current section — `What this implements`, `Context & scope`, `Components & responsibilities`, `Data contract & runtime flow`, `Non-functional realization`, `Risks, tradeoffs & open questions` — is corrected where it stands, and each correction is logged in that phase's entry here, with what the passage said and what it says now, as citation re-pointing is. A change of decision is never a correction: it goes to a dated `## Decision register` amendment. Dated passages — plan files, the entries here, `**Amended YYYY-MM-DD:**` clauses — stay records and are not corrected.
+**Corrected in place**, by the reconcile pass: a fact the landed tree has made false in an always-current section — `What this implements`, `Context & scope`, `Seams`, `Non-functional realization`, `Risks, tradeoffs & open questions` — is corrected where it stands, and each correction is logged in that phase's entry here, with what the passage said and what it says now, as citation re-pointing is. A change of decision is never a correction: it goes to a dated `## Decision register` amendment. Dated passages — plan files, the entries here, `**Amended YYYY-MM-DD:**` clauses — stay records and are not corrected.
 
 **Routed out**, each to a home that already receives it: gate evidence (commit shas, test counts, exit codes, live-run transcripts), review-cycle records, and authorship or provenance confessions about the document itself go to the session's dated note, `memory/<YYYY-MM-DD>.md`; deferrals and named limitations go to the cross-session state the `board` binding names — `memory/STATUS.md` under *Deferred*, one line each, where none is bound; process and methodology lessons aimed at future features go to `memory/notes-for-future-features.md`.
 

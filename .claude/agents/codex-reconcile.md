@@ -16,26 +16,16 @@ The caller supplies: the feature, its process docs (within the architecture doc,
 
 ## Binding
 
-Consult the `product-docs` binding first, looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says; if the binding is absent, report that in the first line and stop, with `NO-BINDING`. Four of its slots are yours: **Location** — where the pages live; **Layout** — which mode you run; **Schema file** — the operating file both modes read, or `none`; **Reconciling agent** — the agent the project names for this work.
+Consult the `product-docs` binding first, looked up in `.claude/bindings/<pack>.md` `## <key>` (absent when missing, empty or holding `TODO`; `none` is filled), the project `CLAUDE.md` *Bindings* section the pre-scaffold fallback; if the binding is absent, report that in the first line and stop, with `NO-BINDING`. Four of its slots are yours: **Location** — where the pages live; **Layout** — which mode you run; **Schema file** — the operating file both modes read, or `none`; **Reconciling agent** — the agent the project names for this work.
 
 ## Mode selection
 
 The `Layout` slot selects the mode, and nothing else does:
 
-- `Layout: wiki` → **Wiki mode**.
+- `Layout: wiki` → **Wiki mode**: read `.claude/references/codex/wiki-mode.md` and run it as it says.
 - `Layout: docs+changelog` → **Documentation~ + CHANGELOG mode**.
 
 A binding that is present but carries no `Layout` line, or carries a word that is neither of those two, stops you: report `BLOCKED` naming the `Layout` slot and quoting the two permitted words, `wiki` and `docs+changelog`. Never infer the mode from the tree — the layout is the project's answer, not a thing you detect.
-
-## Wiki mode
-
-### Schema first
-
-Before touching anything, read the wiki's own schema/operating file (e.g. `<wiki root>/CLAUDE.md` — the binding's Schema file slot names it). It is NOT auto-injected into your context, and it outranks your instincts on page structure, frontmatter, linking, naming, and index/log bookkeeping. Follow it exactly, including its templates.
-
-### Bookkeeping
-
-Perform every index/hub/log update the schema requires for the pages you touched, including status fields and their index mirrors.
 
 ## Documentation~ + CHANGELOG mode
 
@@ -57,7 +47,6 @@ The product page records what IS — the built system's shape, behavior, and rea
 
 ## Hard limits
 
-- Never run version control. Return the changed-file list — committing is a separate ceremony the orchestrator runs.
 - Touch only the pages and the bookkeeping files the binding's layout names. Process docs, code, and the workflow board are out of bounds.
 
 ## Output

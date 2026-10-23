@@ -9,7 +9,9 @@ run from the hub or any tree of the repository: makes the path absolute, waits f
 the tree's directory to be released, removes the tree by
 `git worktree remove "<path>"`, never forced, and reads back.
 
-Standard library only; git is run by argument list, never by a shell string.
+Standard library only; git is run by argument list, never by a shell string, each call
+with `-c core.longpaths=true` on its command line (no config file is written) so a tree
+holding a path past MAX_PATH on Windows is listed and removed whole.
 Exactly one verdict line is printed, after git's own refusal where there is one:
 
 - `removed: <path>` - unlisted, directory gone; exit 0
@@ -51,7 +53,7 @@ def released(path):
 
 def is_listed(path):
     """Whether a `worktree <path>` line of `git worktree list --porcelain` names `path`."""
-    listed = subprocess.run(["git", "worktree", "list", "--porcelain"],
+    listed = subprocess.run(["git", "-c", "core.longpaths=true", "worktree", "list", "--porcelain"],
                             stdin=subprocess.DEVNULL, capture_output=True,
                             encoding="utf-8", errors="replace").stdout
     wanted = normalise(path)
@@ -77,7 +79,7 @@ def main(argv):
             print(f"held: {path} is still in use after {args.wait} s")
             return 2
         time.sleep(1)
-    removal = subprocess.run(["git", "worktree", "remove", path],
+    removal = subprocess.run(["git", "-c", "core.longpaths=true", "worktree", "remove", path],
                              stdin=subprocess.DEVNULL, capture_output=True)
     if removal.returncode != 0:
         sys.stdout.flush()
