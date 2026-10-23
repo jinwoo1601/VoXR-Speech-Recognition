@@ -1,6 +1,6 @@
 ---
 name: doc-extractor
-description: Extracts verbatim answers from the process docs for a list of questions; use when doc recon is needed before planning, instead of reading long process docs on the main thread.
+description: Extracts verbatim answers from the process docs for a list of questions; use when doc recon is needed before planning, instead of reading long process docs in the PM's context.
 tools: Read, Glob, Grep
 model: sonnet
 status: active
@@ -15,7 +15,7 @@ Scope is process docs only. Code is `code-mapper`'s territory; product docs are 
 
 ## Binding
 
-Consult the `process-docs` binding first, looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says — or as the brief quotes it — it names where the design, requirements, and architecture docs live; locate them from it when the brief does not name them; if the binding is absent, report that in the first line and stop, with `NO-BINDING`.
+Consult the `process-docs` binding first, looked up in `.claude/bindings/<pack>.md` `## <key>` (absent when missing, empty or holding `TODO`; `none` is filled), the project `CLAUDE.md` *Bindings* section the pre-scaffold fallback — or as the brief quotes it — it names where the design, requirements, and architecture docs live; locate them from it when the brief does not name them; if the binding is absent, report that in the first line and stop, with `NO-BINDING`.
 
 ## Method
 
@@ -44,5 +44,5 @@ Nothing else: no summary of the feature, no recommendations, no restating the qu
 
 Then read the brief once more to mark the criteria, and end with the index, about 2,000 tokens at most: the first line; one line per question, the answer in one sentence and its `path §section`, or `NOT ANSWERED IN DOCS`; the structure/contradiction flags in full; the trailer.
 
-The trailer is the delegation contract's (`.claude/references/core/delegation-contract.md`): on `DONE`, one line — `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the delegation contract's full trailer (`.claude/references/core/delegation-contract.md` `## The report (up)`).
+The trailer: on `DONE`, one line — `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the full trailer (the brief's acceptance criteria each marked met / not met / not checked; files written, by absolute path, or `none`; verification run and result, or `not run`; blockers; open questions; suggested next step).
 No restating the brief, no narrative, nothing else.

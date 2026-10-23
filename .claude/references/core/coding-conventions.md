@@ -17,7 +17,7 @@ Every new code file opens with the header block below, before any import, includ
 
 - **Purpose**: One line, start with a noun or gerund. Describe *what*, not *how*.
 - **Layer**: Dot-separated path reflecting the file's location in the architecture (e.g. `Runtime`, `Runtime.Commands`, `Editor`, `Tests`, `Scripts`).
-- **Owns**: Comma-separated list of types defined in the file. Include visibility and kind: `ParseResult (public readonly struct)`, `EditorPanel (internal static class)`. For files defining multiple types, list all.
+- **Owns**: Comma-separated list of types defined in the file. Include visibility and kind: `ParseResult (public readonly struct)`, `EditorPanel (internal static class)`. For files defining multiple types, list all. A script that defines no types writes `(script, no public types)`.
 - **Depends**: Comma-separated list of project types this file directly uses. Write `(none)` if there are no project-internal dependencies. Exclude framework and language types (e.g. `List<T>`, `std::string`, `dict`).
 
 ## Comment style by language
@@ -30,35 +30,3 @@ Every new code file opens with the header block below, before any import, includ
 | SQL | `--` |
 
 Use the separator line style that matches: `// ====...` for `//` languages, `# ====...` for `#` languages, etc.
-
-## Examples
-
-C# class:
-```csharp
-// ============================================================================
-// Purpose:  Zero-allocation tokenizer for the command grammar
-// Layer:    Runtime
-// Owns:     CommandTokenizer (internal static class)
-// Depends:  CommandToken, CommandErrorCode
-// ============================================================================
-```
-
-C++ source:
-```cpp
-// ============================================================================
-// Purpose:  Ring-buffered audio capture backend
-// Layer:    Native
-// Owns:     AudioCapture (class)
-// Depends:  RingBuffer, Downsampler
-// ============================================================================
-```
-
-Python script:
-```python
-# =============================================================================
-# Purpose:  Build automation for the native library
-# Layer:    Scripts
-# Owns:     (script, no public types)
-# Depends:  (none)
-# =============================================================================
-```

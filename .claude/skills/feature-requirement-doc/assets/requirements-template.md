@@ -2,7 +2,7 @@
 type: requirements
 feature: <kebab-name>
 topic: <the design topic this feature belongs to>
-status: draft
+status: draft   # draft until G2; accepted at G2 by g2-accept RECORD
 updated: <YYYY-MM-DD>
 sources:
   - <the locked design doc(s) this feature derives from>

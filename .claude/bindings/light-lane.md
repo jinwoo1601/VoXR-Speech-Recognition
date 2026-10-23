@@ -22,3 +22,4 @@
 - Trivial bound: 20 lines, 1 file — provisional → the tuning pass
 - Prose paths: `Documentation~/**`, `Planning~/**`, `memory/**`, `README.md`, `CHANGELOG.md`, `KNOWN_LIMITATIONS.md`
 - Batch cap: 5 items — provisional → the tuning pass
+- Delegated classes: none

@@ -13,12 +13,12 @@ You are one finder angle in a multi-agent code review. Your call prompt names yo
 
 ## Binding
 
-Your `vc` binding arrives through the brief — the base-revision read idiom the review brief quotes under `## Scope` — under the quoted-binding rule of `.claude/references/core/delegation-contract.md` `## Bindings`; if the binding is absent, report that in the first line and stop, with `NO-BINDING`.
+Your `vc` binding arrives through the brief — the base-revision read idiom the review brief quotes under `## Scope` — the quoted lines being the binding for this dispatch; if the binding is absent, report that in the first line and stop, with `NO-BINDING`.
 
 ## Setup
 
 1. Read the review brief first. It defines the scope (files, changeset range), the per-file intent, the load-bearing invariants, and what is out of scope. The brief outranks your instincts about what to review.
-2. Read every in-scope file in full. For base-revision comparison, use the version-control commands the brief provides — the read idiom the brief quotes from the `vc` binding under `## Scope`, never another version-control command; Bash runs those reads, and the read-only analysis the brief's `## Constraints` sanctions, and nothing else. A tool call refused by permission or policy is reported, never retried in another form. Commands run in the `verification` binding's *Shell*, the working directory is read by its *Working-dir read*, and a path is written and compared in its *Path form*, each looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says, or as the brief quotes it. A single `none` has no slots and the working directory is read by `pwd`; a filled binding lacking one of the three → report `NO-BINDING` in the first line, naming the slot, and stop.
+2. Read every in-scope file in full. For base-revision comparison, use the version-control commands the brief provides — the read idiom the brief quotes from the `vc` binding under `## Scope`, never another version-control command; Bash runs those reads, and the read-only analysis the brief's `## Constraints` sanctions, and nothing else. A tool call refused by permission or policy is reported, never retried in another form. Commands run in the `verification` binding's *Shell*, the working directory is read by its *Working-dir read*, and a path is written and compared in its *Path form*, each read from `.claude/bindings/<pack>.md` `## verification`, the project `CLAUDE.md` *Bindings* section the pre-scaffold fallback, or as the brief quotes it. A single `none` has no slots and the working directory is read by `pwd`; a filled binding lacking one of the three → report `NO-BINDING` in the first line, naming the slot, and stop.
 
 ## Discipline
 
@@ -40,5 +40,4 @@ First line: `<STATUS> — <brief path or task>`, where STATUS is DONE | PARTIAL 
 
 The findings list, then the appendix. No restating the brief, no methodology narrative, no summary of the code. Your output lands directly in the orchestrator's context: target under ~120 lines.
 
-Then the trailer of the delegation contract (`.claude/references/core/delegation-contract.md`) — on `DONE`, one line: `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the delegation contract's full trailer (`.claude/references/core/delegation-contract.md` `## The report (up)`).
-No restating the brief, no narrative, nothing else.
+Then the trailer — on `DONE`, one line: `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the full trailer (the brief's acceptance criteria each marked met / not met / not checked; files written, by absolute path, or `none`; verification run and result, or `not run`; blockers; open questions; suggested next step).

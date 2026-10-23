@@ -2,7 +2,7 @@
 
 <!-- Written by the review-cycle skill into .scratch/review-<feature>-brief.md before fan-out. Every review-angle and finding-verifier agent
      reads this file by ABSOLUTE path; it is their entire shared context — anything not written here does not exist for them. Common fields per
-     .claude/references/core/delegation-contract.md, then the review extensions. Load-bearing invariants and canon pointers are its inputs. -->
+     .claude/references/core/brief-fields.md, then the review extensions. Load-bearing invariants and canon pointers are its inputs. -->
 
 ## Task
 

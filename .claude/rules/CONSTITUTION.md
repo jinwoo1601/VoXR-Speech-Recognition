@@ -1,6 +1,6 @@
 # The Constitution
 
-This is the workflow every project on this harness runs; each project holds a copy it does not edit. The constitution says *what*; the project's `CLAUDE.md` says *how*; packs say *who* and by which procedure. Each project's `CLAUDE.md` binds this workflow to that project's tooling; on conflict the project file wins on specifics, this file wins on process.
+This is the workflow every project on this harness runs; each project holds a copy it does not edit. The constitution says *what*; the project's `CLAUDE.md` says *how*; packs say *who* and by which procedure. Each project's `CLAUDE.md` binds this workflow to that project's tooling.
 
 > **Process docs come before implementation. Product docs come after.**
 
@@ -20,7 +20,7 @@ Work runs in two decoupled tracks. Design may run far ahead of implementation; t
 4. Break the locked design into a feature backlog: feature name and one-line scope each.
 5. Merge the design branch to the main branch.
 
-**Implementation track — branch per feature.** Pick a feature off the backlog only when it is actually going to be built, so requirement and architecture docs do not rot against a design still far from implementation.
+**Implementation track — branch per feature.**
 
 1. Create the feature branch.
 2. Write the feature-requirement doc, then the architecture doc, where the process-docs binding says. The architecture doc is the feature's working record — the living document that holds the how, the build plan, and what the build taught. It is not a draft of the product page: the product docs are authored after G2 from live source. One obligation crosses over — its decision register is the design rationale the product docs carry forward.
@@ -38,15 +38,15 @@ Work runs in two decoupled tracks. Design may run far ahead of implementation; t
 
 I do not cross G1 or G2 on my own judgment. "Locked" and "accepted" are the human's calls.
 
-**Branching.** One branch per design topic, one per feature, one per light-lane changeset and one per lab experiment, named by the branch binding (`design-<topic>`, `feat-<feature>`, `light-<topic>` and `lab-<topic>` by default); never design or build on the main branch, in either track or in the light lane. Default to sequential-through-main — build a feature, merge it, branch the next off the updated main; dependency-ordered features branch off their prerequisite. Independent branches may run concurrently per *One writer per tree*.
+**Branching.** One branch per design topic, one per feature, one per light-lane changeset and one per lab experiment, named by the branch binding (`design-<topic>`, `feat-<feature>`, `light-<topic>` and `lab-<topic>` by default); never design or build on the main branch, in either track or in the light lane. Default to sequential-through-main — build a feature, merge it, branch the next off the updated main; dependency-ordered features branch off their prerequisite. Branches neither of which depends on the other may run concurrently as *One writer per tree* allows.
 
 **When implementation contradicts a locked process doc.** If building reveals a locked decision was wrong, **stop**. Reopen the tier-1 doc that carries it — the design doc, or the feature-requirement doc — on a design branch — which may be cut from the feature branch and merged back into it after G1, reaching the main branch with the feature's G2 — amend it, re-lock (**G1** again), then resume. Never silently patch a locked decision mid-implementation.
 
 ## The light lane
 
-Issue and maintenance work runs in a light lane: exempt from G0 and G1, still reviewed, and closed by a **G2-lite ruling on the PR or changeset**.
+Issue and maintenance work runs in a light lane: exempt from G0 and G1, still reviewed, and closed at **G2-lite**: by the human's ruling, or by the PM where the classes binding delegates the changeset's class.
 
-The lane is declared at the start of the work, not claimed afterwards, and with it the changeset's class — slim, prose or trivial, within the bounds the light-lane binding names; the class fixes the review's depth. Several deferred items that each qualify for the lane may run as one deferral batch: one branch, one review over their union at the highest class among them, one G2-lite.
+The lane is declared at the start of the work, not claimed afterwards, and with it the changeset's class — slim, prose or trivial, within the bounds the light-lane binding names; the class fixes the review's depth. Several deferred items that each qualify for the lane may run as one deferral batch: one branch, one review over their union at the highest class among them, one G2-lite. Which classes the PM closes and merges without the human's G2-lite ruling — outright, or listed for the human at the next human stop — is a slot the light-lane binding names; an unfilled or `none` slot delegates nothing.
 
 ## The lab lane
 
@@ -67,18 +67,17 @@ human ──rules at gates──▶ PM (the interactive session)
                    pack references / bindings / the project
 ```
 
-Agents never dispatch agents and never invoke skills. Skills never fork into a subagent when they orchestrate; execution-type skills may fork. Fan-out always ends in an explicit fan-in step with a merge rule. Every irreversible act (a merge into the main branch, delete, publish, external post) sits behind a human stop.
+Agents never dispatch agents and never invoke skills. Skills never fork into a subagent when they orchestrate; execution-type skills may fork. Fan-out always ends in an explicit fan-in step with a merge rule. Every irreversible act (a merge into the main branch, delete, publish, external post) sits behind a human stop, save the merge of a light-lane changeset closed by class, in a class the light-lane binding delegates.
 
-Compiler and test output never runs on the main thread — it goes to the verification agent. Recon reports are trusted rather than re-read. Reviews always fan out through a skill, never ad hoc. The main thread reserves itself for judgment, planning, its own writes, and the human gates.
+Reviews always fan out through a skill, never ad hoc.
 
 ## Standing principles
 
 - **Context is the budget.** What a session or agent loads at start carries current state only; closed history moves to dated records read on demand, never deleted. A process artifact read on every session or dispatch carries a size budget in its binding; `doctor` warns over it, and a gate does not pass over it.
 - **Proportionate ceremony.** Review depth follows the lane and the change class: slim for a light-lane changeset, full wherever G2 is at stake. Ceremony a change does not need is waste, not safety.
-- **Display, don't ask.** Between a skill's declared stops the PM states the next step and takes it; it stops only at a gate, before an irreversible act, at a scope change, or at a fork its canon does not settle. A review finding verified CONFIRMED is fixed by default and listed at the next gate; a disputed finding, a deferral or a scope change stops for the human.
+- **Display, don't ask.** Between a skill's declared stops the PM states the next step and takes it; it stops only at a gate, before an irreversible act, at a scope change, or at a fork with no recommended option, or one the fork default's exceptions stop. A review finding verified CONFIRMED is fixed by default and listed at the next gate; a disputed finding, a deferral or a scope change stops for the human. At a fork between declared stops the PM takes the recommended option and lists it with its option text at the next gate, except that it fixes rather than defers a CONFIRMED finding whose fix lies inside the changeset's own files and needs no new decision — deferral is proposed only when the fix needs another branch's files, a locked doc, or a design choice; runs the probe when a runnable probe is offered beside a docs-only option; waives and files a plan-file budget overage, and never splits or edits a built plan; stops for any option that amends a locked doc, merges, publishes, deletes outside the tree, changes the human's settings, or changes scope; and stops when the options differ on the human's own time.
 - **Every invariant names its enforcer.** A hook where a breach is silent or irreversible, the validator where it is structural, prose only where it takes judgment. A rule with no enforcer is advice and says so. The register of each rule and its enforcer is `.claude/references/core/constitution-annex.md`, `## Invariants and their enforcers`.
 - **Evidence and computed numbers.** A check counts only by its evidence — output shown, exit code read. A count or figure written into a doc, report or memory comes from a command run for it.
-- **What versus why.** A CHANGELOG line says what changed, in one line; how and why go in the session note.
 - **Refusals are reported.** A tool call refused by permission or policy is reported, never retried in another form.
 - **Session rhythm.** A session hands off at a phase boundary, or, inside a phase, at the next skill-step boundary once its context passes the bound the project names — never below the bound merely because a step ended. Where the project binds a session launch, the PM launches the successor without waiting to be asked.
 
@@ -86,9 +85,7 @@ Compiler and test output never runs on the main thread — it goes to the verifi
 
 The PM is the human's session, by constitution. It orients, composes, plans with the human, invokes skills, dispatches agents through them, dedups and rules on findings with the human, and holds every gate.
 
-**Write scope — reference-strict.** The PM writes only `memory/` (which includes `STATUS.md`), CHANGELOG lines, and the brief and collation files under the scratch area — on a lab branch, anything under the scratch area. Every other file is authored by an agent from a PM brief, save one carve-out: a trivial edit whose content is dictated rather than composed — a ruling recorded verbatim, a count, citation or typo fix, a version bump — of at most about 20 lines, on the branch in flight, never in a locked doc and never code logic; its diff is shown at the next gate.
-
-Authorship, where the project's packs provide the agent: design and requirement docs, bindings, and project `CLAUDE.md` prose by the doc writer; the architecture doc, its persisted plan and its fix passes by `architect`, and its as-built and record passes — passes that record what was built or ruled and decide nothing — by `architect-reconcile`; code by `code-writer`; the manifest, the managed block, and the constitution copy by the harness script; product docs by the codex reconciler — each from a PM brief.
+**Write scope.** The PM writes `memory/` (which includes `STATUS.md`), CHANGELOG lines, and the brief and collation files under the scratch area — on a lab branch, anything under the scratch area — and makes edits it does not compose anywhere but a locked doc or code logic. Composition is delegated by brief; a PM edit shows its diff at the next gate.
 
 Version-control ceremony is governed by the VC binding, not by this rule.
 
@@ -120,13 +117,11 @@ Parallel agents that write need physical isolation — a working tree each, made
 
 Parallel writers on one branch take disjoint write sets, fixed in the persisted plan, and are joined back onto the branch serially before its one independent gate; the join is not a gated merge, and a conflict at the join stops for the human.
 
-Branches may run concurrently, each in its own tree, when neither depends on the other and their write sets do not overlap. The main checkout stays on the main branch and holds the project's memory; merges into the main branch stay serial.
+Branches may run concurrently, each in its own tree, when neither depends on the other. Their write sets may overlap only in the release files the `trees` binding names, each with its resolution rule — these overlap freely, and their conflicts are resolved by that rule with no stop; with none named there is no release class — or where the human rules the overlap at the branch's cut. A conflict is resolved by the later-merging branch in its own tree, before review and the gate packet, so the gate rules on the head that merges. The main checkout stays on the main branch and holds the project's memory; merges into the main branch stay serial.
 
 ## The subagent model rule
 
-A subagent's model is **never above the PM's model; `inherit` only for `architect`** — the one agent that may reach the PM's own tier, and only by inheritance (`model: inherit`). Every other agent carries an explicit model in its file.
-
-The baseline model is in the agent file; the brief may downgrade an agent below its baseline for a simple task, never upgrade; a failed downgraded run retries at baseline.
+Every agent carries an explicit model in its file, `inherit` only for `architect`; a brief may downgrade an agent below that model, never upgrade, and the agent guard denies an upgrade.
 
 ## The delegation contract
 

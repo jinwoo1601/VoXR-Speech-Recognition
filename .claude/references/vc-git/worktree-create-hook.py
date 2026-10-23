@@ -74,7 +74,7 @@ def parse_payload(data):
     """
     try:
         document = json.loads(data)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     return document if isinstance(document, dict) else None
 
