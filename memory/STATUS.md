@@ -1,9 +1,10 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-10-16
+updated: 2026-10-23
 
 ## Current
 
+- **`light-harness-upgrade-2026-10-23` (light, class slim): upgrade round run 2 checked in at `0945aa9`, slim review clean, EditMode/PlayMode green; next: PR, G2-lite.**
 - **`main` at the PR #179 merge (`design-endpointer-profile`, G1 2026-10-16); `v2.0.0`; next: `feat-endpointer-profile` at G0.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
