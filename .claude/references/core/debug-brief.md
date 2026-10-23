@@ -3,7 +3,7 @@
 <!-- Written by the implement skill (when verification fails for a non-obvious reason), by the
      light lane, or by the PM where a persisted plan names a red check, into .scratch/debugger-<slug>-brief.md before dispatch.
      The debugger reads this file by ABSOLUTE path; it is its entire context — anything not written here does not exist for the agent.
-     Common fields per .claude/references/core/delegation-contract.md, then the debugger extensions. -->
+     Common fields per .claude/references/core/brief-fields.md, then the debugger extensions. -->
 
 ## Task
 

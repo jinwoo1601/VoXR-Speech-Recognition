@@ -47,9 +47,13 @@ def resolve_root(argv):
 
 def trees_section(root, filler):
     """The body lines of the `trees` section in the bindings file under `root` the filler
-    names for it, `core`'s by default; None when that file or the section is absent. A file
-    that cannot be read raises."""
-    path = root / BINDINGS_REL / f"{filler.get('trees', 'core')}.md"
+    names for it, `core`'s by default and for a filler value naming no bare stem; None when
+    that file or the section is absent. A file that cannot be read raises."""
+    named = filler.get("trees", "core")
+    if not (isinstance(named, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", named)
+            and ".." not in named):
+        named = "core"
+    path = root / BINDINGS_REL / f"{named}.md"
     return binding_section(path.read_text(encoding="utf-8"), "trees") if path.is_file() else None
 
 
@@ -68,15 +72,15 @@ def harness_script(root):
     the main checkout the `trees` binding's Hub slot names, when that is a directory -
     as `harness.py`'s `_manifest_base` resolves it. None is every step of the manifest
     probe: no manifest file (so `doctor`'s own MANIFEST failure row never reaches a
-    session opened outside a project), a manifest that does not parse, no usable
-    `base`, or no script where it points.
+    session opened outside a project), a manifest that does not parse, nesting too deep
+    included, no usable `base`, or no script where it points.
     """
     manifest = root / MANIFEST_REL
     if not manifest.is_file():
         return None
     try:
         document = json.loads(manifest.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         return None
     base = document.get("base") if isinstance(document, dict) else None
     if not isinstance(base, str) or not base:

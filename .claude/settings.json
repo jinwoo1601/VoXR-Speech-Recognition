@@ -201,25 +201,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       },
       {
-        "matcher": "Write|Edit|SendMessage",
+        "matcher": "Write|Edit|NotebookEdit|SendMessage",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/handoff-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/hub-memory-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           }
         ]
@@ -230,25 +221,25 @@
           {
             "type": "command",
             "if": "Bash(*rm*)",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(*rM*)",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(*Rm*)",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(*RM*)",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           }
         ]
@@ -259,7 +250,7 @@
           {
             "type": "command",
             "if": "Bash(*--b*)",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/handoff-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       },
@@ -283,17 +274,16 @@
         ]
       }
     ],
-    "SubagentStop": [
+    "PostToolUse": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/report-filer-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/context-bound-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/context-bound-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 5
           }
         ]
-      }
-    ],
-    "PostToolUse": [
+      },
       {
         "matcher": "Edit|Write",
         "hooks": [
@@ -304,12 +294,12 @@
         ]
       }
     ],
-    "WorktreeCreate": [
+    "SubagentStop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/worktree-create-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/report-filer-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       }

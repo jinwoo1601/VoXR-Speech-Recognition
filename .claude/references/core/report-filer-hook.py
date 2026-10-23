@@ -42,7 +42,7 @@ HANDBACK_TOOL = "SubagentHandback"
 UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 REMEDY = ("end with the contract's report: first line `<STATUS> — <brief path>`, and the "
           "trailer (criteria; files; verification) — "
-          "`.claude/references/core/delegation-contract.md` `## The report (up)`")
+          "`.claude/references/core/brief-fields.md` `## The report (up)`")
 
 
 def resolve_root(argv):
@@ -58,7 +58,7 @@ def parse_payload(data):
     """The hook payload as a mapping, or None for stdin the filer cannot read."""
     try:
         document = json.loads(data)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     return document if isinstance(document, dict) else None
 
@@ -121,7 +121,7 @@ def assistant_blocks(transcript):
     for line in lines:
         try:
             entry = json.loads(line)
-        except ValueError:
+        except (ValueError, RecursionError):
             continue
         if not isinstance(entry, dict) or entry.get("type") != "assistant":
             continue

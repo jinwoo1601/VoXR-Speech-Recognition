@@ -3,7 +3,7 @@
 <!-- Written by the implement skill (or the PM) into .scratch/ before dispatch.
      The code-writer reads this file by ABSOLUTE path; it is its entire context.
      Anything not written here does not exist for the agent.
-     Common fields per .claude/references/core/delegation-contract.md, then the code-writer extensions. -->
+     Common fields per .claude/references/core/brief-fields.md, then the code-writer extensions. -->
 
 ## Task
 
@@ -28,6 +28,12 @@
 
 1. …
 2. …
+
+## Notes
+
+The notes inform, and add no rule; the stop-and-report rule stands.
+
+- <the `plan-validator` report's findings outside the fix-pass classes, each with its plan step and class, or `none`>
 
 ## Conventions
 
