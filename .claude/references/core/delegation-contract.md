@@ -54,7 +54,7 @@ The brief, always, save that a read-only roster agent may take its brief inline,
 - Read-only agents may run in parallel; writing agents run in parallel only each in its own tree, per the constitution's *One writer per tree*, and otherwise serially, one per tree.
 - Agents never commit — the version-control ceremony agent excepted, it *is* the ceremony.
 - The baseline model is in the agent file; a brief may downgrade, never upgrade. Downgrades follow `## Modes`.
-- Any looped agent: two fix iterations, then the human.
+- Any looped agent: two fix iterations, then the escalation its skill names.
 - Continue an agent by `SendMessage` only while it is small or the fix needs what it has loaded; otherwise dispatch a fresh short brief naming the delta — a continued agent carries its whole context forward.
 - An agent's own success claim is never the gate.
 

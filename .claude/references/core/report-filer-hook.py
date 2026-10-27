@@ -4,29 +4,9 @@
 # Owns:     (script, no public types)
 # Depends:  (none)
 # =============================================================================
-"""Claude Code `SubagentStop` hook: the delegation contract's filing step, done
-by the platform rather than remembered by the delegator.
-
-Standard library only, and never an import of `harness.py`, for the agent
-guard's reason: the hook runs under whatever interpreter the platform starts.
-
-The report is the message of the agent's last hand-back tool call where its
-transcript holds one, else the stop's `last_assistant_message`; a stop with no
-agent type files nothing. The report's first non-blank line names the brief it
-answers; a brief that resolves to a `.md` file under a `.scratch/`
-directory gets `<stem>-report.md` beside it, any other first line a file under
-`.scratch/reports/`. Files are created in exclusive mode
-and numbered, so parallel answers to one brief never overwrite each other.
-
-A harness agent - one with a file under `.claude/agents/` - has its receipt
-checked: a malformed first line or DONE trailer blocks the stop once, with the
-remedy as the agent's next input, and files nothing; the stop that follows a
-block is filed whatever it holds, with a system message naming the defect. A
-passing report is filed in silence. There is no generic catch anywhere here, so
-an unforeseen bug is a traceback and a non-blocking error, never a block.
-"""
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -40,13 +20,13 @@ TRAILER_KEYS = ("criteria", "files", "verification")
 FULL_REPORT = "# Full report —"
 HANDBACK_TOOL = "SubagentHandback"
 UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
+DRIVE_FORM = re.compile(r"/([A-Za-z])(?=/|$)")
 REMEDY = ("end with the contract's report: first line `<STATUS> — <brief path>`, and the "
           "trailer (criteria; files; verification) — "
           "`.claude/references/core/brief-fields.md` `## The report (up)`")
 
 
 def resolve_root(argv):
-    """The project root: argv[1] when it names a directory, else the process cwd."""
     if len(argv) > 1:
         candidate = Path(argv[1])
         if candidate.is_dir():
@@ -55,7 +35,6 @@ def resolve_root(argv):
 
 
 def parse_payload(data):
-    """The hook payload as a mapping, or None for stdin the filer cannot read."""
     try:
         document = json.loads(data)
     except (ValueError, RecursionError):
@@ -64,13 +43,11 @@ def parse_payload(data):
 
 
 def text_field(payload, key):
-    """The payload's string under `key`, or "" for an absent or non-string value."""
     value = payload.get(key)
     return value if isinstance(value, str) else ""
 
 
 def first_line(message):
-    """The report's first non-blank line, stripped, or "" when there is none."""
     for line in message.splitlines():
         if line.strip():
             return line.strip()
@@ -78,22 +55,28 @@ def first_line(message):
 
 
 def safe_name(value):
-    """`value` with every character outside `[A-Za-z0-9._-]` made `-`."""
     return UNSAFE.sub("-", value)
 
 
 def resolve_brief(line, root):
-    """The brief the first line names, resolved, or None when it names none.
-
-    The text after the first spaced dash, up to the next one, unquoted; relative
-    to the root; a resolved `.md` file under a `.scratch/` directory.
-    """
-    parts = DASH.split(line, maxsplit=2)
-    if len(parts) < 2:
+    matches = list(DASH.finditer(line))
+    if not matches:
         return None
-    target = parts[1].strip().strip("`'\"").strip()
+    start = matches[0].end()
+    for end in [match.start() for match in matches[1:]] + [len(line)]:
+        path = brief_target(line[start:end], root)
+        if path is not None:
+            return path
+    return None
+
+
+def brief_target(target, root):
+    target = target.strip().strip("`'\"").strip()
     if not target:
         return None
+    match = DRIVE_FORM.match(target) if os.name == "nt" else None
+    if match:
+        target = match.group(1).upper() + ":" + (target[match.end():] or "/")
     path = Path(target)
     if not path.is_absolute():
         path = root / path
@@ -106,11 +89,6 @@ def resolve_brief(line, root):
 
 
 def assistant_blocks(transcript):
-    """The content blocks of the transcript's assistant entries, in order.
-
-    Empty for a path that is not a string and a transcript that is missing or not
-    UTF-8; a line that does not parse is skipped.
-    """
     if not isinstance(transcript, str) or not transcript:
         return []
     try:
@@ -134,7 +112,6 @@ def assistant_blocks(transcript):
 
 
 def full_report(blocks):
-    """The last assistant text among the blocks opening `# Full report —`, or None."""
     found = None
     for block in blocks:
         if (block.get("type") == "text" and isinstance(block.get("text"), str)
@@ -144,7 +121,6 @@ def full_report(blocks):
 
 
 def handed_back(blocks):
-    """The message of the last hand-back tool call among the blocks, or None."""
     found = None
     for block in blocks:
         tool_input = block.get("input")
@@ -155,16 +131,11 @@ def handed_back(blocks):
 
 
 def report_of(payload, blocks):
-    """The agent's report: the message of its last hand-back tool call where the
-    transcript's blocks hold one - the final message is then only what the agent
-    said after handing back - else the stop's `last_assistant_message`."""
     message = handed_back(blocks)
     return message if message is not None else text_field(payload, "last_assistant_message")
 
 
 def declares_trailer(agent_file):
-    """True when the agent file carries the text `Trailer:` - the contract's one-line
-    DONE trailer; an unreadable or non-UTF-8 file declares nothing."""
     try:
         return "Trailer:" in agent_file.read_text(encoding="utf-8")
     except (OSError, ValueError):
@@ -172,9 +143,6 @@ def declares_trailer(agent_file):
 
 
 def receipt_defect(payload, root, message):
-    """The part of the receipt that fails - "first line" or "trailer" - or None when
-    it passes or goes unchecked: an agent with no file under `.claude/agents/` is
-    built in, and is filed, never checked."""
     agent_type = text_field(payload, "agent_type")
     if not agent_type or safe_name(agent_type) != agent_type or not agent_type.strip("."):
         return None
@@ -194,10 +162,6 @@ def receipt_defect(payload, root, message):
 
 
 def decide(payload, root):
-    """What this stop gets: ("skip", None) for a stop with no agent type or an empty
-    report, ("block", reason) for a harness agent's malformed receipt on its first
-    stop, and ("file", defect) otherwise - the defect None when the receipt passed
-    or went unchecked."""
     if not text_field(payload, "agent_type"):
         return "skip", None
     message = report_of(payload, assistant_blocks(payload.get("agent_transcript_path")))
@@ -210,8 +174,6 @@ def decide(payload, root):
 
 
 def report_content(payload, message, blocks):
-    """The filed bytes: the marker line, then the recon full report and a `---` line
-    where the transcript's blocks hold one, then the report; UTF-8 with LF."""
     marker = (f"<!-- report-filer: {text_field(payload, 'agent_type')} "
               f"{text_field(payload, 'agent_id')} -->")
     body = message
@@ -225,8 +187,6 @@ def report_content(payload, message, blocks):
 
 
 def file_report(payload, root):
-    """Create the report file - beside the resolved brief, else under the reports
-    directory - in exclusive mode, numbering `-2`, `-3` past a taken name; its path."""
     blocks = assistant_blocks(payload.get("agent_transcript_path"))
     message = report_of(payload, blocks)
     brief = resolve_brief(first_line(message), root)
@@ -253,7 +213,6 @@ def file_report(payload, root):
 
 
 def handle(payload, root):
-    """Carry out the verdict: the stdout document to print, or None for silence."""
     action, detail = decide(payload, root)
     if action == "skip":
         return None

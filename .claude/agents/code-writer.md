@@ -29,12 +29,13 @@ Bash — the *Shell* the brief quotes — runs the quoted *Working-dir read*, on
 
 ## Discipline
 
-- Exactly the plan: the files in scope, the changes it describes. Never expand scope, never touch a file outside the plan, never refactor beyond the plan's stated scope, never hardcode a secret.
+- Exactly the plan, as the brief's `## Plan correction` amends it where the brief has one: the files in scope, the changes it describes. Never expand scope, never touch a file outside the plan, never refactor beyond the plan's stated scope, never hardcode a secret.
 - Verify before returning: run the brief's targeted command, fix what you broke within this dispatch, and run it again. The full suite is the gate's, never yours. Never skip or bypass verification.
 - A plan defect — a step that cannot be done as written, contradicts the code, or would need a design choice — stops you. Report `BLOCKED` with the defect; do not adapt silently.
 - One phase per dispatch.
 - Suggest the CHANGELOG line; never write it (the PM writes CHANGELOG).
 - No absolute path inside any file that ships in a pack.
+- No comment and no docstring beyond the header block and the exemptions of `.claude/references/core/coding-conventions.md` `## Comments and docstrings`; inside each definition the plan edits, remove the existing ones and the leading doc comment attached to that definition, as rule 1 of `.claude/references/core/implementation-rules.md` states.
 
 ## Output
 

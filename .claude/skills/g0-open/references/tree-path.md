@@ -1,29 +1,6 @@
 # g0-open — the tree path
 
-The order `g0-open`'s `## Workflow` steps run in where `trees` is filled, how several items start under one ruling, and the binding sentences only those use; "the contract" is `.claude/references/core/trees-contract.md`.
-
-## Bindings
-
-- `trees` (optional) — the Hub, Location, Create procedure and List read slots `## The tree path` uses; the Release files slot, the release class INDEPENDENCE sets aside, as the contract's `## The release files` reads it; the Hub path, under which SCOPE reads `memory/backlog-candidates.md` and `memory/notes-for-future-features.md` by absolute path; and the Hub slot's idiom by which a command runs in another tree.
-- `session-launch` (optional) — the Hub session name, to which the branch run's SCOPE sends `FINISHED` for a declined or waiting item and its RE-CHECK sends `BLOCKED`; the List command, by which the active branches of `## The tree path` see the sessions at each tree; the launch and the brief are `handoff`'s, which LAUNCH invokes and which reads this key by its own `## Bindings`.
-
-<!-- harness:binding:start trees .claude/bindings/vc-git.md -->
-<!-- Interview: Does this project run branches in their own working trees — where the main checkout and the trees live and how trees are named, how a branch and its tree are cut, listed, read clean, caught up with the main branch and removed, how writer branches are named, and whether writer trees are pooled — or a single `none` where every branch runs in the one checkout? -->
-- none
-<!-- none: every branch runs in the one checkout — the host project `VoXR TestGround` consumes this checkout by `file:` path, so a branch in another tree would never be the one tested -->
-<!-- harness:binding:end trees -->
-
-<!-- harness:binding:start session-launch .claude/bindings/core.md -->
-<!-- Interview: Does the PM launch sessions itself — by which command a session is started in a given tree for a given branch with a one-line prompt, keeping its transcript and in the permission mode it runs in; under which name the hub session is opened and receives the launched sessions' reports; and by which commands the running sessions are listed and a finished one is stopped; how long a launch or a stop is waited on in that list before it is read as failed; and how long a stopped session may hold its tree's directory; past how many tokens of context a session hands off inside a phase, and by which command it reads its own context — or a single `none` where the human opens every session? -->
-- Launch command: `cd "<tree>" && CLAUDE_CODE_FORCE_SESSION_PERSISTENCE=1 claude --bg --remote-control <branch> -n <branch> --permission-mode auto "<prompt>"`, run in Git Bash from the launching session, `<tree>` the project root in the Path form (`trees` is none) — the CLI's behaviour: `.claude/references/core/claude-code-cli.md`
-- Hub session name: `voxr-hub` — this project's own hub session, which the human opens in the project root with `claude --remote-control voxr-hub -n voxr-hub`
-- List command: `claude agents --json` — one object per running session on this machine, each with its `cwd`; see the reference for its shape
-- Stop command: `claude stop <id>` — the `id` the list command shows
-- Confirm window: 30 seconds (provisional → the tuning pass)
-- Release wait: none — `trees` is none, so no tree is removed
-- Context bound: about 200k tokens (provisional → the tuning pass)
-- Context read: `python3 -c "import glob,json,os;p=glob.glob(os.path.expanduser('~/.claude/projects/*/'+os.environ['CLAUDE_CODE_SESSION_ID']+'.jsonl'))[0];t=[n for n in (u['input_tokens']+u['cache_creation_input_tokens']+u['cache_read_input_tokens'] for u in (e['message']['usage'] for e in map(json.loads,open(p,encoding='utf-8')) if e.get('type')=='assistant')) if n>0];print(t[-1])"` — run in Git Bash from the project root; prints the context of this session's last assistant turn that carries usage, from its transcript under Claude Code's projects directory in the user's home; lags at most one turn
-<!-- harness:binding:end session-launch -->
+The order `g0-open`'s `## Workflow` steps run in where `trees` is filled, and how several items start under one ruling; "the contract" is `.claude/references/core/trees-contract.md`.
 
 ## The tree path
 
