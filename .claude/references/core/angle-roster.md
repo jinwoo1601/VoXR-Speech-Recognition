@@ -42,7 +42,7 @@ Do NOT report: line-level issues (other angles own them) — this angle is about
 ## Sweep family
 
 ### CONV — conventions
-Check the changed code against the project's stated conventions (the coding-conventions reference, the project's bindings, house patterns visible in neighboring code): naming, file headers, comment discipline, module placement.
+Check the changed code against the project's stated conventions (the coding-conventions reference, the project's bindings, house patterns visible in neighboring code): naming, file headers, any body comment or docstring beyond the header block and the exemptions the coding-conventions reference states, module placement.
 Do NOT report: conventions the project doesn't actually state or practice — cite the rule's source for every finding.
 
 ### GAP — gap-sweep

@@ -1,11 +1,11 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-10-23
+updated: 2026-10-27
 
 ## Current
 
-- **`main` at the PR #180 merge (harness upgrade, 2026-10-23); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): Phase 7 built (flip, re-pin, gates green); §9 re-locked (`022912a`); main merged in 2026-10-23; next: human runs Phase 8 (Quest 3, `plan-8.md`).**
+- **`main` at the PR #181 merge `10e6dca` (harness upgrade round 3, 2026-10-27); `v2.0.0`.** `[Unreleased]` holds #143–#154, #146–#148, #160, #161, #178.
+- **`feat-endpointer-profile` (feature, Full): Phase 7 built; §9 re-locked (`022912a`); main merged in 2026-10-27, V23 re-spliced; next: human runs Phase 8 (Quest 3, `plan-8.md`).**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.

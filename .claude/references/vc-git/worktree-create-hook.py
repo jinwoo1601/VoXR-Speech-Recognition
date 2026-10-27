@@ -4,22 +4,6 @@
 # Owns:     (script, no public types)
 # Depends:  (none)
 # =============================================================================
-"""Claude Code `WorktreeCreate` hook: cuts a parallel writer's tree and branch
-where the project's `trees` binding says, from the dispatching branch's tip, or
-refuses.
-
-Standard library only, and never an import of `harness.py` - the hook runs under
-whatever interpreter `python3` names, and `harness.py` exits at import time when
-PyYAML or jsonschema is missing. So the reading of a bindings section is
-re-implemented here rather than imported.
-
-A refusal is one stderr line and exit 2, with nothing made; a failed cut is
-rolled back to nothing and exits 1; success prints the tree's path alone on
-stdout and exits 0. Claude Code takes whatever stdout carries as the tree, so
-every git command's output is captured. Beyond the stdin parse, only the module's
-own two exception classes are caught, so an unforeseen bug is a traceback and a
-non-zero exit, which aborts the creation too.
-"""
 
 import json
 import os
@@ -50,15 +34,14 @@ CUT_FAILED = "the cut failed: git worktree add exited {code}: {message}"
 
 
 class Refused(Exception):
-    """A request the hook declines before anything is made: exit 2."""
+    pass
 
 
 class CutFailed(Exception):
-    """A `git worktree add` that failed, rolled back: exit 1."""
+    pass
 
 
 def resolve_root(argv):
-    """The project root: argv[1] when it names a directory, else the process cwd."""
     if len(argv) > 1:
         candidate = Path(argv[1])
         if candidate.is_dir():
@@ -67,11 +50,6 @@ def resolve_root(argv):
 
 
 def parse_payload(data):
-    """The hook payload as a mapping, or None for stdin the hook cannot read.
-
-    None covers bytes that are not JSON at all, bytes that are not UTF-8, and JSON
-    that parses to a list, a string or a number rather than to an object.
-    """
     try:
         document = json.loads(data)
     except (ValueError, RecursionError):
@@ -80,9 +58,6 @@ def parse_payload(data):
 
 
 def is_plain_name(value):
-    """True for a non-empty string with no `/`, no `\\` and no `:` that is not
-    dots alone - a name that can only fill `<unit>`, never steer a path.
-    """
     if not isinstance(value, str) or not value:
         return False
     if "/" in value or "\\" in value or ":" in value:
@@ -91,9 +66,6 @@ def is_plain_name(value):
 
 
 def trees_section(text):
-    """The body lines of the `trees` section of a bindings file, or None when absent:
-    under the first heading of two or more `#` reading `trees`, up to the next heading.
-    """
     heading = re.compile(r"^#{2,}\s*trees\b", re.IGNORECASE)
     body = None
     for line in text.splitlines():
@@ -107,13 +79,6 @@ def trees_section(text):
 
 
 def absent_form(root):
-    """`(form, None)` where `trees` reads absent - `missing`, `empty`, `TODO` or
-    `none`, checked in that order - else `(None, lines)`, the filled section's lines.
-
-    A content line is one that, stripped, is neither blank nor a comment. The
-    `none` form is a lone content line reading `none` in lowercase, bare or
-    followed by whitespace or an em dash and a reason.
-    """
     path = root / BINDINGS_REL
     if not path.is_file():
         return "missing", None
@@ -134,9 +99,6 @@ def absent_form(root):
 
 
 def slot_token(lines, label):
-    """On the first `- <label>:` line, the first backticked token holding both
-    `<branch>` and `<unit>`; None where there is no such line or token.
-    """
     for line in lines:
         if line.lstrip().startswith(f"- {label}:"):
             for token in re.findall(r"`([^`]+)`", line):
@@ -147,48 +109,42 @@ def slot_token(lines, label):
 
 
 def git(cwd, *args):
-    """git run in `cwd`, every stream captured so nothing reaches the hook's own."""
     return subprocess.run(["git", "-C", cwd, *args], stdin=subprocess.DEVNULL,
                           capture_output=True, encoding="utf-8", errors="replace")
 
 
 def plan_writer(payload, root):
-    """Steps 2 through 6: `(cwd, path, writer_branch)`, or `Refused`."""
     prompt_id = payload.get("prompt_id")
     if not isinstance(prompt_id, str) or not prompt_id:
-        raise Refused(SESSION)                                # [step 2]
+        raise Refused(SESSION)
     cwd = payload.get("cwd")
     if not isinstance(cwd, str) or not cwd or not Path(cwd).is_dir():
-        raise Refused(NO_CWD)                                 # [step 3]
+        raise Refused(NO_CWD)
     name = payload.get("name")
     if not is_plain_name(name):
-        raise Refused(NO_NAME)                                # [step 3]
+        raise Refused(NO_NAME)
     form, lines = absent_form(root)
     if form is not None:
-        raise Refused(ABSENT.format(form=form))               # [step 4]
+        raise Refused(ABSENT.format(form=form))
     location = slot_token(lines, "Location")
     if location is None or not re.match(r"^[A-Za-z]:[\\/]", location):
-        raise Refused(NO_LOCATION)                            # [step 4]
+        raise Refused(NO_LOCATION)
     naming = slot_token(lines, "Writer-branch naming")
     if naming is None:
-        raise Refused(NO_NAMING)                              # [step 4]
+        raise Refused(NO_NAMING)
     branch = git(cwd, "branch", "--show-current").stdout.strip()
     if not branch:
-        raise Refused(NO_BRANCH.format(cwd=cwd))              # [step 5]
+        raise Refused(NO_BRANCH.format(cwd=cwd))
     path = location.replace("<branch>", branch).replace("<unit>", name).replace("/", "\\")
     writer_branch = naming.replace("<branch>", branch).replace("<unit>", name)
     if os.path.lexists(path):
-        raise Refused(PATH_EXISTS.format(path=path))          # [step 6]
+        raise Refused(PATH_EXISTS.format(path=path))
     if git(cwd, "show-ref", "--verify", "--quiet", "refs/heads/" + writer_branch).returncode == 0:
-        raise Refused(BRANCH_EXISTS.format(branch=writer_branch))  # [step 6]
+        raise Refused(BRANCH_EXISTS.format(branch=writer_branch))
     return cwd, path, writer_branch
 
 
 def cut(cwd, path, writer_branch):
-    """Step 7: the writer tree and its branch from `HEAD`, or `CutFailed` with
-    whatever this call made removed - the tree first, since git will not delete a
-    branch a tree has checked out.
-    """
     added = git(cwd, "worktree", "add", "-b", writer_branch, path, "HEAD")
     if added.returncode == 0:
         return
@@ -219,16 +175,16 @@ def main(argv):
     try:
         payload = parse_payload(sys.stdin.buffer.read())
         if payload is None:
-            raise Refused(NOT_AN_OBJECT)                      # [step 1]
+            raise Refused(NOT_AN_OBJECT)
         cwd, path, writer_branch = plan_writer(payload, resolve_root(argv))
-        cut(cwd, path, writer_branch)                         # [step 7]
+        cut(cwd, path, writer_branch)
     except Refused as refusal:
         print(PREFIX + str(refusal), file=sys.stderr)
         return 2
     except CutFailed as failure:
         print(PREFIX + str(failure), file=sys.stderr)
         return 1
-    print(path)                                               # [step 8]
+    print(path)
     return 0
 
 

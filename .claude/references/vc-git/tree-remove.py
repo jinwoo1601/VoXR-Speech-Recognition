@@ -4,25 +4,6 @@
 # Owns:     (script, no public types)
 # Depends:  (none)
 # =============================================================================
-"""`python3 .claude/references/vc-git/tree-remove.py "<path>" [--wait <seconds>]`,
-run from the hub or any tree of the repository: makes the path absolute, waits for
-the tree's directory to be released, removes the tree by
-`git worktree remove "<path>"`, never forced, and reads back.
-
-Standard library only; git is run by argument list, never by a shell string, each call
-with `-c core.longpaths=true` on its command line (no config file is written) so a tree
-holding a path past MAX_PATH on Windows is listed and removed whole.
-Exactly one verdict line is printed, after git's own refusal where there is one:
-
-- `removed: <path>` - unlisted, directory gone; exit 0
-- `absent: <path>` - no such path, nothing run; exit 1
-- `refused: <path> is not a worktree` - not listed, nothing done; exit 1
-- `refused: <path> is still listed` - exit 1
-- `held: <path> is still in use after <n> s` - nothing removed; exit 2
-- `half-removed: <path> is unlisted but its directory remains` - exit 3
-
-A leftover directory is reported, never deleted.
-"""
 
 import argparse
 import os
@@ -34,14 +15,10 @@ PROBE_SUFFIX = ".release-probe"
 
 
 def normalise(path):
-    """`path` as compared: `\\` separators, no trailing separator, casefolded."""
     return path.replace("/", "\\").rstrip("\\").casefold()
 
 
 def released(path):
-    """True once the directory can be renamed to its probe sibling and straight back;
-    False while a rename is refused, which means something still holds it.
-    """
     probe = path.rstrip("\\/") + PROBE_SUFFIX
     try:
         os.rename(path, probe)
@@ -52,7 +29,6 @@ def released(path):
 
 
 def is_listed(path):
-    """Whether a `worktree <path>` line of `git worktree list --porcelain` names `path`."""
     listed = subprocess.run(["git", "-c", "core.longpaths=true", "worktree", "list", "--porcelain"],
                             stdin=subprocess.DEVNULL, capture_output=True,
                             encoding="utf-8", errors="replace").stdout

@@ -4,25 +4,6 @@
 # Owns:     (script, no public types)
 # Depends:  (none)
 # =============================================================================
-"""Claude Code `PreToolUse` hook on `Bash`: subagents never change version-control
-state in the project's trees; the PM and `vc-checkin` are never guarded.
-
-Standard library only, and never an import of `harness.py`, for the agent
-guard's reason: the hook runs under whatever interpreter the platform starts.
-
-The command is split into segments at the shell's control operators and at
-newlines; each segment's command word, past assignments and wrapper words, is
-matched by basename, a trailing `.exe` dropped. A `git` segment's verb is read
-past the global options; a read form is allowed anywhere, and any other verb is
-refused when its target directory - `-C`, else the last `cd`, else the payload's
-`cwd` - lies inside the project root or another tree of the same repository, or
-cannot be resolved. The trees are read from the `.git` files, never from a
-subprocess, and paths compare case-insensitively with either separator.
-
-A denial is an affirmative document at exit 0; anything else is silence. There
-is no generic catch anywhere here, so an unforeseen bug is a traceback and a
-non-blocking error, never a denial.
-"""
 
 import json
 import os
@@ -62,7 +43,6 @@ CONFIG_READS = frozenset(("--get", "--get-all", "--get-regexp", "--list", "-l"))
 
 
 def resolve_root(argv):
-    """The project root: argv[1] when it names a directory, else the process cwd."""
     if len(argv) > 1:
         candidate = Path(argv[1])
         if candidate.is_dir():
@@ -71,7 +51,6 @@ def resolve_root(argv):
 
 
 def parse_payload(data):
-    """The hook payload as a mapping, or None for stdin the guard cannot read."""
     try:
         document = json.loads(data)
     except (ValueError, RecursionError):
@@ -80,9 +59,6 @@ def parse_payload(data):
 
 
 def tokenize(command):
-    """The command's words and operators: quotes group, backslashes stay literal,
-    and a newline is an operator character; unbalanced quotes fall back to a
-    whitespace split with a newline token at each line's end."""
     lexer = shlex.shlex(command, posix=True, punctuation_chars=PUNCTUATION)
     lexer.whitespace_split = True
     lexer.escape = ""
@@ -99,8 +75,6 @@ def tokenize(command):
 
 
 def is_break(token):
-    """True for a token that ends a segment: a run of operator characters that is
-    not a redirection, or a brace."""
     if token in ("{", "}"):
         return True
     return (bool(token) and all(character in PUNCTUATION for character in token)
@@ -108,7 +82,6 @@ def is_break(token):
 
 
 def split_segments(tokens):
-    """The tokens between breaks, empty segments dropped."""
     segments = [[]]
     for token in tokens:
         if is_break(token):
@@ -119,14 +92,11 @@ def split_segments(tokens):
 
 
 def command_name(token):
-    """The token's basename by either separator, lowercased, a trailing `.exe` dropped."""
     name = token.replace("\\", "/").rsplit("/", 1)[-1].lower()
     return name[:-len(".exe")] if name.endswith(".exe") else name
 
 
 def command_start(segment):
-    """The index of the segment's command word: past leading assignments, and past
-    the wrapper words, `sudo`, `env` and `xargs`, each with the options after it."""
     index = 0
     while index < len(segment):
         token = segment[index]
@@ -152,12 +122,6 @@ def command_start(segment):
 
 
 def to_path(text, base):
-    """`text` as a normalized absolute path, relative ones against `base`; None for a
-    drive-relative path, a home-relative one, and a relative one with no base. On
-    Windows a POSIX drive form - a slash, one drive letter, then a slash or nothing -
-    is read as that drive, a rooted path whose first component is `tmp` as lying
-    under the directory `tempfile.gettempdir()` names, and any other rooted path with
-    no drive is None; on any other OS a rooted path is an absolute path."""
     if os.name != "nt":
         if text[:1] == "/":
             return os.path.normpath(text)
@@ -176,8 +140,6 @@ def to_path(text, base):
 
 
 def invocations(command, cwd):
-    """Each segment's command as (name, arguments, working dir), a `cd` segment
-    moving the working dir of the segments after it; None where it is unknown."""
     working = cwd
     found = []
     for segment in split_segments(tokenize(command)):
@@ -196,19 +158,15 @@ def invocations(command, cwd):
 
 
 def path_key(path):
-    """The comparison form of a path: one separator, lowercase, no trailing slash."""
     return str(path).replace("\\", "/").lower().rstrip("/")
 
 
 def inside(path, tree):
-    """True when `path` is `tree` or lies under it."""
     key, top = path_key(path), path_key(tree)
     return key == top or key.startswith(top + "/")
 
 
 def pointed_path(file, prefix):
-    """The path a `.git` pointer file names after `prefix`, relative ones against the
-    file's directory; None for a missing, unreadable or foreign file."""
     try:
         text = file.read_text(encoding="utf-8").strip()
     except (OSError, ValueError):
@@ -220,8 +178,6 @@ def pointed_path(file, prefix):
 
 
 def protected_trees(root):
-    """The root and every tree of its repository: the hub, the common dir's parent,
-    and each tree a `worktrees/*/gitdir` file names."""
     trees = [Path(os.path.normpath(root))]
     dot_git = trees[0] / ".git"
     if dot_git.is_dir():
@@ -244,9 +200,6 @@ def protected_trees(root):
 
 
 def git_verb(arguments, working):
-    """(verb, its arguments, target dir, where, risky) past the global options, or
-    None when no verb follows them. The target is None when it cannot be resolved;
-    risky is True for a `-c` whose key can run a command."""
     target, where, risky = working, working or UNRESOLVED, False
     index = 0
     while index < len(arguments):
@@ -272,7 +225,6 @@ def git_verb(arguments, working):
 
 
 def branch_reads(rest):
-    """True when a `branch` invocation only lists."""
     listing = False
     index = 0
     while index < len(rest):
@@ -294,7 +246,6 @@ def branch_reads(rest):
 
 
 def is_read_form(verb, rest):
-    """True when the verb and its arguments only read."""
     if verb in READ_VERBS:
         return not (verb in WRITES_FILE
                     and any(word == "--output" or word.startswith("--output=") for word in rest))
@@ -317,7 +268,6 @@ def is_read_form(verb, rest):
 
 
 def decide(payload, root):
-    """The reason to deny this call with, or None to allow it."""
     if not payload.get("agent_id") or payload.get("agent_type") == "vc-checkin":
         return None
     if payload.get("tool_name") != "Bash":
@@ -349,7 +299,6 @@ def decide(payload, root):
 
 
 def deny_document(reason):
-    """The denial, one ASCII line: the guard's only output."""
     return json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                               "permissionDecision": "deny",
                                               "permissionDecisionReason": reason}})

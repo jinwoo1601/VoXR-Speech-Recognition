@@ -20,9 +20,9 @@ G1 locks a design: a preflight establishes that every fork is ruled and nothing 
 
 - `process-docs` (required) — where the design doc and the feature backlog live, and the area every changed file on this branch must lie in. Absent → stop and say so before any brief is filed.
 - `vc` (required) — the base-revision reads that give PREFLIGHT's changed-file list, the *Branch procedure*, whose lab form Prerequisites refuses, and the merge procedure of MERGE.
-- `verification` (required only where CATCH-UP brings the target in) — read only on the tree path, as `references/tree-path.md` `## Bindings` says. Absent there → stop before the merge and say so.
-- `trees` (optional) — the slots `references/tree-path.md` `## Bindings` names. Absent → today's path. Filled → the steps run as `references/tree-path.md` orders them, and PREFLIGHT's `budget` run adds `--hub "<Hub path>"`.
-- `session-launch` (optional) — the Hub session name, read by `references/tree-path.md`. Absent, or the Hub session name missing or `none` → REMOVE as today and no report sent.
+- `verification` (required only where CATCH-UP brings the target in) — read only on the tree path: the commands CATCH-UP's `compile-check` runs in the branch's tree; `none` is a filled value, and CATCH-UP records `nothing to run`. It is consulted nowhere else. Absent there → stop before the merge and say so.
+- `trees` (optional) — the Hub path ROOT compares with this session's root, PREFLIGHT's `budget` run takes as `--hub`, and STATUS's `scripts/hub.py write` and the `scripts/hub.py lock` commands take as `--root`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ and MERGE run in the hub. Absent → today's path. Filled → the steps run as `references/tree-path.md` orders them, and PREFLIGHT's `budget` run adds `--hub "<Hub path>"`.
+- `session-launch` (optional) — the Hub session name, to which the tree path's REMOVE sends `FINISHED`. Absent, or the Hub session name missing or `none` → REMOVE as today and no report sent.
 - Agents — `doc-extractor` missing → PREFLIGHT's question list is answered by the PM's own read, said so. `doc-writer` missing → stop after the ruling and say so. `compile-check` missing → where CATCH-UP brings the target in, stop before the merge and say so.
 
 <!-- harness:binding:start process-docs .claude/bindings/core.md -->
@@ -82,7 +82,7 @@ G1 locks a design: a preflight establishes that every fork is ruled and nothing 
 - Confirm window: 30 seconds (provisional → the tuning pass)
 - Release wait: none — `trees` is none, so no tree is removed
 - Context bound: about 200k tokens (provisional → the tuning pass)
-- Context read: `python3 -c "import glob,json,os;p=glob.glob(os.path.expanduser('~/.claude/projects/*/'+os.environ['CLAUDE_CODE_SESSION_ID']+'.jsonl'))[0];t=[n for n in (u['input_tokens']+u['cache_creation_input_tokens']+u['cache_read_input_tokens'] for u in (e['message']['usage'] for e in map(json.loads,open(p,encoding='utf-8')) if e.get('type')=='assistant')) if n>0];print(t[-1])"` — run in Git Bash from the project root; prints the context of this session's last assistant turn that carries usage, from its transcript under Claude Code's projects directory in the user's home; lags at most one turn
+- Context read: `py -c "import glob,json,os;p=glob.glob(os.path.expanduser('~/.claude/projects/*/'+os.environ['CLAUDE_CODE_SESSION_ID']+'.jsonl'))[0];t=[n for n in (u['input_tokens']+u['cache_creation_input_tokens']+u['cache_read_input_tokens'] for u in (e['message']['usage'] for e in map(json.loads,open(p,encoding='utf-8')) if e.get('type')=='assistant')) if n>0];print(t[-1])"` — run in Git Bash from the project root; prints the context of this session's last assistant turn that carries usage, from its transcript under Claude Code's projects directory in the user's home; lags at most one turn
 <!-- harness:binding:end session-launch -->
 
 ## Prerequisites

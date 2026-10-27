@@ -19,12 +19,12 @@ bindings: [vc, verification, product-docs, board, process-docs, trees, session-l
 ## Bindings
 
 - `vc` (required) — what STAGE needs staged for the ruling form, the read commands the preflight runs, the *Branch procedure*, whose lab form Prerequisites refuses, and MERGE's merge procedure. Absent → stop and say so before any brief is filed.
-- `verification` (required) — the commands whose run evidence the preflight's item 2 looks for, quoted into the preflight brief; `none` is a filled value (item 2 reports `nothing to run`). Absent → stop and say so before the brief is filed.
+- `verification` (required) — the commands whose run evidence the preflight's item 2 looks for, quoted into the preflight brief; `none` is a filled value (item 2 reports `nothing to run`). On the tree path, also the commands CATCH-UP's `compile-check` runs in the branch's tree, where `none` has CATCH-UP record `nothing to run`. Absent → stop and say so before the brief is filed.
 - `process-docs` (required) — the docs `gate-preflight` audits and RECORD writes to.
 - `product-docs` (optional) — the location and the reconciling agent. `none bound` → PRODUCT DOCS is reported as not applicable. A location with a named reconciling agent → that agent is dispatched from a decision-style brief only if it exists in the composed set, else the step is reported, never improvised.
 - `board` (optional) — default `none — memory/STATUS.md`. A bound board → CLOSE OUT advances or retires its row.
-- `trees` (optional) — the slots `references/tree-path.md` `## Bindings` names. Absent → today's path. Filled → the steps run as `references/tree-path.md` orders them.
-- `session-launch` (optional) — the Hub session name, read by `references/tree-path.md`. Absent, or the Hub session name missing or `none` → REMOVE as today and no report sent.
+- `trees` (optional) — the Hub path ROOT compares with this session's root and the `scripts/hub.py lock` commands take as `--root`; the List read that confirms the branch's tree; the Catch-up procedure; and the Clean read and the Hub slot's idiom by which HUB READ and MERGE run in the hub. Absent → today's path. Filled → the steps run as `references/tree-path.md` orders them.
+- `session-launch` (optional) — the Hub session name, to which the tree path's REMOVE sends `FINISHED`. Absent, or the Hub session name missing or `none` → REMOVE as today and no report sent.
 - Agents — `gate-preflight` missing → stop before any dispatch and say so. `doc-writer` missing → RECORD is reported as not done; the ruling stands in the conversation and the session note. `compile-check` missing → where CATCH-UP brings the main branch in, stop before the merge and say so. `architect-reconcile` missing → the architecture doc's `status:` move, and a lite feature's whole RECORD, are reported as not done, the ruling standing as said of `doc-writer`.
 
 <!-- harness:binding:start vc .claude/bindings/vc-git.md -->
@@ -99,7 +99,7 @@ bindings: [vc, verification, product-docs, board, process-docs, trees, session-l
 - Confirm window: 30 seconds (provisional → the tuning pass)
 - Release wait: none — `trees` is none, so no tree is removed
 - Context bound: about 200k tokens (provisional → the tuning pass)
-- Context read: `python3 -c "import glob,json,os;p=glob.glob(os.path.expanduser('~/.claude/projects/*/'+os.environ['CLAUDE_CODE_SESSION_ID']+'.jsonl'))[0];t=[n for n in (u['input_tokens']+u['cache_creation_input_tokens']+u['cache_read_input_tokens'] for u in (e['message']['usage'] for e in map(json.loads,open(p,encoding='utf-8')) if e.get('type')=='assistant')) if n>0];print(t[-1])"` — run in Git Bash from the project root; prints the context of this session's last assistant turn that carries usage, from its transcript under Claude Code's projects directory in the user's home; lags at most one turn
+- Context read: `py -c "import glob,json,os;p=glob.glob(os.path.expanduser('~/.claude/projects/*/'+os.environ['CLAUDE_CODE_SESSION_ID']+'.jsonl'))[0];t=[n for n in (u['input_tokens']+u['cache_creation_input_tokens']+u['cache_read_input_tokens'] for u in (e['message']['usage'] for e in map(json.loads,open(p,encoding='utf-8')) if e.get('type')=='assistant')) if n>0];print(t[-1])"` — run in Git Bash from the project root; prints the context of this session's last assistant turn that carries usage, from its transcript under Claude Code's projects directory in the user's home; lags at most one turn
 <!-- harness:binding:end session-launch -->
 
 ## Prerequisites
