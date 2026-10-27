@@ -41,16 +41,16 @@
       "Bash(cygpath:*)",
       "Bash(realpath:*)",
       "WebSearch",
-      "Bash(python3 scripts/harness.py list:*)",
-      "Bash(python3 scripts/harness.py validate:*)",
-      "Bash(python3 scripts/harness.py doctor:*)",
-      "Bash(python3 scripts/harness.py outline:*)",
-      "Bash(python3 scripts/harness.py budget:*)",
-      "Bash(python3 scripts/harness.py bounds:*)",
-      "Bash(python3 scripts/harness.py upgrade --dry-run:*)",
-      "Bash(python3 scripts/hub.py sessions-at:*)",
-      "Bash(python3 scripts/hub.py predecessor:*)",
-      "Bash(python3 scripts/hub.py write:*)",
+      "Bash(py scripts/harness.py list:*)",
+      "Bash(py scripts/harness.py validate:*)",
+      "Bash(py scripts/harness.py doctor:*)",
+      "Bash(py scripts/harness.py outline:*)",
+      "Bash(py scripts/harness.py budget:*)",
+      "Bash(py scripts/harness.py bounds:*)",
+      "Bash(py scripts/harness.py upgrade --dry-run:*)",
+      "Bash(py scripts/hub.py sessions-at:*)",
+      "Bash(py scripts/hub.py predecessor:*)",
+      "Bash(py scripts/hub.py write:*)",
       "Bash(claude agents:*)",
       "Bash(claude stop:*)",
       "Bash(claude --bg:*)",
@@ -73,44 +73,41 @@
       "Bash(git ls-files:*)",
       "Bash(git merge-base:*)",
       "Bash(git worktree list:*)",
-      "Bash(git branch --show-current:*)",
+      "Bash(git branch --show-current)",
       "Bash(git stash list:*)",
       "Bash(git config --get:*)",
       "Bash(git grep:*)",
       "Bash(git blame:*)",
       "Bash(git commit:*)",
-      "Bash(python3 .claude/references/vc-git/tree-remove.py:*)",
-      "Bash(python3 .claude/references/vc-git/pre-commit-check.py --range:*)",
+      "Bash(py .claude/references/vc-git/tree-remove.py:*)",
+      "Bash(py .claude/references/vc-git/pre-commit-check.py --range:*)",
       "Bash(git add:*)",
       "Bash(git switch:*)",
       "Bash(git branch)",
-      "Bash(git branch --list:*)",
-      "Bash(git branch -l:*)",
-      "Bash(git branch -a:*)",
-      "Bash(git branch -r:*)",
-      "Bash(git branch -v:*)",
-      "Bash(git branch -vv:*)",
-      "Bash(git branch --all:*)",
-      "Bash(git branch --remotes:*)",
-      "Bash(git branch --contains:*)",
-      "Bash(git branch --no-contains:*)",
-      "Bash(git branch --merged:*)",
-      "Bash(git branch --no-merged:*)",
-      "Bash(git branch --points-at:*)",
+      "Bash(git branch --list)",
+      "Bash(git branch -l)",
+      "Bash(git branch -a)",
+      "Bash(git branch -r)",
+      "Bash(git branch -v)",
+      "Bash(git branch -vv)",
+      "Bash(git branch --all)",
+      "Bash(git branch --remotes)",
+      "Bash(git branch -a -v)",
       "Bash(git check-ignore:*)",
       "Bash(git show-ref:*)",
       "Bash(git stash create:*)",
       "Bash(git stash store:*)",
-      "Bash(python3 ../harness/scripts/harness.py list:*)",
-      "Bash(python3 ../harness/scripts/harness.py validate:*)",
-      "Bash(python3 ../harness/scripts/harness.py doctor:*)",
-      "Bash(python3 ../harness/scripts/harness.py outline:*)",
-      "Bash(python3 ../harness/scripts/harness.py budget:*)",
-      "Bash(python3 ../harness/scripts/harness.py bounds:*)",
-      "Bash(python3 ../harness/scripts/harness.py upgrade --dry-run:*)",
-      "Bash(python3 ../harness/scripts/hub.py sessions-at:*)",
-      "Bash(python3 ../harness/scripts/hub.py predecessor:*)",
-      "Bash(python3 ../harness/scripts/hub.py write:*)"
+      "Bash(git update-ref refs/harness/pre-upgrade/*)",
+      "Bash(py ../harness/scripts/harness.py list:*)",
+      "Bash(py ../harness/scripts/harness.py validate:*)",
+      "Bash(py ../harness/scripts/harness.py doctor:*)",
+      "Bash(py ../harness/scripts/harness.py outline:*)",
+      "Bash(py ../harness/scripts/harness.py budget:*)",
+      "Bash(py ../harness/scripts/harness.py bounds:*)",
+      "Bash(py ../harness/scripts/harness.py upgrade --dry-run:*)",
+      "Bash(py ../harness/scripts/hub.py sessions-at:*)",
+      "Bash(py ../harness/scripts/hub.py predecessor:*)",
+      "Bash(py ../harness/scripts/hub.py write:*)"
     ],
     "deny": [
       "Bash(curl:*)",
@@ -190,7 +187,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/doctor-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/doctor-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       }
@@ -201,7 +198,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/agent-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       },
@@ -210,7 +207,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           }
         ]
@@ -221,25 +218,25 @@
           {
             "type": "command",
             "if": "Bash(*rm*)",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(*rM*)",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(*Rm*)",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(*RM*)",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/rm-fence-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           }
         ]
@@ -250,16 +247,7 @@
           {
             "type": "command",
             "if": "Bash(*--b*)",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/references/unity/csharpier-hook.sh\" snapshot"
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/write-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       },
@@ -269,7 +257,7 @@
           {
             "type": "command",
             "if": "Bash(*git*)",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/vc-git/vc-guard-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
           }
         ]
       }
@@ -279,17 +267,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/context-bound-hook.py\" ] || python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/context-bound-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/context-bound-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/context-bound-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/references/unity/csharpier-hook.sh\" format"
           }
         ]
       }
@@ -299,7 +278,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/references/core/report-filer-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+            "command": "py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/report-filer-hook.py\" \"${CLAUDE_PROJECT_DIR}\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/stop-line-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/stop-line-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
           }
         ]
       }

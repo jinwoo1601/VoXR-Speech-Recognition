@@ -30,3 +30,13 @@ Every new code file opens with the header block below, before any import, includ
 | SQL | `--` |
 
 Use the separator line style that matches: `// ====...` for `//` languages, `# ====...` for `#` languages, etc.
+
+## Comments and docstrings
+
+A code file carries no comment but its header block: every other comment, commented-out code included, and every docstring is banned, in every language. Exempt, each carrying no prose after it:
+
+- Shebang lines.
+- Encoding lines.
+- Tool directives a tool or the OS reads, such as `# noqa`, `# type: ignore`, `// csharpier-ignore`, and C# `#pragma` and `#region`; a `#region` name is a label, not prose.
+
+Existing comments and docstrings are removed only where a plan edits a definition, inside it and in the leading doc comment attached to it, as rule 1 of `.claude/references/core/implementation-rules.md` states. The `CONV` angle of a review cycle checks changed code against this section.

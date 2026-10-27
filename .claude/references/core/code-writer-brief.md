@@ -10,13 +10,19 @@
 - Agent: `code-writer`
 - Baseline model: `<the agent file's model:>`; downgrade for this dispatch: `<none | sonnet — mechanical phase>`
 - Binding to consult: the project's `verification` binding, looked up as `.claude/references/core/delegation-contract.md` `## Bindings` says (`.claude/bindings/<pack>.md` first, the project CLAUDE.md as the pre-scaffold fallback), quoted under "Verification command"
-- Task: implement phase `<id>` of `<feature>` exactly as persisted
+- Task: implement phase `<id>` of `<feature>` exactly as persisted, as the brief's `## Plan correction` amends it where the brief has one
 
 ## Plan reference
 
 - Plan file: `<repo-relative path>` (required)
 - Architecture doc: `<repo-relative path>` — for the decisions the plan cites, not read whole
 - Requirements doc: `<repo-relative path>` (rows `<F…>`) — for a lite feature, by the test of `.claude/references/core/feature-lite.md` `## The mark`, the backlog's path and criteria `<A…>`, with the word `lite`, the feature's name and the row quoted (`.claude/references/core/feature-lite.md` `## The acceptance source`)
+
+## Plan correction
+
+Only in a re-dispatch after `implement` LOOP's `architect` fix pass; left out otherwise. The fix pass's return, verbatim: it governs over the persisted plan for each item it names, the files it names join the files in scope below, and the plan file stays unedited.
+
+- <the fix pass's report text, verbatim>
 
 ## Files in scope (from the plan's files-to-change table)
 
