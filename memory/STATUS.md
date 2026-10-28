@@ -5,7 +5,7 @@ updated: 2026-10-28
 ## Current
 
 - **`main` at PR #181 `10e6dca` (harness round 3, 2026-10-27); `v2.0.0`; next: `feat-endpointer-profile` takes `main` in, re-splices.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178.
-- **`light-vc-automode-excluded` (light, slim, ruled 2026-10-28): vc `Auto-mode entries` -> `excluded` + pack round 4 (core 0.109.0); next: review, PR, G2-lite.**
+- **`light-vc-automode-excluded` (light, slim, ruled 2026-10-28): vc `Auto-mode entries` -> `excluded` + pack round 4; slim review 0 findings; EditMode 203/203, PlayMode 704/704; next: PR, G2-lite.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
