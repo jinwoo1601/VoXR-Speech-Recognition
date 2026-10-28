@@ -14,7 +14,7 @@ from pathlib import Path
 
 MANIFEST_REL = ".claude/harness.json"
 BINDINGS_REL = ".claude/bindings"
-WAIT_SECONDS = 10
+WAIT_SECONDS = 30
 LIST_WAIT_SECONDS = 5
 HUB_CHECKOUT = re.compile(r"the main checkout is `([^`]+)`")
 
@@ -97,7 +97,9 @@ def doctor_stdout(root, script):
             result = subprocess.run([sys.executable, *argv], cwd=str(root), env=env,
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     timeout=WAIT_SECONDS)
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired:
+        return b"", None, f"timed out after {WAIT_SECONDS} s"
+    except OSError:
         return b"", None, None
     return result.stdout, result.returncode, first_line(result.stderr)
 
@@ -179,6 +181,10 @@ def main(argv):
             elif code:
                 line = (f"warn  DOCTOR  {script}  harness.py doctor exited {code} "
                         f"with no report: {reason}\n")
+                sys.stdout.buffer.write(line.encode("utf-8"))
+                sys.stdout.buffer.flush()
+            elif code is None and reason is not None:
+                line = f"warn  DOCTOR  {script}  harness.py doctor {reason} with no report\n"
                 sys.stdout.buffer.write(line.encode("utf-8"))
                 sys.stdout.buffer.flush()
     except Exception:
