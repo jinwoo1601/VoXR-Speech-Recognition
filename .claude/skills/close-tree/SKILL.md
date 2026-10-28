@@ -10,7 +10,7 @@ bindings: [vc, verification, trees, session-launch]
 
 ## What this is
 
-The hub's half of a branch's close: the tree a finished branch was built in is removed from the hub once its checks pass, or kept with one line naming the check that failed. A report line is a trigger, never proof — a tree's close reads the `vc` binding's log read, the session list and the tree, never the report's detail, and `## A handed-off session`, which stops a handed-off session and removes nothing, takes from its line only the branch and the predecessor's session id. The removal rides on the gate ruling that authorised the merge — the G1, G2 or G2-lite ruling, or a light-lane close by class — and takes no ruling of its own (`adr-0024`).
+The hub session's half of a branch's close: the tree a finished branch was built in is removed from the hub once its checks pass, or kept with one line naming the check that failed. A report line is a trigger, never proof — a tree's close reads the `vc` binding's log read, the session list and the tree, never the report's detail, and `## A handed-off session`, which stops a handed-off session and removes nothing, takes from its line only the branch and the predecessor's session id. The removal rides on the gate ruling that authorised the merge — the G1, G2 or G2-lite ruling, or a light-lane close by class — and takes no ruling of its own (`adr-0024`).
 
 > At a tree's close, nothing is stopped before the branch is merged, nothing is read clean while a session is at the tree, nothing is removed before the release wait, and a half-removal or a refused step is told, never retried.
 
@@ -105,14 +105,17 @@ A close that ends short of `removed` tells the human one line — R3's line, the
 `<branch>` and `<session id>` are the ones the `STARTED` line names; the line is a trigger and never proof. The tree is kept: nothing is removed, read clean or written, and MERGED is not read.
 
 1. **TREE** — as `## Workflow`'s TREE.
-2. **PREDECESSOR** — first the shell returns to this session's project root. Then the trees contract's `predecessor` verb on the tree's path and `<session id>`, which decides the case where the Path form is Windows form; under another Path form this step decides the same cases by that Path form itself, as the contract says. One act per output, `<path>` the tree's path, each line one line to the human, its template plain ASCII and `<cwd>`, `<path>` and `<session id>` printed as read:
-   - `stop <id>` → the Stop command with that `<id>`, its conversation kept; then the case is re-read, by the verb where the contract delivers it, until `gone`, within the `session-launch` binding's *Confirm window*, or the line `<branch>: predecessor <session id> still listed at <path>`.
+2. **PREDECESSOR** — first the shell returns to this session's project root. Then the trees contract's `predecessor` verb on the tree's path and `<session id>`, which decides the case where the Path form is Windows form; under another Path form this step decides the same cases by that Path form itself, as the contract says. The verb's tool call is given a timeout of 420000 ms, the Bash tool's `timeout`, never its shorter default, since the verb waits up to its `CHILD_WAIT`, 300 seconds, on a live child process. One act per output, `<path>` the tree's path, each line one line to the human, its template plain ASCII and `<cwd>`, `<path>` and `<session id>` printed as read:
+   - `stop <id>` → the Stop command with that `<id>`, its conversation kept; then the case is re-read, by the verb with `--wait 0` where the contract delivers it, until `gone`, within the `session-launch` binding's *Confirm window*, or the line `<branch>: predecessor <session id> still listed at <path>`; a re-read acts on `gone` alone, and any other output it prints, `children` included, is not acted on and the re-read goes on.
    - `gone` → nothing, silently.
    - `elsewhere <cwd>` → `<branch>: predecessor <session id> not stopped - listed at <cwd>, not at <path>`, and nothing is stopped.
    - `alone` → `<branch>: predecessor <session id> not stopped - no newer session at <path>`, and nothing is stopped.
    - `no-id` → `<branch>: predecessor <session id> not stopped - no stop id at <path>`, and nothing is stopped.
+   - `children <pid> <name>, ...` → `<branch>: predecessor <session id> not stopped - live child processes at <path>: <the children printed>`, and nothing is stopped; it is the first call's act alone, never a re-read's.
 
 The verb exiting 1 or 2 → one line to the human naming it, and nothing is stopped. Nothing is kept between lines: a replayed `STARTED` reads `gone`.
+
+The verb's call refused by permission or policy → `<branch>: predecessor <session id> - call refused at <path>: <the refused call>`, and nothing after it runs; the refused call is never retried in another form.
 
 Where `trees` reads absent, the tree is this session's project root: TREE reads nothing, `<path>` is the project root, and the steps run as written.
 
@@ -120,4 +123,4 @@ The `session-launch` binding absent, or a slot these steps need missing or `none
 
 At a tree's close and for a handed-off session alike, this skill writes nothing to `memory/`, keeps the branch, sends nothing to any session, and says nothing on success.
 
-A handoff the hub takes at a step boundary of `## Workflow` or of `## A handed-off session`, or where either stops, as `handoff` `## When to hand off` says, has as its objective the next step — after the last step or a stop, the hub's next act: the next report line or the human's next word. The brief targets the hub, so `handoff` launches nothing and shows the paste line (`handoff`'s `references/launch.md` condition 3); its brief, note and pointer are `handoff`'s, not this skill's. Where `trees` reads absent, `## A handed-off session` takes no rhythm handoff: `handoff` has no hub to target there.
+A handoff the hub session takes at a step boundary of `## Workflow` or of `## A handed-off session`, or where either stops, as `handoff` `## When to hand off` says, has as its objective the next step — after the last step or a stop, the hub session's next act: the next report line or the human's next word. The brief targets the hub, so `handoff` launches nothing and shows the paste line (`handoff`'s `references/launch.md` condition 3); its brief, note and pointer are `handoff`'s, not this skill's. Where `trees` reads absent, `## A handed-off session` takes no rhythm handoff: `handoff` has no hub to target there.

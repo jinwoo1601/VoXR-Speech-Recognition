@@ -10,7 +10,7 @@
 - **The write guard** — `.claude/references/core/write-guard-hook.py`, on `PreToolUse` twice, given the project directory as its argument: with the matcher `Write|Edit|NotebookEdit|SendMessage`, and with the matcher `Bash` and `"if": "Bash(*--b*)"`, so a Bash call whose text holds no `--b` starts no process. One process holds three rules, and the first that refuses decides: the handoff rule, the hub memory rule and the locked-doc rule. The handoff rule watches a SendMessage beginning `HANDOFF -` and, by the project's `trees` section, a Bash call placing a brief or a Write or Edit under a `memory/handoffs/` directory; every call not watched by its shape gets silence, with no file and no transcript read. The hub memory rule watches a Write, Edit or NotebookEdit aimed beneath the hub's `memory/` where the `trees` section is filled; a path holding no `memory` component gets silence, with no file read. The locked-doc rule watches a Write or Edit of a `.md` file. Its timeout on the first entry is 10 seconds, provisional; past it, the call proceeds unchecked.
 - **The rm fence** — `.claude/references/core/rm-fence-hook.py`, on `PreToolUse` with the matcher `Bash`, as four handlers running one command, each with its own `"if"` — `"Bash(*rm*)"`, `"Bash(*rM*)"`, `"Bash(*Rm*)"` and `"Bash(*RM*)"` — so a call whose text holds no `rm` in any letter case starts no process. It reads each `rm` and `rmdir` in the call. Its timeout is 10 seconds, provisional; past it, the call proceeds unchecked. Within that, the expansion of the call's pattern targets has a walk budget of 5 seconds, also provisional: a pattern still expanding when it is spent, and every pattern after it, is unresolved, so the call stops.
 - **The context-bound hook** — `.claude/references/core/context-bound-hook.py`, on `PostToolUse` with no matcher, so it runs after every tool call, given the project directory as its argument. In the main thread, once the session's context passes the `session-launch` binding's *Context bound*, it puts one line into the model's context on every call; at or below the bound, in a subagent and on any error it is silent (`## What the context-bound hook prints`). Its timeout is 5 seconds, provisional; past it, the tool's result stands and no line is added.
-- **The stop-line hook** — `.claude/references/core/stop-line-hook.py`, on `Stop` with no matcher, so it runs at each main-thread turn end, given the project directory as its argument. It passes an end whose final text closes on a stop line and, in skill work, blocks any other end once; in conversation and on any error it is silent (`## What the stop-line hook passes`). Its timeout is 10 seconds, provisional; past it, the turn ends unchecked.
+- **The stop-line hook** — `.claude/references/core/stop-line-hook.py`, on `Stop` with no matcher, so it runs at each main-thread turn end, given the project directory as its argument. It blocks an end once where, in skill work, its final text closes on no stop line, or where, in any context, it closes on a stop line of a waiting kind with no AskUserQuestion call since the newest human prompt; every other end passes, and on any error it is silent (`## What the stop-line hook passes`). Its timeout is 10 seconds, provisional; past it, the turn ends unchecked.
 
 A version-control pack may add its own `PreToolUse` guard on `Bash` for subagents; that pack describes it.
 
@@ -121,13 +121,15 @@ A stop line is the final text's last non-blank line, read with `*`, `_` and back
 
 `declared` needs a detail, and the detail, normalized the same way, its backticks and one final `.` dropped, must equal an entry of the frontmatter `stops:` of a composed `.claude/skills/*/SKILL.md`; otherwise the line reads as no line. A `stops:` that is not an unquoted flow list, or a SKILL.md that cannot be read, passes the end.
 
+Six kinds wait on the human: `declared`, `gate`, `irreversible act`, `scope change`, `BLOCKED` and `fork`; an end on `background agents`, `answering the human` or `handoff` passes before anything is read. An end on a valid line of a waiting kind, in skill work or conversation alike, is checked for the call alone: the hook reads the transcript back to the newest human prompt in the same blocks and cap, and the end passes where that window holds an assistant `tool_use` block named `AskUserQuestion`, whatever its result, since no result is read. A window reaching the prompt, the file's start or the 1 MB cap with no such call blocks: a call beyond the cap counts as none. An unreadable transcript passes.
+
 With no valid line, the hook reads the transcript back to the newest human prompt, in 64 KB blocks, at most 1 MB. The end is skill work where that window holds a Skill call whose `input.skill`, after its last `:`, names a directory under `.claude/skills/`, or where that prompt's typed command names one; or by the carry, where the assistant text before that prompt closed on a stop line of a kind other than `answering the human` or `handoff`. Anything else, nothing found within the cap and an unreadable transcript included, is conversation, and the end passes.
 
-A payload with a non-empty `agent_id`, a true `stop_hook_active` or no string `last_assistant_message` passes before anything is read. Skill work blocks: `{"decision": "block", "reason": …}` at exit 0, the reason "invoke the next skill, or `handoff` past the context bound or at a phase boundary". The end that follows a block passes. Any error is silence, and the end passes.
+A payload with a non-empty `agent_id`, a true `stop_hook_active` or no string `last_assistant_message` passes before anything is read. Skill work blocks: `{"decision": "block", "reason": …}` at exit 0, the reason "invoke the next skill, or `handoff` past the context bound or at a phase boundary". A waiting line with no call blocks the same way, the reason "put this stop to the human through AskUserQuestion, its question stating the issue on its own, then end again; where AskUserQuestion is unavailable or refused, say so and end again". The end that follows a block passes, so an end is blocked once, by one check only. Any error is silence, and the end passes.
 
 Elsewhere, a legitimate stop in skill work ended without the line costs one turn: the end is blocked once, and the next end passes. The reminder lines in `phase-pickup` and `implement` give the form and point here.
 
-It leaves unchecked: whether the stop the line names is the true one, the end after a block, skill work its window misses, and the carry's one block per reply while the human chats after a stop in skill work.
+It leaves unchecked: whether the stop the line names is the true one, the end after a block, skill work its window misses, and the carry's one block per reply while the human chats after a stop in skill work; and, of the call, whether it put the stop the line names, an earlier call covering a later stop, a stop to the human on no line or an exempt kind, a result or another entry recorded as a human prompt after the call — a task notification or an interrupt marker, as observed, or a dismissal's result, as an unobserved one's might be — closing the window for one block, and, after a `/clear`, a `transcript_path` that may name the pre-clear file (deferral B152).
 
 ## What the hooks rely on
 
@@ -200,6 +202,20 @@ Documented by the platform (https://code.claude.com/docs/en/hooks), read on 2026
 - Past eight blocks in a row, a count a tool call resets, the next block is overridden and the turn ends.
 - A command that times out has its output discarded.
 - `Stop` does not run when the user interrupts the turn.
+
+Observed in a probe on 2026-10-28, its Claude Code version not recorded, of three answered AskUserQuestion calls in one session's transcript:
+
+- An `AskUserQuestion` call is an `assistant` entry whose `message.content` holds a `tool_use` block named `AskUserQuestion`.
+- Its answer is a `user` entry holding a `tool_result` block and a top-level `toolUseResult` holding `answers` and `questions`, which the stop-line hook reads as no human prompt.
+- A dismissed or refused call's result was not observed, and the hook reads no result.
+
+Observed in a live check on 2026-10-28, against Claude Code 2.1.312, of the stop-line hook's AskUserQuestion check in a running session:
+
+- The replaced hook ran in the running session after `upgrade`, with no restart: the first end only it could block was blocked.
+- An end on `Stop: gate` with no `AskUserQuestion` call since the newest human prompt was blocked once with the waiting line's reason, and the end that followed passed.
+- An end on `Stop: gate` after an `AskUserQuestion` call in that window passed: the call's `tool_use` entry was in the transcript at the `Stop` read.
+- The call was answered inside the turn, and the turn went on.
+- A dismissed or refused call's result was not shown.
 
 ## Allowing named calls
 

@@ -36,7 +36,9 @@ That line opens your final message, the index. Before it goes the full report, a
 
 No narrative summary, no design recommendations, no plan suggestions. If a caller's question needs judgment ("should this live in X?"), answer with the facts that bear on it and say the call is theirs.
 
-Then read the brief once more to mark the criteria, and end with the index, about 2,000 tokens at most: the first line; one line per site, `path:line — symbol — role`, no quoted declarations; the not-found list and the scope flags in full; the trailer.
+Then read the brief once more to mark the criteria, and end with the index, about 2,000 tokens at most: the first line; one line per site, `path:line — symbol — role`, no quoted declarations; the not-found list and the scope flags in full; any `refused` lines; the trailer.
+
+A tool call refused by permission or policy is reported, never retried in another form: whatever the status, one `refused` line per refused call before the trailer, ``refused: <tool>; `<call>`; <the refusal's words>``, the call on one line, whitespace folded, cut to 140 characters, `...` where cut, non-ASCII as `?`, the refusal's words verbatim.
 
 The trailer: on `DONE`, one line — `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the full trailer (the brief's acceptance criteria each marked met / not met / not checked; files written, by absolute path, or `none`; verification run and result, or `not run`; blockers; open questions; suggested next step).
 No restating the brief, no narrative, nothing else.

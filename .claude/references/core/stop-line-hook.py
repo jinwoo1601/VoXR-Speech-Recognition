@@ -1,5 +1,5 @@
 # =============================================================================
-# Purpose:  Stop hook blocking, once, a skill-work turn end that closes on no stop line
+# Purpose:  Stop hook blocking, once, a skill-work turn end that closes on no stop line, or an end on a waiting stop line with no AskUserQuestion call
 # Layer:    Hooks
 # Owns:     (script, no public types)
 # Depends:  (none)
@@ -12,8 +12,10 @@ import re
 import sys
 
 REASON = "invoke the next skill, or `handoff` past the context bound or at a phase boundary"
+ASK_REASON = "put this stop to the human through AskUserQuestion, its question stating the issue on its own, then end again; where AskUserQuestion is unavailable or refused, say so and end again"
 KINDS = ("declared", "gate", "irreversible act", "scope change", "BLOCKED",
          "background agents", "answering the human", "fork", "handoff")
+WAITING = ("declared", "gate", "irreversible act", "scope change", "BLOCKED", "fork")
 CARRY_PASS = ("answering the human", "handoff")
 BLOCK_BYTES = 65536
 SCAN_BYTES = 1048576
@@ -185,6 +187,24 @@ def final_text(entry):
     return texts[-1] if texts else None
 
 
+def unasked(transcript):
+    if not isinstance(transcript, str) or not transcript:
+        return False
+    try:
+        for entry in entries_backwards(transcript):
+            message = entry.get("message")
+            content = message.get("content") if isinstance(message, dict) else None
+            if entry.get("type") == "assistant" and isinstance(content, list) and any(
+                    isinstance(block, dict) and block.get("type") == "tool_use"
+                    and block.get("name") == "AskUserQuestion" for block in content):
+                return False
+            if human_prompt(entry):
+                return True
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def skill_work(transcript, names):
     if not isinstance(transcript, str) or not transcript:
         return False
@@ -217,16 +237,22 @@ def decide(payload, argument=None):
     if not isinstance(text, str):
         return None
     line = stop_line(text)
-    if line is not None and line[0] != "declared":
+    waiting = line is not None and line[0] in [kind.casefold() for kind in WAITING]
+    if line is not None and not waiting:
         return None
+    ask = json.dumps({"decision": "block", "reason": ASK_REASON})
+    if waiting and line[0] != "declared":
+        return ask if unasked(payload.get("transcript_path")) else None
     root = project_root(payload, argument)
     names = skill_names(root)
     if names is None:
         return None
     if line is not None:
         declared = declared_names(root, names)
-        if declared is None or declared_key(line[1]) in declared:
+        if declared is None:
             return None
+        if declared_key(line[1]) in declared:
+            return ask if unasked(payload.get("transcript_path")) else None
     if skill_work(payload.get("transcript_path"), names):
         return json.dumps({"decision": "block", "reason": REASON})
     return None
