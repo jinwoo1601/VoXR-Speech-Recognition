@@ -58,3 +58,5 @@ First line: `<STATUS> — <brief path or task>`, where STATUS is DONE | PARTIAL 
 3. **Unverifiable claims** — anything from the process docs you declined to write, and why.
 4. **Decisions not carried** — each decision from the process docs you filtered out as transient rather than durable, and why.
 5. **Precedence conflicts** — each conflict between the two homes that the precedence order settled, one per line: the two statements, which home won, and what the pack-owned contract may therefore have wrong.
+
+A tool call refused by permission or policy is reported, never retried in another form: whatever the status, one `refused` line per refused call at the report's end, ``refused: <tool>; `<call>`; <the refusal's words>``, the call on one line, whitespace folded, cut to 140 characters, `...` where cut, non-ASCII as `?`, the refusal's words verbatim.

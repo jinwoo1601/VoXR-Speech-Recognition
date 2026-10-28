@@ -25,7 +25,7 @@ Execution discipline:
 - Run gates sequentially; capture full output. A command the binding says to start in the background, or one that may run past about two minutes, is started with the Bash tool's `run_in_background: true`, its output redirected to a file under the system temp that ends with an exit line (`<command> > <file> 2>&1; echo "exit=$?" >> <file>`); then wait in one foreground Bash call that loops until that line appears — `until grep -q '^exit=' <file>; do sleep 2; done` — with an explicit `timeout` under 600000 ms, re-issued if it times out before the run ends, unless the completion notice comes first; never a bare `sleep` call, which the harness blocks, and never a foreground call that can reach the tool's 600 s limit — then Read the output file. Every other command runs in the foreground with a generous `timeout`.
 - A non-zero exit OR error-shaped output means FAIL, regardless of what the tool prints at the end.
 - Know the environment quirks the bindings document (e.g. platform-specific APIs that throw only in headless harnesses); attribute such failures to the documented quirk, not to the code under test — and say which.
-- A tool call refused by permission or policy is reported, never retried in another form.
+- A tool call refused by permission or policy is reported, never retried in another form: whatever the status, one `refused` line per refused call before the trailer, ``refused: <tool>; `<call>`; <the refusal's words>``, the call on one line, whitespace folded, cut to 140 characters, `...` where cut, non-ASCII as `?`, the refusal's words verbatim.
 
 ## Mode B — parse
 

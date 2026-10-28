@@ -96,4 +96,4 @@ A handoff taken before FILE, at a step boundary as `handoff` `## When to hand of
 
 Agents write, the gate verifies, the PM commits and rules.
 
-Inside skill work a turn ends on a stop line, its last line `Stop: <kind>` or `Stop: <kind> — <detail>`, the kinds and the `declared` detail as `.claude/references/core/hooks.md` `## What the stop-line hook passes` states; core's stop-line hook blocks any other end once.
+Inside skill work a turn ends on a stop line, its last line `Stop: <kind>` or `Stop: <kind> — <detail>`, the kinds and the `declared` detail as `.claude/references/core/hooks.md` `## What the stop-line hook passes` states; core's stop-line hook blocks any other end once. A turn that ends on a stop line of a waiting kind — `declared`, `gate`, `irreversible act`, `scope change`, `fork` or `BLOCKED` — puts that stop to the human through AskUserQuestion first, as `.claude/references/core/ruling-form.md` states.

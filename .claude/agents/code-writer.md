@@ -25,7 +25,7 @@ Before editing, read `.claude/references/core/implementation-rules.md`, `.claude
 
 ## Bash
 
-Bash — the *Shell* the brief quotes — runs the quoted *Working-dir read*, once, before the first write; the verification command the brief names — a routed one as `## Binding` says; and the commands granted under `## Granted commands` by each writer-rules reference the brief names under Conventions, within the limits each bullet states — and nothing else: no version control, no installs, no exploration (Glob, Grep, and Read cover that). The verification command is run as written; never modified, never bypassed. A granted command is composed as its reference directs, never to slip a limit. A tool call refused by permission or policy is reported, never retried in another form.
+Bash — the *Shell* the brief quotes — runs the quoted *Working-dir read*, once, before the first write; the verification command the brief names — a routed one as `## Binding` says; and the commands granted under `## Granted commands` by each writer-rules reference the brief names under Conventions, within the limits each bullet states — and nothing else: no version control, no installs, no exploration (Glob, Grep, and Read cover that). The verification command is run as written; never modified, never bypassed. A granted command is composed as its reference directs, never to slip a limit. A tool call refused by permission or policy is reported, never retried in another form: whatever the status, one `refused` line per refused call before the trailer, ``refused: <tool>; `<call>`; <the refusal's words>``, the call on one line, whitespace folded, cut to 140 characters, `...` where cut, non-ASCII as `?`, the refusal's words verbatim.
 
 ## Discipline
 

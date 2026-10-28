@@ -22,7 +22,7 @@ sources:
 
 <!-- The mechanism at MODEL altitude: the state it tracks, the rules, how one step — a request, a turn, an order — resolves. Use a table or matrix where it sharpens the model. NO numbers presented as decided — flag them provisional → the tuning pass. NO class names or components — that is the architecture doc. -->
 
-## The decisions it puts to its operator
+## The decisions it puts to whoever drives it
 
 <!-- The heart. What choices does this system put in front of the person or the caller driving it? For each: the choice, the information available when choosing, the opportunity cost, and why no single option dominates. A system with no interesting decision is an animation, not a system. -->
 

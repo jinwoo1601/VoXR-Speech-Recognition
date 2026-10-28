@@ -42,7 +42,9 @@ Then:
 
 Nothing else: no summary of the feature, no recommendations, no restating the questions in prose.
 
-Then read the brief once more to mark the criteria, and end with the index, about 2,000 tokens at most: the first line; one line per question, the answer in one sentence and its `path §section`, or `NOT ANSWERED IN DOCS`; the structure/contradiction flags in full; the trailer.
+Then read the brief once more to mark the criteria, and end with the index, about 2,000 tokens at most: the first line; one line per question, the answer in one sentence and its `path §section`, or `NOT ANSWERED IN DOCS`; the structure/contradiction flags in full; any `refused` lines; the trailer.
+
+A tool call refused by permission or policy is reported, never retried in another form: whatever the status, one `refused` line per refused call before the trailer, ``refused: <tool>; `<call>`; <the refusal's words>``, the call on one line, whitespace folded, cut to 140 characters, `...` where cut, non-ASCII as `?`, the refusal's words verbatim.
 
 The trailer: on `DONE`, one line — `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the full trailer (the brief's acceptance criteria each marked met / not met / not checked; files written, by absolute path, or `none`; verification run and result, or `not run`; blockers; open questions; suggested next step).
 No restating the brief, no narrative, nothing else.
