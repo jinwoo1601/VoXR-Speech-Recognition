@@ -5,6 +5,7 @@ updated: 2026-10-29
 ## Current
 
 - **`main` at PR #183 `5c0f99c` (harness round 4, core 0.114.0); `v2.0.0`; next: `feat-endpointer-profile` takes `main` in, re-splices.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178.
+- **`light-harness-upgrade-2026-11-03` (light, class slim): round 5 (core 0.141.0) + 4 slots, `fe4d9b6`; review 0; EditMode 203, PlayMode 704; PR #184; next: G2-lite.**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
