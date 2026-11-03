@@ -18,6 +18,7 @@ Read this while drafting the hard parts of an architecture doc: holding the righ
 - 8. Honest about risk & as-built drift
 - A lite feature
 - Smell tests
+- Bindings
 
 ## The anchor
 
@@ -46,7 +47,7 @@ Nothing here is folded onto the product surface at G2: that surface is written f
 | `## Decision register` (decisions + rejected alternatives) | **The one obligation that crosses over** — the why behind each costly-to-reverse choice and the alternative it beat, which no reading of the built tree recovers; the agent that authors the product docs lifts it from here, so write it to survive that lift |
 | `## Seams` · `## Non-functional realization` | Authored fresh from live source — the product page describes the behaviour that was built; these record the seams and the budgets the build was held to, the maintainer's map of the tree as built, not a draft of the product page's component list |
 | `## What this implements` · `## Build plan` | **Stays here** — the working record: the breakdown, the link lines to the phase plans in their files, and the sequence the build actually ran in |
-| Risks · `## As-built deltas` | **Stays here** — the working record of the plan; `## As-built deltas` is governed by the charter the template's `## As-built deltas` guidance carries (`assets/architecture-template.md`), and its two amended kinds go into `## Decision register` instead |
+| Risks · `## As-built deltas` | **Stays here** — the working record of the plan; `## As-built deltas` is governed by the charter in `references/as-built-charter.md`, and its two amended kinds go into `## Decision register` instead |
 | `## Related` | Authored fresh from live source — the product docs carry their own links; cross-linking from here to a product page that already exists stays fine |
 
 So nothing on this map is folded or trimmed: every section is written for the maintainer who did not sit in the feature, and the register is written to survive the one carry.
@@ -108,7 +109,7 @@ The riskiest part gets a throwaway prototype first, and the assets code cannot a
 - ✅ **Risk (before build):** "Riskiest sub-items: the failure taxonomy the store actually returns (prototype against it first); a two-hundred-file batch holding the interface responsive on the slowest supported device."
 - ✅ **As-built delta (after build):** "`RetryPolicy` has **no jitter** — the decision register planned jitter against a synchronized-retry storm; the prototype showed the queue's own drain order already staggers attempts. Simpler, and the storm case is still covered."
 
-**The `## As-built deltas` charter** — what the section admits, what is amended into `## Decision register` or corrected in place, where each routed kind goes, the frontmatter `updated:` line and the rule that a persisted phase plan is never edited — is stated once, in the template's `## As-built deltas` guidance (`assets/architecture-template.md`); read it there.
+**The `## As-built deltas` charter** — what the section admits, what is amended into `## Decision register` or corrected in place, where each routed kind goes, the frontmatter `updated:` line and the rule that a persisted phase plan is never edited — is stated once, in `references/as-built-charter.md`; read it there.
 
 ## A lite feature
 
@@ -123,3 +124,11 @@ A lite doc is `## User story`, `## Context & scope`, `## What this implements`, 
 - Uncited or vague → drift-blind; cite paths and symbols, with a line number where it helps.
 - A plan with no risk ordering → sequence lowest-risk-first, and prototype the riskiest part early.
 - A separate decisions directory for the feature → architectural decisions go *inline*; only design-track decision records live in the design topic's own `decisions/`.
+
+## Bindings
+
+- `vc` [System] (required) — the slot of that name, the project's version-control system; the altitude stack's "system design doc" uses the plain word.
+
+<!-- harness:binding:start vc .claude/bindings/vc-git.md -->
+- System: git; GitHub, remote `origin` `https://github.com/jinwoo1601/VoXR-Speech-Recognition.git`, public; `gh` on the Windows PATH (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `jinwoo1601`
+<!-- harness:binding:end vc -->

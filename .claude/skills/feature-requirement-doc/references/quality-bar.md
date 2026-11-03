@@ -16,6 +16,7 @@ Read this while drafting the hard parts of a requirements doc: cashing a subject
 - 8. Right-sized & honest
 - Operationalizing "feel"
 - Smell tests
+- Bindings
 
 ## The anchor
 
@@ -100,3 +101,11 @@ Requirements are full of subjective targets — "fast", "reliable", "personal", 
 - A "feel" word with no proxy → unfinished.
 - No non-goals → unscoped.
 - No upward citation → unparented, or the design is not actually locked.
+
+## Bindings
+
+- `board` [Mechanism] (optional) — the slot of that name, where cross-session state lives; `## 3. Traced upward` uses "mechanism" as the plain word.
+
+<!-- harness:binding:start board .claude/bindings/core.md -->
+- Mechanism: none — memory/STATUS.md
+<!-- harness:binding:end board -->

@@ -5,7 +5,7 @@ kind: orchestration
 agents: [doc-writer]
 stops: [the agreement on the settled model before the brief is filed, the call on each open fork before it is recorded]
 status: active
-bindings: [process-docs, vc, board]
+bindings: [{process-docs: [Design docs]}, {vc: [System, Main branch, Branch procedure, Check-in procedure]}, {board: [Mechanism]}]
 removal-date: null
 ---
 
@@ -29,7 +29,9 @@ A doc that only *describes mechanics* and never reasons about what *emerges* fro
 
 **What differs by form in the workflow:** only SETTLE's content, DRAFT's template and BAR's bar, each where its step says, and the frontmatter `type`, where `## Filing and bookkeeping` says. Everything else — the prerequisites, GATHER, FORKS and `## The ADR convention`, FILE and the rest of `## Filing and bookkeeping` — holds for both forms as written; for a deliverable doc, a "system" in that text reads as the deliverable, and "the model" or "the settled model" as its settled content.
 
-**The test of every line**, for a deliverable, is item 4 of `## The deliverable quality bar`, content altitude, in place of the anchor above.
+**The test of every line**, for a deliverable, is item 4 of `## The deliverable quality bar`, intent altitude, in place of the anchor above.
+
+**Where the parts are cut:** a deliverable doc holds the intent, never a per-part breakdown. The parts are cut from that intent in the requirements of the path the deliverable's backlog row names — the `deliverable` path's requirements and outline where the project composes that path, otherwise that path's own requirements. Text the human dictates sits by altitude: intent-level text, such as a title or a purpose line, goes in the doc's `## Intent`, quoted verbatim and marked (dictated); part-level text goes in its part in that path's requirements, quoted verbatim and marked (dictated), and words dictated before that stage the PM records verbatim in a file in the topic's recon, where the `process-docs` binding's *Design docs* slot puts it, cited by name in the doc's `## Sources and facts`, for that stage to quote.
 
 **Changes after G1:** a deliverable doc is unlocked and the changed section rewritten in place; the form has no amendments section.
 
@@ -37,39 +39,22 @@ A doc that only *describes mechanics* and never reasons about what *emerges* fro
 
 - `process-docs` (required) — where design docs live and what they are called, and therefore where this topic's directory and its `decisions/` subdirectory sit. Absent → stop and say so before any brief is filed.
 - `vc` (required) — the branch procedure (the design branch this work runs on, never the main branch) and the check-in procedure for the files drafted here.
-- `board` (optional) — where cross-session state lives beyond `memory/STATUS.md`, and therefore where this topic's row is updated. Absent → `memory/STATUS.md` is the state; orient from what the project binds.
+- `board` (optional) — the *Mechanism* slot, where cross-session state lives beyond `memory/STATUS.md`, and therefore where this topic's row is updated. Absent → `memory/STATUS.md` is the state; orient from what the project binds.
 - Agents — `doc-writer` missing → stop after SETTLE and say so.
 
 <!-- harness:binding:start process-docs .claude/bindings/core.md -->
-<!-- Interview: Where do this project's design docs and feature docs live, what are the files called, and at which path is a phase's plan file written, and at most how many KB may an architecture doc's body, a plan file and a brief each hold, at which path pattern? -->
 - Design docs: `Planning~/design-docs/<topic>.md`, one file per design topic, its decision records beside it per design-track's ADR convention; the root-level `Planning~/*.md` vN docs are pre-harness history, read-only
-- Feature docs: `Planning~/features/<feature>/requirements.md` and `Planning~/features/<feature>/architecture.md`, one directory per feature
-- Persisted plan: `Planning~/features/<feature>/plan-<id>.md`
-- Architecture-doc body budget: 40 KB over `Planning~/features/<feature>/architecture.md`; the closed features' oversized docs, all written before the harness, are ruled in `memory/doctor-rulings.md`
-- Plan-file budget: 10 KB over `Planning~/features/<feature>/plan-*.md`
-- Brief budget: 15 KB over `.scratch/**/*brief*.md`
 <!-- harness:binding:end process-docs -->
 
 <!-- harness:binding:start vc .claude/bindings/vc-git.md -->
-<!-- Interview: Which version-control system does this project use, and how are branches created, changes checked in, base revisions read, branches merged, the working tree recorded before an upgrade, and pull requests read, diffed and commented on? -->
 - System: git; GitHub, remote `origin` `https://github.com/jinwoo1601/VoXR-Speech-Recognition.git`, public; `gh` on the Windows PATH (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `jinwoo1601`
 - Main branch: `main`
-- Auto-mode entries: excluded
-- Branch procedure: a re-lock — a `design-<topic>` branch cut from the feature branch's head in the feature's own tree, declared on its STATUS line `re-lock of <feature-branch>`, merged back into that feature branch after G1 — is cut by `git switch -c design-<topic>` in the feature's tree and merged back by `git switch <feature-branch>`, then `git merge design-<topic>`, in that tree; branches are `design-<topic>`, `feat-<feature>`, `light-<topic>` (an issue's `light-<n>-<slug>`), `lab-<topic>`, which merges nothing, and the release prep `chore/release-X.Y.Z`; each is cut from an up-to-date `main` — `git fetch origin`, then on `main` `git merge --ff-only origin/main`, then `git switch -c <branch>` — and runs in the one checkout, since `trees` is none
+- Branch procedure: a re-lock — a `design-<topic>` branch cut from the feature branch's head in the feature's own tree, declared on its STATUS line `re-lock of <feature-branch>`, merged back into that feature branch after G1 — is cut by `git switch -c design-<topic>` in the feature's tree and merged back by `git switch <feature-branch>`, then `git merge design-<topic>`, in that tree; a carry — a `design-<topic>` branch cut from the main branch in a prototype's own tree, the one checkout where `trees` is absent, declared on its STATUS line `carry of <prototype-branch>`, which takes only the topic's design directory from the prototype branch — is cut and switched to by `git switch -c design-<topic> <main-branch>` in that tree; branches are `design-<topic>`, `feat-<feature>`, `light-<topic>` (an issue's `light-<n>-<slug>`), `lab-<topic>`, which merges nothing, and the release prep `chore/release-X.Y.Z`; each is cut from an up-to-date `main` — `git fetch origin`, then on `main` `git merge --ff-only origin/main`, then `git switch -c <branch>` — and runs in the one checkout, since `trees` is none
 - Check-in procedure: inline on the main thread — `git add -- <paths>`, then `git commit -F <message file> -- <paths>`, each one command, never a heredoc or a chain, never `git add -A` — a hub operation's `memory/` check-in by the base's `scripts/hub.py commit --message <file> --root <hub> <paths>`, which commits the named paths under `memory/` alone; then `git push -u origin <branch>` on a branch's first push and `git push` after; the commit sha is the receipt
-- Base-revision reads: `git show <revision>:<repo-relative-path>`; `git diff --name-status <base>..<head>` for the changed-file list; `git diff <base>..<head> -- <path>`; `git log --oneline <base>..<head>`; `git status --short` for the working-tree read; `git branch --show-current` for the current branch; `git diff --numstat --no-renames <base>..<head>` for the per-file line-count read
-- Merge procedure: a pull request against `main`, opened by `gh pr create --base main --title "<title>" --body-file <file>` after the push, merged by the human on GitHub behind the gate's stop; Claude never merges
-- Snapshot procedure: `git stash create`, then, where it prints a sha, `git stash store -m "harness pre-upgrade <date>" <sha>` — the working tree and the index are left as they are; where it prints nothing, the snapshot is `git rev-parse HEAD`; confirmed by `git rev-parse --verify <sha>^{commit}`; restored by the human from that sha; `.claude/` and `CLAUDE.md` are tracked from `light-harness-adopt` on, so the record covers them — `.claude/settings.local.json` and `.scratch/` stay ignored and are not covered
-- PR read: `gh pr view <n> --json number,title,body,url,state,isDraft,headRefName,headRefOid,baseRefName,files,labels` and `gh pr list --head "<branch>" --json number`; `gh` has no `baseRefOid` and no `closingIssuesReferences` field, and `--json` never goes without an explicit field list
-- PR diff: `gh pr diff <n> > <file>`
-- PR comment: `gh pr review <n> --comment --body-file <file>`, falling back to `gh pr comment <n> --body-file <file>`; never `--approve` or `--request-changes`, which GitHub refuses on one's own pull request; `gh pr edit` fails on the Projects-classic `projectCards` deprecation, so a PR body is patched by `gh api repos/jinwoo1601/VoXR-Speech-Recognition/pulls/<n> -X PATCH -F body=@<file>`
 <!-- harness:binding:end vc -->
 
 <!-- harness:binding:start board .claude/bindings/core.md -->
-<!-- Interview: Does this project track cross-session state on a board — which, and how is it read — or is memory/STATUS.md the only state? And at most how many characters may one memory/STATUS.md line carry, or is there no cap? And at most how many KB may memory/STATUS.md hold, or is there no budget? -->
 - Mechanism: none — memory/STATUS.md
-- STATUS line cap: 200
-- STATUS budget: 10 KB
 <!-- harness:binding:end board -->
 
 ## When it applies — and prerequisites
@@ -93,10 +78,10 @@ Read those fully before drafting. A mechanism that traces to no stated goal is f
 
 ## Workflow
 
-1. **ORIENT** — confirm the design topic, the branch and the scope: the branch per the `vc` binding's branch procedure, the cross-session state per the `board` binding. Nothing is drafted before the topic and its scope are agreed. The form — systems or deliverable — is named with the topic and its scope, by `## The two forms`.
+1. **ORIENT** — confirm the design topic, the branch and the scope: the branch per the `vc` binding's branch procedure, the cross-session state per the `board` binding's *Mechanism* slot. Nothing is drafted before the topic and its scope are agreed. The form — systems or deliverable — is named with the topic and its scope, by `## The two forms`.
 2. **GATHER** — read the layer above: the goals the locked design states, the parent hub and its source section, and the locked sibling systems this one couples to. Cite each; an uncited parent is an assumption.
-3. **SETTLE** — the first hard stop: the PM and the human work the system out in conversation until the model is settled — the state it tracks and the rules that move it, the decisions it puts to whoever drives it, the dynamics reasoned forward and then war-gamed for degeneracy, and the boundaries it owns, couples to, hands off and deliberately does not decide. That settled content is the decision record the next step's brief carries: `doc-writer` records decisions and never makes one, so nothing agreed here may be left for it to invent. Where the model has a genuine unknown rather than a settled answer, it leaves this step as an open item and surfaces at FORKS for the human's ruling. For a deliverable, what is settled is the content G1 locks — its audience and purpose, its form and constraints, each part's intent and key content, its sources and facts, and its exclusions — with any text the human dictates recorded verbatim and marked dictated, and each number recorded either as a limit set from outside, with its source, or as a target the project set itself, provisional.
-4. **DRAFT** — file `.scratch/doc-writer-<topic>-<system>-brief.md` from `.claude/references/core/decision-brief.md`: the settled model and its open items, plus the parents and their citations, as the decision record, `assets/design-doc-template.md` as the skeleton, and the target directory and file name per the `process-docs` binding. Dispatch `doc-writer` through the Agent tool without a `name`. The brief says to order the middle sections to fit the system and to keep the top `> **What's decided.**` callout and the two bookends. For a deliverable, the skeleton is `assets/deliverable-doc-template.md` instead, and the brief says to keep its headings in the template's order — the deliverable's own structure lives in `## The parts`.
+3. **SETTLE** — the first hard stop: the PM and the human work the system out in conversation until the model is settled — the state it tracks and the rules that move it, the decisions it puts to whoever drives it, the dynamics reasoned forward and then war-gamed for degeneracy, and the boundaries it owns, couples to, hands off and deliberately does not decide. That settled content is the decision record the next step's brief carries: `doc-writer` records decisions and never makes one, so nothing agreed here may be left for it to invent. Where the model has a genuine unknown rather than a settled answer, it leaves this step as an open item and surfaces at FORKS for the human's ruling. For a deliverable, what is settled is the intent G1 locks — its audience and purpose, its intent, its form and constraints, its sources and facts, and its exclusions, with no part list — with any text the human dictates recorded verbatim, marked dictated and placed by altitude as *Where the parts are cut* says, and each number recorded either as a limit set from outside, with its source, or as a target the project set itself, provisional. Where part-level text is dictated and the `process-docs` binding's *Design docs* slot names no recon place, the PM stops and says the binding lacks one, so the human adds it.
+4. **DRAFT** — file `.scratch/doc-writer-<topic>-<system>-brief.md` from `.claude/references/core/decision-brief.md`: the settled model and its open items, plus the parents and their citations, as the decision record, `assets/design-doc-template.md` as the skeleton, and the target directory and file name per the `process-docs` binding's *Design docs* slot. Dispatch `doc-writer` through the Agent tool without a `name`. The brief says to order the middle sections to fit the system and to keep the top `> **What's decided.**` callout and the two bookends. For a deliverable, the skeleton is `assets/deliverable-doc-template.md` instead, and the brief says to keep its headings in the template's order.
 5. **BAR** — judge the returned draft against `## The quality bar` below. For the hard parts — arguing the dynamics, killing degenerate strategies, keeping numbers out of the model — `references/quality-bar.md` carries the worked examples and the altitude-stack table. A miss is a second brief to `doc-writer`, never a PM edit; where the miss is a gap in the settled model rather than in the writing, the fix is upstream — settle it with the human first, then re-brief. A deliverable draft is judged against `## The deliverable quality bar` instead; `references/quality-bar.md` is the systems form's.
 6. **FORKS** — the second hard stop: where a decision is genuinely open, lay the tradeoff out in prose and let the human rule. Do not force a picker, do not silently pick. On a contested fork, independent derivations judged against one another are strong signal where they converge — the technique is kept, the panel is not fixed. Each ruling becomes an ADR; what stays unresolved is parked in `## Status / openness`, and the downstream docs inherit it.
 7. **FILE** — the ADRs per `## The ADR convention`, the doc and its bookkeeping per `## Filing and bookkeeping`.
@@ -132,14 +117,14 @@ Every deliverable design doc must clear these.
 
 1. **Traced to a stated goal.** Name which goal of the locked design the deliverable serves, and cite the doc.
 2. **Audience and purpose explicit.**
-3. **Every part has an intent, not only content.**
-4. **Content altitude.** G1 locks intent and key content; final wording, layout and styling are the build's, except text the human dictated, which is recorded verbatim and marked dictated. Numbers follow the numbers rule: a limit set from outside is locked, with its source cited; a target the project set itself is provisional.
+3. **The intent is whole, not broken into parts.** What the deliverable must do and say for its audience is stated, with no entry per part.
+4. **Intent altitude.** G1 locks the intent; content the whole deliverable must carry is stated as intent, placed in no part; final wording, layout and styling are the build's, except intent-level text the human dictated, which is recorded verbatim and marked dictated. Numbers follow the numbers rule: a limit set from outside is locked, with its source cited; a target the project set itself is provisional.
 5. **Every fact is sourced** to a material or to the human's dated word; an unsourced fact is invented.
 6. **Exclusions as sharp as inclusions.**
 7. **What it delivers is stated.**
 8. **Right-sized, ending with the open items.**
 
-**Smell tests:** a part with no intent; a fact with no source; no audience; a pixel-level layout spec, which is the build; no exclusions.
+**Smell tests:** no intent stated; an entry per part, which is the path's requirements; a fact with no source; no audience; a pixel-level layout spec, which is the build; no exclusions.
 
 ## Filing and bookkeeping
 
@@ -161,6 +146,6 @@ Every deliverable design doc must clear these.
 - **Deliverable frontmatter:** a deliverable doc's frontmatter is its template's, `assets/deliverable-doc-template.md` — `type: deliverable`, the other keys as above.
 - **Prose and linking convention:** keep each paragraph and list item on one logical line — no hard-wrapped prose. For link and date form, match what the project's existing process docs already do; where there are none, link by relative path and write dates absolute (`YYYY-MM-DD`). End with `## Status / openness`, then `## Related`.
 - **Mark unbuilt content:** a line that states forward design intent rather than as-built fact carries `(design intent, not yet built)` inline, so a reader of a design-of-record can tell the two apart line by line.
-- **Update the cross-session state:** add or update the topic's row where the `board` binding says — track `design`, stage `design-doc`, the pre-G1 design stage. No board bound → `memory/STATUS.md` is the state.
+- **Update the cross-session state:** add or update the topic's row where the `board` binding's *Mechanism* slot says — track `design`, stage `design-doc`, the pre-G1 design stage. No board bound → `memory/STATUS.md` is the state.
 - **Do not touch the product surface.** A project's product docs are written only after G2 acceptance, by the agent that reconciles them; writing there now is a layer violation. Design docs are process docs, and their only bookkeeping is the row above. Cross-*linking* to a product page is fine; creating or editing one from here is not.
 - **Check in only when the human asks**, per the `vc` binding's check-in procedure. Concurrent sessions edit the same cross-session state and share the ADR sequence — re-read both, and re-check the highest ADR number on disk, before appending.
