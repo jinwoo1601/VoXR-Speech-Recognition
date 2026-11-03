@@ -45,5 +45,6 @@ The files or sections the brief names, in each target doc's existing form — fr
 
 First line: `<STATUS> — <brief path or task>`, where STATUS is DONE | PARTIAL | BLOCKED | NO-BINDING.
 Then one line per file or section written.
+A tool call refused by permission or policy is reported, never retried in another form: whatever the status, one `refused` line per refused call before the trailer, ``refused: <tool>; `<call>`; <the refusal's words>``, the call on one line, whitespace folded, cut to 140 characters, `...` where cut, non-ASCII as `?`, the refusal's words verbatim.
 Then the trailer — on `DONE`, one line: `Trailer: criteria <all met | the unmet or unchecked, named>; files <absolute paths | none>; verification <command and result | not run — reason>`; otherwise the full trailer (the brief's acceptance criteria each marked met / not met / not checked; files written, by absolute path, or `none`; verification run and result, or `not run`; blockers; open questions; suggested next step), with files written, by absolute path; verification: `not run` (you run nothing); open questions — every ambiguity the brief left.
 No restating the brief, no narrative, nothing else.

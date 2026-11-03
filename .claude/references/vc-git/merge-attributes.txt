@@ -1,0 +1,2 @@
+.claude/** merge=binary
+.claude/bindings/** merge

@@ -43,7 +43,7 @@ A system that traces to no stated goal is flavour or scope creep. Open by naming
 
 ## 2. The decision space is the heart
 
-A system is interesting because of the decisions it puts to its operator — the person, or the calling system, that drives it.
+A system is interesting because of the decisions it puts to whoever drives it — the person, or the calling system.
 
 - ❌ "The scheduler runs submitted jobs in submission order." *(no live decision = a queue, not a system)*
 - ✅ "Every submission is the three-question loop: *cheap-and-late or expensive-and-now? · how much of the quota does this job spend? · what gets preempted if it will miss its deadline?* — each answered against a fixed budget and partial information about what else is about to arrive." *(the decision space)*

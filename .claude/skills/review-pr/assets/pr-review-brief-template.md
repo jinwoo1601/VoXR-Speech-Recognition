@@ -1,6 +1,6 @@
 # PR review brief — #<n> <title>
 
-<!-- Written by the orchestrating session into its scratchpad. Every review-angle and
+<!-- Written by the orchestrating session to `.scratch/review-pr-<n>-brief.md`. Every review-angle and
      finding-verifier agent reads this file by ABSOLUTE path; it is their entire shared
      context. Anything not written here does not exist for them. -->
 
@@ -11,7 +11,7 @@
 - Head: `<headRefName>` @ `<headRefOid>` (the exact commit under review)
 - Base: `<baseRefName>`, merge-base `<base-sha>`
 - Base content for comparisons — use EXACTLY this idiom: `git show <base-sha>:<repo-relative-path>`. Repo root is `<absolute path>`; strip it from the paths in the table below to form the repo-relative path.
-- Full unified diff, already fetched — read it here: `<absolute path to pr-<n>.diff>`
+- Full unified diff, already fetched — read it here: `<absolute path to .scratch/review-pr-<n>.diff>`
 - Review intent: <one sentence — what this PR was supposed to accomplish>
 
 ## What the PR claims

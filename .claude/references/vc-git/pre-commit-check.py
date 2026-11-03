@@ -35,7 +35,9 @@ ASSIGNED = re.compile(
     r"(?i)\b['\"]?\s*[:=]\s*"
     r"(?:(['\"])([^'\"\s]{8,})\1|([A-Za-z0-9+/_.~-]{8,}))")
 EXPRESSION = re.compile(r"[A-Za-z_][A-Za-z0-9_]*[(.\[]")
-URL = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s:/@]*:([^\s/@]+)@")
+URL = re.compile(r"://[^\s:/@]*:([^\s/@]+)@")
+SCHEME_CHAR = re.compile(r"[A-Za-z0-9+.-]")
+SCHEME_LETTER = re.compile(r"[A-Za-z]")
 PROVIDER = re.compile("|".join((
     "AKIA[0-9A-Z]{16}", "ghp_[A-Za-z0-9]{36}", "github_pat_[A-Za-z0-9_]{20,}",
     "glpat-[A-Za-z0-9_-]{20,}", "xox[abprs]-[A-Za-z0-9-]{10,}", "sk-ant-[A-Za-z0-9_-]{20,}",
@@ -103,13 +105,22 @@ def is_credential(match, text):
     return not is_placeholder(match.group(2))
 
 
+def url_matches(text):
+    for match in URL.finditer(text):
+        start = match.start()
+        while start > 0 and SCHEME_CHAR.match(text, start - 1):
+            start -= 1
+        if SCHEME_LETTER.search(text, start, match.start()):
+            yield match
+
+
 def line_hits(text, opens):
     hits = []
     if PRIVATE_KEY.search(text):
         hits.append("private key")
     if any(is_credential(match, text) for match in credential_matches(text)):
         hits.append("credential assignment")
-    if any(not is_placeholder(match.group(1)) for match in URL.finditer(text)):
+    if any(not is_placeholder(match.group(1)) for match in url_matches(text)):
         hits.append("inline credentials in URL")
     if PROVIDER.search(text):
         hits.append("provider token")

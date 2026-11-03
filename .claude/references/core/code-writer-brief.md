@@ -14,7 +14,7 @@
 
 ## Plan reference
 
-- Plan file: `<repo-relative path>` (required)
+- Plan file: `<repo-relative path>` (required) — or, on the five routes that have no plan, `none — a review fix` (`review-cycle` FIX, the verified findings quoted under the task standing in for the plan), `none — a catch-up resolution` (`.claude/references/core/gate-close.md` `### CATCH-UP`, the conflict and both sides' revisions, or the gate's parsed error list, quoted under the task standing in for the plan), `none — a light-lane fix` (`tackle-issue` FIX, `debugger`'s proved cause and proposed fix standing in) or `none — a prototype round` (`prototype-round` BRIEF, the prototype's requirements doc by path and the human's last direction, quoted under the task, standing in), the two lines below then left out; or `none — a path build` (a path's build skill, the working record its build stage names standing in for the plan, by path, the round's revision entry quoted under the task), the Architecture doc line alone then left out
 - Architecture doc: `<repo-relative path>` — for the decisions the plan cites, not read whole
 - Requirements doc: `<repo-relative path>` (rows `<F…>`) — for a lite feature, by the test of `.claude/references/core/feature-lite.md` `## The mark`, the backlog's path and criteria `<A…>`, with the word `lite`, the feature's name and the row quoted (`.claude/references/core/feature-lite.md` `## The acceptance source`)
 

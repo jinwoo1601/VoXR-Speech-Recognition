@@ -9,19 +9,25 @@ import json
 import ntpath
 import os
 import re
-import shlex
 import subprocess
 import sys
 from pathlib import Path
 
-WATCHED_TOOLS = ("Write", "Edit", "SendMessage", "Bash")
+WATCHED_TOOLS = ("Write", "Edit", "SendMessage")
 HANDOFF_PREFIX = "HANDOFF -"
 SKILL_NAME = "handoff"
 COMMAND_MARKER = re.compile(r"<command-name>/(?:[^<]*:)?handoff</command-name>")
-NO_PROOF_REASON = "this session's transcript shows no `handoff` invoked. A brief placed under `memory/handoffs/`, by Write or by `hub.py write --brief`, and a `HANDOFF` line go through it: invoke the `handoff` skill, which places the brief and sends `HANDOFF` itself."
+SLOT_PARTS = [".scratch", "session-brief.md"]
+NO_PROOF_REASON = "this session's transcript shows no `handoff` invoked. A session brief, `.scratch/session-brief.md`, and a `HANDOFF` line go through it: invoke the `handoff` skill, which writes the brief and sends `HANDOFF` itself."
 SUBAGENT_REASON = "a hand-off runs in the session through the `handoff` skill, never in an agent. Stop, and report to the session that dispatched you."
-PUNCTUATION = "();<>|&\n"
-REDIRECTS = frozenset(("<", ">", ">>", "<<", "<<<", ">&", "<&", "&>", "&>>", ">|", "<>"))
+MALFORMED_REASON = "the session brief `{target}` is missing {missing}. Rewrite it from the `handoff` template, `.claude/skills/handoff/assets/session-brief-template.md`."
+UNJUDGED_REASON = "the {tool} of the session brief `{target}` cannot be judged: {why}. Rewrite it from the `handoff` template, `.claude/skills/handoff/assets/session-brief-template.md`, by Write."
+NOT_TEXT = "its `content` is not text"
+STAMP_ITEM = "the stamp, `read <date time zone>, <branch>@<sha>`, as the first non-blank line of `## Context`"
+CONTEXT_HEADING = "## Context"
+REQUIRED_HEADINGS = ("## Objective", "## Lane", CONTEXT_HEADING, "## Next steps")
+MISSING_STAMP = "stamp"
+STAMP_LINE = re.compile(r"read [0-9]{4}-[0-9]{2}-[0-9]{2}(\s[^,]*)?,\s*[^\s@,]+@[^\s@,]+")
 WATCHED = ("Write", "Edit", "NotebookEdit")
 DRIVE_ABSOLUTE = re.compile(r"^[A-Za-z]:[\\/]")
 HUB_CHECKOUT = re.compile(r"the main checkout is `([^`]+)`")
@@ -56,58 +62,6 @@ def parse_payload(data):
     except (ValueError, RecursionError):
         return None
     return document if isinstance(document, dict) else None
-
-
-def tokenize(command):
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=PUNCTUATION)
-    lexer.whitespace_split = True
-    lexer.escape = ""
-    lexer.commenters = ""
-    lexer.whitespace = lexer.whitespace.replace("\n", "")
-    try:
-        return list(lexer)
-    except ValueError:
-        tokens = []
-        for line in command.split("\n"):
-            tokens.extend(line.split())
-            tokens.append("\n")
-        return tokens
-
-
-def is_break(token):
-    if token in ("{", "}"):
-        return True
-    return (bool(token) and all(character in PUNCTUATION for character in token)
-            and token not in REDIRECTS)
-
-
-def command_name(token):
-    name = token.replace("\\", "/").rsplit("/", 1)[-1].lower()
-    return name[:-len(".exe")] if name.endswith(".exe") else name
-
-
-def places_brief(command):
-    command = command.replace("\\\r\n", " ").replace("\\\n", " ")
-    tokens = tokenize(command)
-    segments = [[]]
-    for token in tokens:
-        if is_break(token):
-            segments.append([])
-        else:
-            segments[-1].append(token)
-    for segment in segments:
-        names = [command_name(word) for word in segment]
-        if "hub.py" not in names:
-            continue
-        rest = segment[names.index("hub.py") + 1:]
-        if "write" not in rest:
-            continue
-        for word in rest[rest.index("write") + 1:]:
-            prefix = word.split("=", 1)[0]
-            if len(prefix) >= 3 and "--brief".startswith(prefix):
-                return True
-    return any(token != command and len(token.split()) > 1 and places_brief(token)
-               for token in tokens)
 
 
 def trees_section(text):
@@ -169,33 +123,19 @@ def trees_lines(root):
     return trees_section(text)
 
 
-def trees_filled(root):
-    if root is None:
-        return False
-    lines = trees_lines(root)
-    if lines is None or absent_form(lines):
-        return False
-    return True
-
-
 def watched(payload):
     if payload.get("tool_name") not in WATCHED_TOOLS:
         return False
     tool_input = payload.get("tool_input")
     if not isinstance(tool_input, dict):
         return False
-    if payload["tool_name"] == "Bash":
-        command = tool_input.get("command")
-        return isinstance(command, str) and places_brief(command)
     if payload["tool_name"] == "SendMessage":
         message = tool_input.get("message")
         return isinstance(message, str) and message.lstrip().startswith(HANDOFF_PREFIX)
     file_path = tool_input.get("file_path")
     if not isinstance(file_path, str):
         return False
-    parts = [part.lower() for part in file_path.replace("\\", "/").split("/")]
-    return any(parts[index] == "memory" and parts[index + 1] == "handoffs"
-               and parts[index + 2] != "" for index in range(len(parts) - 2))
+    return key(file_path).split("\\")[-2:] == SLOT_PARTS
 
 
 def proof(transcript):
@@ -229,20 +169,63 @@ def proof(transcript):
     return False
 
 
-def handoff_decide(payload, root=None):
+def brief_missing(text):
+    lines = text.replace("\r\n", "\n").split("\n")
+    stripped = [line.rstrip() for line in lines]
+    missing = [heading for heading in REQUIRED_HEADINGS if heading not in stripped]
+    if CONTEXT_HEADING not in stripped:
+        return missing + [MISSING_STAMP]
+    following = lines[stripped.index(CONTEXT_HEADING) + 1:]
+    stamp = next((line for line in following if line.strip()), None)
+    if stamp is None or STAMP_LINE.match(stamp) is None:
+        missing.append(MISSING_STAMP)
+    return missing
+
+
+def edited_brief(tool_input):
+    old, new = tool_input.get("old_string"), tool_input.get("new_string")
+    if not isinstance(old, str) or not isinstance(new, str) or not old:
+        return None, "`old_string` or `new_string` is not usable text"
+    try:
+        text = Path(tool_input["file_path"]).read_bytes().decode("utf-8")
+    except (OSError, ValueError):
+        return None, "the file is absent or unreadable"
+    text = text.replace("\r\n", "\n")
+    old = old.replace("\r\n", "\n")
+    new = new.replace("\r\n", "\n")
+    count = text.count(old)
+    if count == 0:
+        return None, "`old_string` is not in the file"
+    if count > 1 and tool_input.get("replace_all") is not True:
+        return None, "`old_string` is found more than once and `replace_all` is not set"
+    return text.replace(old, new), None
+
+
+def brief_reason(tool, tool_input):
+    if tool == "Write":
+        text = tool_input.get("content")
+        why = None if isinstance(text, str) else NOT_TEXT
+    else:
+        text, why = edited_brief(tool_input)
+    if why is not None:
+        return UNJUDGED_REASON.format(tool=tool, target=tool_input["file_path"], why=why)
+    missing = brief_missing(text)
+    if not missing:
+        return None
+    items = [STAMP_ITEM if item == MISSING_STAMP else "`" + item + "`" for item in missing]
+    return MALFORMED_REASON.format(target=tool_input["file_path"], missing=", ".join(items))
+
+
+def handoff_decide(payload):
     if not watched(payload):
         return None
-    if payload["tool_name"] != "SendMessage":
-        filled = trees_filled(root)
-        if payload["tool_name"] == "Bash" and not filled:
-            return None
-        if payload["tool_name"] in ("Write", "Edit") and filled:
-            return None
     if "agent_id" in payload:
         return SUBAGENT_REASON
-    if proof(payload.get("transcript_path")):
+    if not proof(payload.get("transcript_path")):
+        return NO_PROOF_REASON
+    if payload["tool_name"] == "SendMessage":
         return None
-    return NO_PROOF_REASON
+    return brief_reason(payload["tool_name"], payload["tool_input"])
 
 
 def target(payload):
@@ -378,7 +361,7 @@ def locked_on_disk(path):
     try:
         with open(path, "rb") as handle:
             head = handle.read(HEAD_BYTES)
-    except OSError:
+    except (OSError, ValueError):
         return False
     lines = front_matter(head.decode("utf-8", "replace"))
     return lines is not None and holds_lock(lines)
@@ -406,7 +389,7 @@ def locked_doc_decide(payload, root, reads=None):
 
 def decide(payload, root=None):
     reads = {}
-    reason = handoff_decide(payload, root)
+    reason = handoff_decide(payload)
     if reason is None:
         reason = hub_memory_decide(payload, root, reads)
     if reason is None:
