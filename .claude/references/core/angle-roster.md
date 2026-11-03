@@ -1,6 +1,6 @@
 # Review angle roster
 
-Each entry below is pasted into one `review-angle` agent's call prompt, together with the review brief's absolute path. Which angles a cycle runs is its depth profile — `review-cycle`'s `## Depth profiles` — and the review brief's `## Angles` field lists them. The full profile runs the composed roster set: this file plus each composed pack's own `.claude/references/<pack>/angle-roster.md` where it exists, and a pack's angles run exactly as the entries below do. EFF is dispatched only where the brief declares hot paths. No angle reports nits.
+Each entry below is pasted into one `review-angle` agent's call prompt, together with the review brief's absolute path. Which angles a cycle runs is its depth profile — `review-cycle`'s `## Depth profiles` — and the review brief's `## Angles` field lists them. The full profile runs the composed roster set: this file plus each composed pack's own `.claude/references/<pack>/angle-roster.md` where it exists, and a pack's angles run exactly as the entries below do. EFF is dispatched only where the brief declares hot paths. MOVED is dispatched only where the brief's `## Master's changes` lists files: a brief with no such section, or none listed, leaves it out of every run, the composed roster set's included. No angle reports nits.
 
 ## Correctness family
 
@@ -19,6 +19,11 @@ Do NOT report: single-file logic (LINE owns it).
 ### WRAP — wrapper/adapter correctness
 Where the change wraps, adapts, or mirrors another layer (adapter over another layer's model, serialization mirror, interface implementation), verify the wrapper preserves the wrapped contract: value ranges, units, null behavior, ordering, threading assumptions, error propagation.
 Do NOT report: the wrapped layer's own internal bugs unless the wrapper amplifies them.
+
+### MOVED — moved-target clash hunt
+Dispatched only where the brief's `## Master's changes` lists files.
+Read the `touches` and `calls` lines under the brief's `## Master's changes`: files the catch-up brought the target's changes into, that the branch changed or names. For each, read the target's change, as that section says, then what the branch's change assumes of that file, on a `calls` line in the files after `<-`: a signature, a field, a default, an ordering, a stated rule, a behaviour. The branch's change is read whole, from the block's `<base>` to its head before, whatever `## Scope`'s range. Report each assumption the target's change breaks: a semantic clash the catch-up did not mark as a conflict.
+Do NOT report: a path on an `other` line; a defect wholly inside the target's own change with no bearing on the branch; a changed line's own logic (LINE owns it), a behaviour the branch removed (GONE), or a contract whose ends the branch's change both holds (XFILE).
 
 ## Quality family
 

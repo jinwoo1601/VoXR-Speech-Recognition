@@ -12,7 +12,7 @@ sources:
 
 # <Feature Name> — Architecture
 
-<!-- This is the HOW for the feature, and the feature's working record. The architecture doc is the feature's working record — the living document that holds the how, the build plan, and what the build taught. It is not a draft of the product page: the product docs are authored after G2 from live source. One obligation crosses over — `## Decision register` is the design rationale a reader cannot recover from the code, and it is what the product docs carry forward. Document load-bearing decisions and WHY (with the rejected alternative); cite real paths and symbols so drift is detectable; reconcile to AS-BUILT before G2, under the charter the As-built deltas guidance below carries. Keep each paragraph and list item on one logical line — no hard-wrapped prose; match the link and date form the project's existing process docs use. Delete these guidance comments as you fill each section, except the charter, which the As-built deltas section keeps. -->
+<!-- This is the HOW for the feature, and the feature's working record. The architecture doc is the feature's working record — the living document that holds the how, the build plan, and what the build taught. It is not a draft of the product page: the product docs are authored after G2 from live source. One obligation crosses over — `## Decision register` is the design rationale a reader cannot recover from the code, and it is what the product docs carry forward. Document load-bearing decisions and WHY (with the rejected alternative); cite real paths and symbols so drift is detectable; reconcile to AS-BUILT before G2, under the charter that the `**Charter:**` line in `## As-built deltas` points to. Keep each paragraph and list item on one logical line — no hard-wrapped prose; match the link and date form the project's existing process docs use. Delete these guidance comments as you fill each section; the `**Charter:**` line is not a guidance comment and stays. -->
 
 <!-- OPENING (one paragraph): what this feature builds, the requirements it realizes, and the one governing architectural driver — often a non-functional row the platform makes load-bearing — that shapes the design below. -->
 
@@ -62,22 +62,9 @@ sources:
 
 ## As-built deltas
 
-<!-- Fill AFTER implementing: where the build diverged from the plan and the decisions above. Empty while still planning. The charter below is canon; keep it in the doc when you delete the rest of this comment.
+<!-- Fill AFTER implementing: where the build diverged from the plan and the decisions above. Empty while still planning. The line below stays. -->
 
-**The `## As-built deltas` charter.** This section is about the plan, and the plan lives in the plan files this document links: four kinds of entry are **admitted** here, two are **amended into `## Decision register`** in place with a dated line instead, a fact the landed tree has made false in an always-current section is **corrected in place** where it stands, and every other kind is **routed** to a home that already receives it — the session's dated note, `memory/<YYYY-MM-DD>.md`; the cross-session state the `board` binding names, `memory/STATUS.md` where none is bound; or the lessons file, `memory/notes-for-future-features.md`. No new home is built for what is routed out.
-
-**Admitted**, each a statement about the plan, a few lines each, the detail in the session's dated note: (1) divergence between the persisted plan and the tree as built, with the ruling that settled it; (2) "built as planned" confirmations, which are a real result; (3) citation re-pointing, plan-time line numbers read against the landed tree; (4) post-G2 addenda from unrelated later work, carrying their date.
-
-**Amended into `## Decision register`**, in place and carrying the amendment's date, in the form `**Amended YYYY-MM-DD:**` appended to the decision it extends: a ruling that extends a decision this document already carries, and a trap or do-not-undo notice for a later maintainer. Both are design rationale, and the register is the one section carried forward into the product surface the `product-docs` binding names; filed here instead, a decision would reach that surface without the category later added to it.
-
-**Corrected in place**, by the reconcile pass: a fact the landed tree has made false in an always-current section — `What this implements`, `Context & scope`, `Seams`, `Non-functional realization`, `Risks, tradeoffs & open questions` — is corrected where it stands, and each correction is logged in that phase's entry here, with what the passage said and what it says now, as citation re-pointing is. A change of decision is never a correction: it goes to a dated `## Decision register` amendment. Dated passages — plan files, the entries here, `**Amended YYYY-MM-DD:**` clauses — stay records and are not corrected.
-
-**Routed out**, each to a home that already receives it: gate evidence (commit shas, test counts, exit codes, live-run transcripts), review-cycle records, and authorship or provenance confessions about the document itself go to the session's dated note, `memory/<YYYY-MM-DD>.md`; deferrals and named limitations go to the cross-session state the `board` binding names — `memory/STATUS.md` under *Deferred*, one line each, where none is bound; process and methodology lessons aimed at future features go to `memory/notes-for-future-features.md`.
-
-**Frontmatter `updated:`** — the reconcile pass also moves the doc's frontmatter `updated:` to its own date: bookkeeping, never logged as a correction, never a change of decision.
-
-**A persisted phase plan is never edited** — it is the record of what its planner knew on its own date, which is why re-pointing its citations is an admitted kind here rather than a correction there.
--->
+**Charter:** this section is kept under `.claude/skills/architecture-doc/references/as-built-charter.md`, which says what it admits, what goes to `## Decision register` or is corrected in place, and what is routed out.
 
 ## Related
 

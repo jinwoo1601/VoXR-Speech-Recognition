@@ -1,6 +1,6 @@
 # architect — plan mode
 
-Read by `architect` when its brief dispatches it to persist one phase's plan, to apply a persisted plan's ruled fixes — the findings in `plan-validator`'s fix-pass classes ruled real, a canon-conflict excepted since it stops the line, or the human's ruling at the no-row stop that drops work in no build-plan row and no requirement — by rewriting its plan file in that same form, or to return a built phase's plan correction as text (`## The fix pass`). The agent's own body carries what every mode shares: the binding, the inputs every brief gives, the altitude, the discipline and the output.
+Read by `architect` when its brief dispatches it to persist one phase's plan, to apply a persisted plan's ruled fixes — the findings in `plan-validator`'s fix-pass classes ruled real, a canon-conflict excepted since it stops the line, or the human's ruling at the no-row stop that drops work in no build-plan row and no requirement, or the PM's trim at PLAN — by rewriting its plan file in that same form, or to return a built phase's plan correction as text (`## The fix pass`). The agent's own body carries what every mode shares: the binding, the inputs every brief gives, the altitude, the discipline and the output.
 
 ## Inputs
 
@@ -27,7 +27,7 @@ A brief that dispatches you to persist a phase plan gives you, besides the input
 
 - When the brief dispatches you to persist a phase plan, plan ONE phase. If it names two, plan the first and say so.
 - Quote only a heading, a key, a command line or a one-sentence ruling — never a multi-line block of any file's content. Say what a text must say and where, identifiers exact.
-- The plan file holds at most the plan-file budget the `process-docs` binding names, where it names one.
+- Aim at the plan-file budget the `process-docs` binding names, where it names one; over it is the PM's trim-or-proceed at PLAN, never a reason to drop a contract or criterion.
 
 ## The fix pass
 
