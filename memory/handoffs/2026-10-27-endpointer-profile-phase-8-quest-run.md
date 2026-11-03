@@ -13,11 +13,11 @@ feature
 
 ## Context
 
-- One checkout (`trees` is none), `D:\Workspace\VoXR-Speech-Recognition`, branch `feat-endpointer-profile`, head `285589c`, pushed. Full track.
+- One checkout (`trees` is none), `D:\Workspace\VoXR-Speech-Recognition`, branch `feat-endpointer-profile`, head `b03468b`, pushed (2026-11-03: `main` rounds 4-5 merged in at `2c23598`, re-spliced; validate and doctor PASS). Full track.
 - Phases 1-7 built; Phase 7 (`100a987`) flipped the Continuous default to `Responsive` (rule2 0.45). Phase 8 gates the flip (adr-0002, option A): F11, plus §8's arm64 conf assumption.
 - Requirements §9 re-locked at G1 2026-10-17 (`022912a`): "fires are not perceptibly later, sooner where perceptible", eager commit on for both runs. `plan-8.md` matches.
 - 2026-10-23 and 2026-10-27: `main` merged in twice (harness upgrades PR #180, #181; last merge `d557a72`); the 15 V23-stale composed skills re-spliced by `upgrade` (`285589c`; snapshot `d557a72`; validate and doctor PASS).
-- STATUS `## Current` line: "next: human runs Phase 8 (Quest 3, `plan-8.md`)". Session notes: `memory/2026-10-17.md` (re-lock, Phase 8 plan), `memory/2026-10-27.md` (merge, re-splice).
+- STATUS `## Current` line: "next: human runs Phase 8 (Quest 3, `plan-8.md`)". Session notes: `memory/2026-10-17.md` (re-lock, Phase 8 plan), `memory/2026-10-27.md` (merge, re-splice), `memory/2026-11-03.md` (rounds 4-5 merge, re-splice).
 
 ## Current state
 
