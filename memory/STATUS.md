@@ -1,11 +1,11 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-11-03
+updated: 2026-11-04
 
 ## Current
 
 - **`main` at PR #184 `6041702` (harness round 5, core 0.141.0); `v2.0.0`.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): Phase 8 passed on Quest 3 2026-11-04; as-built reconcile done; next: `review-cycle`, then G2.**
+- **`feat-endpointer-profile` (feature, Full): Phase 8 passed on Quest 3 2026-11-04; as-built reconcile done; review-cycle done `0e2c0df`; next: G2 (`g2-accept`).**
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
