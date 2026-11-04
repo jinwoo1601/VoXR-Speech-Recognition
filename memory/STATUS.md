@@ -4,15 +4,14 @@ updated: 2026-11-04
 
 ## Current
 
-- **`main` at PR #184 `6041702` (harness round 5, core 0.141.0); `v2.0.0`.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178.
-- **`feat-endpointer-profile` (feature, Full): Phase 8 passed on Quest 3 2026-11-04; as-built reconcile done; review-cycle done `0e2c0df`; next: G2 (`g2-accept`).**
+- **`main` at PR #185 `b8765ce` (endpointer-profile; core 0.141.0); `v2.0.0`; next: the human names it (doctor V11: `upgrade`).** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
 - **Plan of action** (2026-09-06 rulings, `Planning~/research/2026-09-05-next-level/05-rulings.md`): Phase A complete (#143–#148, #150, #153, #154 merged).
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
-- Phase D after R1: R11 locked (#179); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
+- Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 
 ## Deferred
 
@@ -28,3 +27,13 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **WND-4** · OPEN · design-relock · v2026-10-14 — locked `windows-native-toolchain.md:44` cites the recipe's pre-Phase-1 `:21`, `:35`, `:71`: re-point at the next unlock
 - **JRR-1** · OPEN · human · v2026-10-15 — joined-rig-recogniser bridge change (2 exports, rebuilt `.so`): Quest on-device check not stated at G2
 - **JRR-2** · OPEN · human · v2026-10-15 — joined-rig-recogniser: human read of the 16-fixture recogniser-layer report (split case, flips legible) not stated at G2
+- **EPR-1** · OPEN · design-relock · v2026-11-04 — locked `joined-rig.md` rule 2 (:66, :84, :108): kill check compares final texts; `ab-rig/Joined.cs` :214-277 also compares gain, libvosk, conf
+- **EPR-2** · OPEN · light-lane · v2026-11-04 — stale `:143-195` cite at `Planning~/features/joined-rig-recogniser/architecture.md:73` and `plan-2.md:78`
+- **EPR-3** · OPEN · light-lane · v2026-11-04 — Tactical sample shows a literal `\n` placeholder; its Quest setup works on a flat screen only
+- **EPR-4** · OPEN · light-lane · v2026-11-04 — `MetaQuestFeatureBuildHooks` throws a NullReferenceException on every Android build (host TestGround)
+- **EPR-5** · OPEN · human · v2026-11-04 — TestGround's modified `OpenXRPackageSettings.asset` and `EditorBuildSettings.asset` from the Phase 8 sitting: keep or revert in the host
+- **EPR-6** · OPEN · light-lane · v2026-11-04 — UNRESOLVED cite `Documentation~/getting-started.md` :51 in endpointer-profile `architecture.md` *Related*
+- **EPR-7** · OPEN · light-lane · v2026-11-04 — `Planning~/verification-recipe.md` cites `VoxrPushToTalkController.cs:133` for `OnApplicationPause`, now :188 (stale before this feature)
+- **EPR-8** · OPEN · light-lane · v2026-11-04 — confgen's echo misses a BOM-prefixed first rule line
+- **EPR-9** · OPEN · light-lane · v2026-11-04 — confgen never re-checks an existing `--out` against `--model`
+- **EPR-10** · OPEN · light-lane · v2026-11-04 — not-applied warning wording does not tell "nothing to apply" from "could not apply" (duplicate key under Model default)

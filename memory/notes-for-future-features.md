@@ -10,3 +10,7 @@ Process and methodology lessons routed out of architecture docs' `## As-built de
 - 2026-10-14 (windows-native-harness) — The repo root is the package root, so Unity imports `memory/`: a Unity run's untracked `memory/**/*.meta` belong to new notes and are committed, never deleted as orphans; only `Tests~` leftovers are reverted.
 - 2026-10-14 (windows-native-dotnet-fixtures) — Where the vc-guard hook refuses agent `git` writes, plan every canary revert or fixture restore as a PM step between `compile-check` dispatches from the start, not as a gate-agent step.
 - 2026-10-14 (joined-rig-parser) — A session's working directory can drift (to `.scratch/`) mid-run, and a writer's `pwd -W` then prints the drifted path: every brief names the project root explicitly and says to write by it if `pwd -W` disagrees.
+- 2026-11-04 (endpointer-profile) — Agent shells collapse `\` in paths: briefs give paths with `/` or quoted drive-letter forms.
+- 2026-11-04 (endpointer-profile) — `grep -c $'\r$'` misses CRLF in Git Bash; count CR with `grep -U`. GNU `sed -i` strips CR; edit CRLF files with `sed -b -i`.
+- 2026-11-04 (endpointer-profile) — Subagents are refused `git init`: a plan needing a scratch repo names it as a PM step.
+- 2026-11-04 (endpointer-profile) — A review-fix commit after the as-built reconcile stales the architecture doc's cites: re-point them before the G2 preflight.
