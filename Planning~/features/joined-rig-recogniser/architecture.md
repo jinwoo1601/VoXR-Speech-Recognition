@@ -3,7 +3,7 @@ type: architecture
 feature: joined-rig-recogniser
 topic: joined-rig
 status: accepted
-updated: 2026-10-15
+updated: 2026-11-05
 sources:
   - Planning~/features/joined-rig-recogniser/requirements.md
   - Planning~/design-docs/joined-rig.md
@@ -193,6 +193,13 @@ Phases 1-3: moved verbatim to [as-built-record-2026-10-15.md](as-built-record-20
   - *Components & responsibilities:* `recognition_loop` :70-165 → :80-183; `QueuedResult` `result_queue.h` :8-11 → :9-14; `Push` :19-22 → :22-25; `DrainResults` :78-117 → :83-127; harness header :248-258 → :258-269; `DumpCaseEnd` :65-73 → :69-78.
   - *Risks, tradeoffs & open questions:* harness re-serialization `main.cpp` :93-97 → :103-108; harness padding :277-280 → :288-291.
   - *Context & scope:* the `QueuedResult` citation (`result_queue.h` :8-11), whose sentence describes the struct before this feature's change, pinned to the base: :8-11 → :8-11 at `29d0926`.
+
+### Citation re-point (2026-11-05)
+
+- **Citations re-pointed to the landed tree.** Plan-time → landed, by the light-lane deferral EPR-2; the symbol in each reads as the register or entry states it.
+  - *Guards at this layer:* `Joined.cs` grammar-pin guard :125-141 → :196-212, kill check :143-195 → :214-277 (moved by `ef1ed67`, `594f783`, `ca8c6ea`; the kill check lengthened by `9617e63`'s `modelConf` line).
+  - *Phase 4 and review fix* entry: `Joined.cs` :436-447 (the timing keys) → :447-458 (shifted by `9617e63`).
+- **Corrections to always-current sections:** none.
 
 ## Related
 

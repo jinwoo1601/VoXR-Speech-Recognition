@@ -3,7 +3,7 @@ type: architecture
 feature: endpointer-profile
 topic: endpointer-profile
 status: accepted
-updated: 2026-11-04
+updated: 2026-11-05
 sources:
   - Planning~/features/endpointer-profile/requirements.md
   - Planning~/design-docs/endpointer-profile.md
@@ -215,6 +215,11 @@ Cites are repo-relative, cited>current. SR `Runtime/VoxrSpeechRecogniser.cs`, PT
   - Register: SR 228>251, 252>275, 22-23>23-24, 22-34>23-41, `OnError` 663>`FireError` 686-689; PT 154>166, 164>178, 112>115, 80>82, `Start` 138>148 (138 is now `Awake`), 52-99>52-101, 197>227-237; MC 274>296, 263>281, 355-356>377-378, 362-367>381-382+386-391, 224-243>242-261, 232>250; `ab-rig/JoinedInput.cs` 151>153-161, 587-592>599-616; `ab-rig/stage.sh` closure 39-58>54-81, `STAGED_FROM` 81-90>146-151; `generate.py` 64-81>79-99, 103-104>121-122; `VoxrWavReplayTests` 136-199>137-200, 128-132>128-133. Bare `:355-356, :362-367` read as MC and `:81-90` as `stage.sh`.
   - Earlier entries' current figures superseded: Phase 1 `generate.py` 64-102>79-99, 124-125>121-122; MC 246-265>242-261, 254>250; `VoxrWavReplayTests` 136-201>137-200, 128-134>128-133. Phase 2 MC 280-295>276-291, 300>296, 285>281, 381-382>377-378, 385-386+390-395>381-382+386-391; `JoinedInput.cs` 600-617>599-616. Phase 3 `stage.sh` 155-160>146-151. Phase 4 `ModelExtractorCacheTests.cs` `BuildModelArchive` 866-880>890-904 (plan-4 too), `ExtractWithToken` 812-820>844-852, `CountingArchiveSource` 847-860>875-888, `ReadStamp` 829-830>859-860. Phase 6 SR 200>197, 216>213, 227-230>223-226, 240-241>236-237, 255>249, 281>275, `Update` 596-635>590-629, 257>251, `FireError` 692-695>686-689; PT 167>166, 179>178, 149>148, 231-241>227-237; `stage.sh` 43-54>54-81.
   - The plan-6 and plan-7 maps in the Phase 6 and 7 entries were read at the as-built reconcile and are not re-read here. No decision changed.
+
+### Citation re-point (2026-11-05)
+
+- **Citations re-pointed to the landed tree.** *Related*'s `Documentation~/getting-started.md` :51 resolves unchanged: the model setup step that places the `.zip` archive under `Assets/StreamingAssets` (the archive *Pristine source* builds on), at :51 since `d068b14` and at this doc's authoring (`e02f784`); :63 is forcing a re-extraction. The 2026-11-04 re-point pass reported :51 unresolved because *Related* names no claim beside it (light-lane deferral EPR-6).
+- **Corrections to always-current sections:** none.
 
 ## Related
 
