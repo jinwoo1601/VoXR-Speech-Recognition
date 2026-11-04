@@ -1,6 +1,6 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-11-04
+updated: 2026-11-05
 
 ## Current
 
@@ -21,19 +21,14 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **RSE-1** · OPEN · release · v2026-10-04 — `[Unreleased]` #148 and #144 entries predate #161 (short pattern never reaches a resolver; runner-up order without DR-9): reword at release
 - **RSE-2** · OPEN · light-lane · v2026-10-04 — codex page contract wants frontmatter on product pages; no `Documentation~` page has any: rule on the contract vs this surface
 - **LHU-1** · OPEN · harness-hub · v2026-10-07 — vc-git `Bash(git branch:*)` allow admits a clustered force-delete (`git branch -vD x`) no ask rule matches: fix in the base template
-- **WND-1** · OPEN · light-lane · v2026-10-14 — binding Command 3's `cd NativeBridge~ && …` leaves the shell in the subdirectory (the shape fixed for Command 4): wrap in a subshell
 - **WND-2** · OPEN · light-lane · v2026-10-14 — `core.autocrlf=true` checks `generate.sh` out CRLF; Git Bash proven on CRLF `stage.sh` only: run a CRLF `generate.sh` or pin `eol=lf`
-- **WND-3** · OPEN · light-lane · v2026-10-14 — binding Command 4 expects "one CS0618 warning", but an incremental rebuild prints 0 warnings: say the warning shows on a fresh compile
 - **WND-4** · OPEN · design-relock · v2026-10-14 — locked `windows-native-toolchain.md:44` cites the recipe's pre-Phase-1 `:21`, `:35`, `:71`: re-point at the next unlock
 - **JRR-1** · OPEN · human · v2026-10-15 — joined-rig-recogniser bridge change (2 exports, rebuilt `.so`): Quest on-device check not stated at G2
 - **JRR-2** · OPEN · human · v2026-10-15 — joined-rig-recogniser: human read of the 16-fixture recogniser-layer report (split case, flips legible) not stated at G2
 - **EPR-1** · OPEN · design-relock · v2026-11-04 — locked `joined-rig.md` rule 2 (:66, :84, :108): kill check compares final texts; `ab-rig/Joined.cs` :214-277 also compares gain, libvosk, conf
-- **EPR-2** · OPEN · light-lane · v2026-11-04 — stale `:143-195` cite at `Planning~/features/joined-rig-recogniser/architecture.md:73` and `plan-2.md:78`
 - **EPR-3** · OPEN · light-lane · v2026-11-04 — Tactical sample shows a literal `\n` placeholder; its Quest setup works on a flat screen only
 - **EPR-4** · OPEN · light-lane · v2026-11-04 — `MetaQuestFeatureBuildHooks` throws a NullReferenceException on every Android build (host TestGround)
 - **EPR-5** · OPEN · human · v2026-11-04 — TestGround's modified `OpenXRPackageSettings.asset` and `EditorBuildSettings.asset` from the Phase 8 sitting: keep or revert in the host
-- **EPR-6** · OPEN · light-lane · v2026-11-04 — UNRESOLVED cite `Documentation~/getting-started.md` :51 in endpointer-profile `architecture.md` *Related*
-- **EPR-7** · OPEN · light-lane · v2026-11-04 — `Planning~/verification-recipe.md` cites `VoxrPushToTalkController.cs:133` for `OnApplicationPause`, now :188 (stale before this feature)
 - **EPR-8** · OPEN · light-lane · v2026-11-04 — confgen's echo misses a BOM-prefixed first rule line
 - **EPR-9** · OPEN · light-lane · v2026-11-04 — confgen never re-checks an existing `--out` against `--model`
 - **EPR-10** · OPEN · light-lane · v2026-11-04 — not-applied warning wording does not tell "nothing to apply" from "could not apply" (duplicate key under Model default)
