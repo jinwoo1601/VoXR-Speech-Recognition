@@ -2,7 +2,7 @@
 type: architecture
 feature: endpointer-profile
 topic: endpointer-profile
-status: draft
+status: accepted
 updated: 2026-11-04
 sources:
   - Planning~/features/endpointer-profile/requirements.md

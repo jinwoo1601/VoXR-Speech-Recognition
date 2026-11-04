@@ -2,8 +2,8 @@
 type: requirements
 feature: endpointer-profile
 topic: endpointer-profile
-status: draft
-updated: 2026-10-17
+status: accepted
+updated: 2026-11-04
 sources:
   - Planning~/design-docs/endpointer-profile.md
   - Planning~/design-docs/endpointer-profile/decisions/adr-0001-runtime-overlay.md
@@ -101,9 +101,11 @@ This is the largest latency cut available with no native code: the endpointer is
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] Every Must in §5 (F1–F12) checked.
-- [ ] Human-only verification, on a Quest 3, Continuous mode: (1) after a load under the tuned default, the extracted `conf/model.conf` pulled by adb shows the tuned values; (2) about 10 commands spoken naturally, a few with a hesitation, under the tuned default and then under "Model default", each with eager commit on (design §3, "The buffer masks the saving"): under tuned every command fires its intended intent with no extra split and no changed words (session log), and the maintainer judges that fires are not perceptibly later, sooner where perceptible. A fail blocks the flip (adr-0002, option A).
-- [ ] The `unity` binding's Commands 1, 2 and 3 green (Command 3 runs because the harness changes).
+- [x] Every Must in §5 (F1–F12) checked. (Phases 1–8 built, each through its verification gate; feature-wide review-cycle, fixes at `0e2c0df`; preflight at `241946b`)
+- [x] Human-only verification, on a Quest 3, Continuous mode: (1) after a load under the tuned default, the extracted `conf/model.conf` pulled by adb shows the tuned values; (2) about 10 commands spoken naturally, a few with a hesitation, under the tuned default and then under "Model default", each with eager commit on (design §3, "The buffer masks the saving"): under tuned every command fires its intended intent with no extra split and no changed words (session log), and the maintainer judges that fires are not perceptibly later, sooner where perceptible. A fail blocks the flip (adr-0002, option A). (Phase 8 on a Quest 3, 2026-11-03/04: the pulled conf one hunk, rule2 0.5 -> 0.45; every command fired once with its intents and slots as spoken under both, eager commit on; the maintainer: "i can't really tell the difference" — ruled a pass on §9 as locked, with two timing runs as extra evidence; record in `memory/2026-11-04.md`)
+- [x] The `unity` binding's Commands 1, 2 and 3 green (Command 3 runs because the harness changes). (review-fix CHECK: EditMode 230/230, PlayMode 724/724, Command 3 harness 37/37; Command 4 also green, its mutation check red then green)
+
+**Ruled at G2 on 2026-11-04** by the maintainer, in conversation ("Accept"): accepted at head `241946b`, with the second preflight in view — the first preflight's stale architecture-doc cites re-pointed and the missing `memory/2026-11-04.md.meta` added in `badf908` and `241946b`; the ten deferral candidates deferred to the backlog ("Defer all").
 
 ## 10. Open questions
 
