@@ -3,7 +3,7 @@ type: architecture
 feature: endpointer-profile
 topic: endpointer-profile
 status: draft
-updated: 2026-10-16
+updated: 2026-11-04
 sources:
   - Planning~/features/endpointer-profile/requirements.md
   - Planning~/design-docs/endpointer-profile.md
@@ -38,7 +38,7 @@ Realizes `Planning~/features/endpointer-profile/requirements.md` (Track **Full**
 
 ## Context & scope
 
-A load runs in `VoxrSpeechRecogniser.InitialiseAsync` (`Runtime/VoxrSpeechRecogniser.cs` :188): claim (:204), `await ModelExtractor.ExtractModelAsync` (:210-213), ownership re-check (:223-224), then the Editor backend (`#if UNITY_EDITOR_WIN` :226; `vosk_model_new`, `Runtime/EditorMicBackend.cs` :85) or `vosk_bridge_init` (:252). The extractor returns a validated path at :89, :115, :169 and :230 (`Runtime/ModelExtractor.cs`; `ValidateModelDirectory` :250-261); tier 1 never reads the archive (:69-91), and only the R9 stamp (:23, :420-428) writes into the model. The recogniser knows no controller (`Runtime/VoxrPushToTalkController.cs` :18 holds the reverse reference). The harness decodes any `--model` and records no conf (`NativeBridge~/harness/main.cpp` :174, :258-269); the joined rig replays dumps behind a stand-in extractor (`Planning~/features/coverage-in-selection/ab-rig/ModelExtractor.cs` :17-23).
+A load runs in `VoxrSpeechRecogniser.InitialiseAsync` (`Runtime/VoxrSpeechRecogniser.cs` :200): claim (:216), `await ModelExtractor.ExtractModelAsync` (:227-230), ownership re-check (:240-241), then the Editor backend (`#if UNITY_EDITOR_WIN` :255; `vosk_model_new`, `Runtime/EditorMicBackend.cs` :85) or `vosk_bridge_init` (:281). The extractor returns a validated path at :89, :115, :169 and :230 (`Runtime/ModelExtractor.cs`; `ValidateModelDirectory` :250-261); tier 1 never reads the archive (:69-91), and only the R9 stamp (:23, :420-428) writes into the model. The recogniser knows no controller (`Runtime/VoxrPushToTalkController.cs` :18 holds the reverse reference). The harness decodes any `--model` and records its conf as `modelConf` (`NativeBridge~/harness/main.cpp` :174, :280-295); the joined rig replays dumps behind a stand-in extractor (`Planning~/features/coverage-in-selection/ab-rig/ModelExtractor.cs` :17-23).
 
 **Owns:** `Runtime/EndpointerOverlay.cs`, `Runtime/VoxrEndpointerProfile.cs`; the field, hint, resolution, overlay call and log in the recogniser; the controller's hand-off; `NativeBridge~/harness/confgen/`; `modelConf` in the harness and pin; the ladder; the rig's conf line, pin key, buffer setups and *Sweep measures*. **Untouched:** `ModelExtractor.cs` and the stamp format; `NativeBridge~/src/`, its ABI and `Runtime/Plugins/` (§2 Out 2); the rig's stand-ins; every recogniser default (§2 Out 3); R10's keys (§2 Out 1). **Owed after G2**, by the codex reconciler: `Documentation~/getting-started.md` :63, the pages naming the field, `KNOWN_LIMITATIONS.md` (§2 Out 4).
 
@@ -56,7 +56,7 @@ A load runs in `VoxrSpeechRecogniser.InitialiseAsync` (`Runtime/VoxrSpeechRecogn
 
 - **Choice surface — one serialized field (F5, F6; recon Q4).** `VoxrSpeechRecogniser` gains `[SerializeField] VoxrEndpointerProfile endpointerProfile = VoxrEndpointerProfile.Automatic` with a tooltip, beside `modelRelativePath` (:22-23); no public property. *Why:* the recogniser's load-time settings are private serialized fields (:22-34). *Rejected:* a public property (no requirement asks; additive later); a ScriptableObject (an asset for one value); a field on the controller (a scene without one still loads).
 
-- **Mode at load — the controller hands its mode over; none means Continuous (F6; recon Q3).** The recogniser gains an internal, unserialized `ListeningModeHint`, default `Continuous`. The controller writes its `_listeningMode` (:27) there in a new `Awake`, before each call that can begin a load (`OnEnable` :154, :164; `PressTalk` :112; the setter :80; `Start` :138), on a mode or reference change (:52-99, :197), and writes `Continuous` back in `OnDestroy`. `InitialiseAsync` resolves (`EndpointerOverlay.Resolve`) before its first await, design §1's order: an explicit choice wins; `Automatic` is "Model default" in Push-to-talk and, from Phase 7, the tuned preset in Continuous. A later mode change reaches the next load (§4.3). *Why:* `Awake` precedes `OnEnable`, so a load begun in the controller's `OnEnable` carries the mode, and the recogniser still knows no controller. *Rejected:* the recogniser finding controllers (reverses the dependency; the rig's stage would need the controller and `UnityEvent`); a public mode setter; an `Initialise` argument (a developer's own call has none).
+- **Mode at load — the controller hands its mode over; none means Continuous (F6; recon Q3).** The recogniser gains an internal, unserialized `ListeningModeHint`, default `Continuous`. The controller writes its `_listeningMode` (:27) there in a new `Awake`, before each call that can begin a load (`OnEnable` :154, :164; `PressTalk` :112; the setter :80; `Start` :138), on a mode or reference change (:52-99, :197), and writes `Continuous` back in `OnDestroy`. `InitialiseAsync` resolves (`EndpointerOverlay.Resolve`) before its first await, design §1's order: an explicit choice wins; `Automatic` is "Model default" in Push-to-talk and, from Phase 7, the tuned preset in Continuous. A later mode change reaches the next load (§4.3). *Why:* `Awake` precedes `OnEnable`, so a load begun in the controller's `OnEnable` carries the mode, and the recogniser still knows no controller. *Rejected:* the recogniser finding controllers (reverses the dependency; the rig's stage would need the controller and `UnityEvent`); a public mode setter; an `Initialise` argument (a developer's own call has none). **Amended 2026-11-04:** Phase 6 (human-approved) also hands the hint over in `OnApplicationPause` and the `InitialMode` setter.
 
 - **Load-time log — one info line per load, the package's first (F12; recon Q4).** `Debug.Log` of `[VoxrSpeechRecogniser] Endpointer profile <preset> (<explicit choice | Continuous default | Push-to-talk default>): rule2=<v> rule3=<v> rule4=<v>`, values from the effective conf, `absent` for a missing key (Kaldi's default applies); when the row was not applied the line ends `— not applied: <reason> (<conf path>)` and goes through `Debug.LogWarning`, the package's `[ClassName]` form (`VoxrCommandRecogniser.cs` :340). `EndpointerOverlay` composes it, so EditMode tests need no model. *Rejected:* a warning for the normal line (not a fault); `OnError` (:663; not an error); a verbosity flag (F12 has no off state).
 
@@ -81,7 +81,7 @@ A load runs in `VoxrSpeechRecogniser.InitialiseAsync` (`Runtime/VoxrSpeechRecogn
 - **Runtime** — `EndpointerOverlay` (new; table, `Resolve`, rewrite, copy, writes, log text); `VoxrEndpointerProfile` (new, public); `VoxrSpeechRecogniser` (field, hint, resolution, seam, log); `VoxrPushToTalkController` (writes the hint).
 - **Harness** — `main.cpp` (`modelConf` header, pin check and write); `confgen` (new).
 - **Rig** — `JoinedInput.cs` pin key; `Joined.cs` kill check; `JoinedReport.cs` conf line and *Sweep measures*; `stage.sh` buffer edit and closure; `joined.sh` flags.
-- **Fixtures and tests** — ladder entries, WAVs and pins; the Tier B skip; EditMode tests (rules, presets, resolution, log text); PlayMode tests on the core extractor (`ModelExtractor.cs` :42; `BuildModelArchive`, `ModelExtractorCacheTests.cs` :788-798) and on a real load.
+- **Fixtures and tests** — ladder entries, WAVs and pins; the Tier B skip; EditMode tests (rules, presets, resolution, log text); PlayMode tests on the core extractor (`ModelExtractor.cs` :42; `BuildModelArchive`, `ModelExtractorCacheTests.cs` :866-880) and on a real load.
 
 ## Data contract & runtime flow
 
@@ -93,7 +93,7 @@ A load runs in `VoxrSpeechRecogniser.InitialiseAsync` (`Runtime/VoxrSpeechRecogn
 
 ### The pause ladder
 
-Every word is in the grammar the harness pins (`expectations.json` :101-235); the patterns are the demo grammar's (`Tests~/Runtime/DemoGrammar.cs` :58, :104, :111, :122-124; its hand-synced copy, :7-11). A P prefix is a complete command the continuation extends; an M prefix still owes a slot or literal.
+Every word is in the grammar the harness pins (`expectations.json` :233-367); the patterns are the demo grammar's (`Tests~/Runtime/DemoGrammar.cs` :58, :104, :111, :122-124; its hand-synced copy, :7-11). A P prefix is a complete command the continuation extends; an M prefix still owes a slot or literal.
 
 | Set | Intent; expected slots | Segments | Rungs (s) | Prefix |
 |---|---|---|---|---|
@@ -145,7 +145,7 @@ A candidate is eligible when its four KC1 verdicts pass and KC2 lists no case; t
 
 ## Non-functional realization
 
-- **Once per load (§6 Performance).** The overlay runs synchronously in `InitialiseAsync`: two small files read, at most two replaced, none on a steady-state load. `Update` (:567-606), `Runtime/Commands/**` and the bridge — the `review` binding's hot paths — are untouched.
+- **Once per load (§6 Performance).** The overlay runs synchronously in `InitialiseAsync`: two small files read, at most two replaced, none on a steady-state load. `Update` (:596-635), `Runtime/Commands/**` and the bridge — the `review` binding's hot paths — are untouched.
 - **Input boundary (§6 Robustness).** An unparseable conf yields the pristine bytes and a warning; a missing key comes only from a tuned row; every write is temp-then-replace. The invariant is structural: the effective bytes are computed from the copy and the row, never from the current conf (F8).
 - **R9 intact (F9); degraded dependencies (§6).** Extractor and stamp are unchanged and validation never inspects the added file; an IO failure is a warning, and no load fails for the profile.
 - **One function, three producers (F3).** Device, Editor and `confgen` compile one file with values as text; the harness records the bytes it decoded and its pin checks them.
@@ -177,7 +177,7 @@ Lowest-risk-first, retiring the riskiest unknown — whether any rule2 below 0.5
 
 - **The decoder's "complete" is not the parser's.** rule2 tests the best state of vosk's grammar model (design §1, inferred from upstream `recognizer.cc`); whether a P prefix ends at rule2 and an M pause holds to rule3 is what the ladder measures. An M rung that splits under "Model default" is evidence, not a defect.
 - **Piper's edge silence.** Segments are synthesized alone; the generator trims each ladder segment's edge near-silence (10 ms frames, -40 dBFS), so a pause is the gap. Phase 1's band check catches a rung out of band, and its joined-words check a clipped word.
-- **Tier B under the tuned default (Phase 7).** A red is flip evidence and stops for the human, never a test edit. **`File.Replace` on IL2CPP Android** is first exercised in Phase 8.
+- **Tier B under the tuned default (Phase 7).** A red is flip evidence and stops for the human, never a test edit. **`File.Replace` on IL2CPP Android** was first exercised in Phase 8, where it held.
 - **Out-of-contract edits.** Deleting `.voxr-archive-model.conf` alone after a tuned load re-takes a tuned conf — a cache hand-edit; `getting-started.md` :63 says so after G2. A developer's own `Initialise()` from another component's `Awake` or `OnEnable`, before the controller's `Awake`, resolves as Continuous; the explicit choice covers it.
 - **Readings.** F1's "never by hand" covers pinned values, not the drift guard's `{file}` entries (scope flag 2). F10's CHANGELOG line is written in Phase 7: F10 is a Must checked at G2 (§9), the narrow exception to §2 Out 4. KC1's S counts cases correct on both sides.
 - **Drift watch.** `confgen`'s links and `stage.sh`'s closure follow the overlay's dependencies; the README copies Command 3; the rig's pin keys follow `expectations.json`. TTS evidence cannot rank decoders (C12); decode latency is not modelled.
@@ -199,6 +199,17 @@ Lowest-risk-first, retiring the riskiest unknown — whether any rule2 below 0.5
 
 **A persisted phase plan is never edited** — it is the record of what its planner knew on its own date, which is why re-pointing its citations is an admitted kind here rather than a correction there.
 -->
+
+Cites are repo-relative, cited>current. SR `Runtime/VoxrSpeechRecogniser.cs`, PT `Runtime/VoxrPushToTalkController.cs`, MC `NativeBridge~/harness/main.cpp`, OV `Runtime/EndpointerOverlay.cs`.
+
+- **Phase 1 (2026-11-04).** As planned, plus the human-ruled edge-silence trim (*Pause ladder*, amended 2026-10-16) and "37/37" in the binding. In place: *Data contract* `expectations.json` 101-235>233-367. Register: `generate.py` 64-81>64-102, 103-104>124-125; MC 224-243>246-265, 232>254; `VoxrWavReplayTests` 136-199>136-201, 128-132>128-134.
+- **Phase 2 (2026-11-04).** As planned. In place: *Context* "records no conf" now `modelConf`, MC 258-269>280-295. Register: MC 274>300, 263>285, 355-356>381-382, 362-367>385-386+390-395; `ab-rig/Joined.cs` 307-311>318-322, 214-266>214-277; `ab-rig/JoinedInput.cs` 151>153-161, 587-592>600-617.
+- **Phase 3 (2026-11-04).** As planned; writer choices in the 2026-10-16 note. Register: `STAGED_FROM` appends, in `stage.sh`, 81-90>155-160.
+- **Phase 4 (2026-11-04).** Built under the human-approved B1-B4: the row type, a `ModelDefault`-only table and `Apply` here; the enum, `Resolve`, log text, tuned rows and `confgen --profile/--mode` in Phase 6 (B3-B4: test-owned tuned row; `confgen` links the overlay only). Writer choices in the 2026-10-17 note. In place: *Components* `BuildModelArchive` 788-798>866-880. plan-4: that 789-803>866-880, `ExtractWithToken` 735-743>812-820, `CountingArchiveSource` 770-783>847-860, `ReadStamp` 752-753>829-830; host `ProjectSettings.asset` 925>927.
+- **Phase 5 (2026-11-04).** As planned; no candidate passed, so the human ruled a second sweep (5b).
+- **Phase 6 (2026-11-04).** Human-approved D1-D4: `confgen --profile/--mode` here (B2); Command 3 in the green; hint hand-off also in `OnApplicationPause` and `InitialMode` (*Mode at load*, amended); `ApplyResult` carries the effective values. Writer choices in the 2026-10-17 note. In place: *Context* SR 188>200, 204>216, 210-213>227-230, 223-224>240-241, 226>255, 252>281; *Non-functional* `Update` 567-606>596-635. Register: SR 228>257, 22-23>23-24, 22-34>23-41, `OnError` 663>`FireError` 692-695; PT 154>167, 164>179, 112>115, 80>82, 138>149, 52-99>52-101, 197>231-241; `stage.sh` closure 39-58>43-54. plan-6: OV 37-47>37-60, 49>77-78, 257>336, 271>348-371, 230>318-319; SR 23>24, 205>217, 224>241, 226>255, 89>101; PT as above and 185>203, 213-216>257-264; `confgen/Program.cs` 30>33, 54-58>66-70, 60-66>87-93, 27-28>30-31; `stage.sh` 59-78>62-86, 91>99.
+- **Phase 7 (2026-11-04).** As planned under R1-R2, D1-D6; writer choices in the 2026-10-17 note. Register: README 49-53>50-55, 61-68>63-70, 68>70. plan-7: `VoxrEndpointerProfileLoadTests.cs` 109-113>109-121; README 43>44, 62>63, 65>66, 69>70.
+- **Phase 8 (2026-11-04).** Pass: the human ruled F11 and §8 discharged on §9 as locked. Human-ruled departures from D1-D4: the PM did the host setup; world-space panels; Meta Quest Support on; logcat `[Phase8] FIRE` lines as the record table; a host-only timing probe and two timing runs. Correction to plan-8's *Expected difference*: W commands also carry the endpointer gain, the 2 s window starting at the VOSK final. In place: *Risks* `File.Replace` on IL2CPP Android held. Evidence: `memory/2026-11-04.md`.
 
 ## Related
 
