@@ -16,12 +16,13 @@ Offline speech recognition and voice command parsing for Unity XR applications. 
 - [Inspector Authoring](inspector-authoring.md) -- Zero-code setup using ScriptableObject assets in the Unity Inspector
 - [Editor Testing](editor-testing.md) -- Debug window, session debug log, live microphone, text injection, and batch test runner
 - [Push-to-Talk and Error Handling](push-to-talk.md) -- Push-to-talk pattern, error handling, and the error code reference
+- [Endpointer Profile](endpointer-profile.md) -- The endpointer presets, how each model load writes them into `conf/model.conf`, the load-time log line, and how to tune
 
 ## API Reference
 
 - [VoxrSpeechRecogniser](api/speech-recogniser.md) -- Core speech recognition component: events, properties, methods
 - [VoxrCommandRecogniser](api/command-recogniser.md) -- Command parsing component: configuration, events, injection
-- [Data Types](api/data-types.md) -- VoxrResult, VoxrWord, VoxrCommand, VoxrPendingAmbiguity, VoxrListeningMode, and related structs and enums
+- [Data Types](api/data-types.md) -- VoxrResult, VoxrWord, VoxrCommand, VoxrPendingAmbiguity, VoxrListeningMode, VoxrEndpointerProfile, and related structs and enums
 - [Command Definitions](api/command-definitions.md) -- VoxrCommandDefinition, VoxrSlotDefinition, VoxrCommandSet
 - [ScriptableObject Assets](api/scriptable-objects.md) -- VoxrSlotAsset, VoxrCommandAsset, VoxrCommandSetAsset, VoxrTestSuiteAsset, VoxrAudioTestSuiteAsset
 - [VoxrNumberParser](api/number-parser.md) -- Digit word to integer conversion

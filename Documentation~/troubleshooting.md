@@ -24,6 +24,10 @@ Ensure the model `.zip` is at `Assets/StreamingAssets/<modelName>.zip` where `<m
 
 A sibling message reporting that the archive **could not be read**, with the underlying reason appended, means the file is where it should be but the SDK could not get its bytes -- a locked or permission-denied file, or running out of memory materialising the array. Both arrive as `ModelLoadFailed`, and both are raised only when there is no valid extracted cache to fall back on: where one exists it is used, with only its freshness left unchecked. See [Model Validation](getting-started.md#model-validation).
 
+### "Endpointer profile … — not applied" warning at model load
+
+The model loaded, but the recogniser's endpointer preset was not written into its `conf/model.conf`; the reason and the conf's path follow `not applied:`. Either the copy of the archive's conf could not be parsed -- not valid UTF-8, one of the three `--endpoint.rule2/3/4.min-trailing-silence` keys present more than once, or one of their values not a non-negative decimal -- and the conf is the archive's own, unchanged; or a file-system failure stopped the write, and the decoder reads the conf already on disk. Fix the conf inside the `.zip` in `StreamingAssets`, which re-extracts on the next launch. See [Endpointer Profile](endpointer-profile.md#the-rewrite).
+
 ### "Microphone permission (RECORD_AUDIO) was not granted"
 
 Add `RECORD_AUDIO` to your Android manifest or enable it in Player Settings > Android > Other Settings. The SDK requests the permission at runtime, but the manifest entry must be present for the request to succeed.

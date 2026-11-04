@@ -50,6 +50,8 @@ Setter semantics:
 
 Both transitions are guarded by the `Speech Recogniser` reference. Without one — unassigned, or a component Unity has destroyed — the property still changes the mode, but starts and stops nothing and fires neither event, the same way `PressTalk()` and `ReleaseTalk()` do nothing without it. An event is only ever an announcement of a start or stop that actually happened.
 
+**The mode also picks the endpointer preset.** With the recogniser's `endpointerProfile` left at `Automatic`, the mode the controller has handed over when a model load begins decides how much trailing silence ends an utterance: `Continuous` loads the `Responsive` preset, `PushToTalk` the model's own values. The controller hands its mode over in its `Awake`, before each start or load it begins, and on every mode change, and a recogniser with no controller loads as `Continuous`. A switch after the model has loaded reaches the next load, not the current one -- so a scene that starts on `PushToTalk` and switches to `Continuous` keeps the model's own values until it reloads. See [Endpointer Profile](endpointer-profile.md#when-the-mode-is-read); an explicit preset on the recogniser ignores the mode.
+
 ## Inspector Reference
 
 | Field                         | Purpose                                                                                 |
@@ -150,6 +152,7 @@ Push-to-talk eliminates this problem entirely by only running recognition during
 - Wire the button press to an XR controller input (e.g. grip or trigger) using Unity's Input System or XR Interaction Toolkit.
 - Provide visual feedback (e.g. a microphone icon or recording indicator) so the user knows when the system is listening.
 - The manual pattern does **not** close the Android permission race (see above). If you hit it in practice, either switch to `VoxrPushToTalkController` or add the same `Update` guard yourself.
+- Without the controller nothing hands the recogniser a listening mode, so under `Automatic` it loads as `Continuous`, with the `Responsive` [endpointer preset](endpointer-profile.md). Releasing the button already ends the utterance, so for push-to-talk wired by hand set the recogniser's `endpointerProfile` to `ModelDefault` to keep the model's own values, as the controller's `PushToTalk` mode does.
 
 ---
 

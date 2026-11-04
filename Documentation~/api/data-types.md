@@ -153,6 +153,20 @@ How `VoxrPushToTalkController` gates the speech recogniser. Read and written at 
 
 See [Push-to-Talk → Listening Modes](../push-to-talk.md#listening-modes) for the setter semantics of switching mode at runtime.
 
+## VoxrEndpointerProfile
+
+`public enum VoxrEndpointerProfile` -- Namespace: `VoXR`
+
+The endpointer preset `VoxrSpeechRecogniser` writes into the extracted model's `conf/model.conf` at each model load, chosen in its [`endpointerProfile`](speech-recogniser.md#inspector-fields) Inspector field.
+
+| Value | Int | Description |
+|-------|-----|-------------|
+| `Automatic` | 0 | The field's default. The listening mode when the load begins decides: `Responsive` in `Continuous` mode, and with no `VoxrPushToTalkController` driving the recogniser; `ModelDefault` in `PushToTalk`. |
+| `ModelDefault` | 1 | The model archive's own endpointer values, exactly: the effective conf is the archive's conf, byte for byte. |
+| `Responsive` | 2 | `--endpoint.rule2.min-trailing-silence=0.45`; rule3 and rule4 keep the archive's own values. For `vosk-model-small-en-us-0.15` it moves rule2 from `0.5`. |
+
+Presets are named rather than numeric -- nothing public takes a raw value. The field serializes the integer, so each value keeps its number. See [Endpointer Profile](../endpointer-profile.md) for what a load does with the preset, its log line, and how to tune.
+
 ## VoxrPendingTimeoutBehavior
 
 `public enum VoxrPendingTimeoutBehavior` -- Namespace: `VoXR.Commands`
@@ -209,7 +223,7 @@ Answering is ordinary follow-up speech. The value is matched as a *whole* uttera
 
 ## See Also
 
-- [VoxrSpeechRecogniser](speech-recogniser.md) -- produces `VoxrResult` via `OnResult`
+- [VoxrSpeechRecogniser](speech-recogniser.md) -- produces `VoxrResult` via `OnResult`; takes a `VoxrEndpointerProfile` in its `endpointerProfile` field
 - [VoxrCommandRecogniser](command-recogniser.md) -- produces `VoxrCommand` via `OnCommandRecognised`
 - [Command Definitions](command-definitions.md) -- defining patterns and slots
 - [Number Parser](number-parser.md) -- converting `NumberSequence` slot values returned by `GetSlot`

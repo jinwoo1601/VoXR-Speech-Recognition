@@ -46,6 +46,7 @@ mode there is no such retry, so prefer the explicit `ReleaseNativeResources()` h
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `modelRelativePath` | `string` | `"vosk-model-small-en-us-0.15"` | Path within StreamingAssets (without `.zip` extension) |
+| `endpointerProfile` | [`VoxrEndpointerProfile`](data-types.md#voxrendpointerprofile) | `Automatic` | Endpointer preset written into the extracted model's `conf/model.conf` at each model load. `Automatic` lets the listening mode at load decide: `Responsive` in `Continuous` mode, and with no `VoxrPushToTalkController` driving the recogniser; `ModelDefault` in `PushToTalk`. An explicit preset overrides the mode. Read when a load begins; a change reaches the next load. Each load logs the resolved preset and its values. Serialized only -- there is no public property. See [Endpointer Profile](../endpointer-profile.md) |
 | `sampleRate` | `float` | `16000` | VOSK recogniser sample rate in Hz |
 | `micGainTargetDb` | `float` | `-18` | AGC target level in dB (calibrated for Quest 3) |
 
@@ -97,8 +98,9 @@ For full setup and lifecycle examples, see the [Getting Started](../getting-star
 
 - [Getting Started](../getting-started.md) -- setup walkthrough and first recognition
 - [Push-to-Talk](../push-to-talk.md) -- start/stop lifecycle pattern
+- [Endpointer Profile](../endpointer-profile.md) -- the presets, the load-time overlay on `conf/model.conf`, and its log line
 - [Editor Testing](../editor-testing.md) -- injection workflows
 - [Voice Check sample](../../Samples~/VoiceCheck/README.md) -- a live `InputLevel` meter and a first-run microphone check
 - [VoxrCommandRecogniser](command-recogniser.md) -- command parsing layer
-- [Data Types](data-types.md) -- `VoxrResult`, `VoxrWord`
+- [Data Types](data-types.md) -- `VoxrResult`, `VoxrWord`, `VoxrEndpointerProfile`
 - [Error Codes](error-codes.md) -- `VoxrBridgeErrorCode` values
