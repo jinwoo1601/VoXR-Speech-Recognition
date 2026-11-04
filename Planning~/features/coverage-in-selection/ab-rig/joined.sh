@@ -44,7 +44,7 @@ die() {
   exit 2
 }
 
-VARY="" DUMP="" DUMP_A="" DUMP_B="" REF="" REF_A="" REF_B="" MANIFEST="" PIN="" OUT="" EVALUATE="" LAYER=""
+VARY="" DUMP="" DUMP_A="" DUMP_B="" REF="" REF_A="" REF_B="" MANIFEST="" PIN="" OUT="" EVALUATE="" LAYER="" BUFFER="" WINDOW=""
 
 # take <var> <option> <value>: each option once, with a value.
 take() {
@@ -63,13 +63,15 @@ while [ $# -gt 0 ]; do
       shift
       continue
       ;;
-    --vary | --dump | --dump-a | --dump-b | --ref | --ref-a | --ref-b | --manifest | --pin | --out | --layer)
+    --vary | --dump | --dump-a | --dump-b | --ref | --ref-a | --ref-b | --manifest | --pin | --out | --layer | --buffer | --window)
       [ $# -ge 2 ] || die "$opt needs a value" ;;
     *) die "unknown argument: $opt" ;;
   esac
   case "$opt" in
     --vary) take VARY "$opt" "$2" ;;
     --layer) take LAYER "$opt" "$2" ;;
+    --buffer) take BUFFER "$opt" "$2" ;;
+    --window) take WINDOW "$opt" "$2" ;;
     --dump) take DUMP "$opt" "$2" ;;
     --dump-a) take DUMP_A "$opt" "$2" ;;
     --dump-b) take DUMP_B "$opt" "$2" ;;
@@ -112,6 +114,10 @@ case "$LAYER" in
   *) die "--layer must be parser or recogniser, not: $LAYER" ;;
 esac
 
+[ -z "$BUFFER" ] || [ -n "$WINDOW" ] || die "--buffer needs --window"
+[ -z "$WINDOW" ] || [ -n "$BUFFER" ] || die "--window needs --buffer"
+[ -z "$BUFFER" ] || [ -n "$RECOGNISER" ] || die "--buffer and --window need --layer recogniser, not: parser"
+
 MANIFEST="${MANIFEST:-Tests~/Fixtures/audio/manifest.json}"
 PIN="${PIN:-NativeBridge~/harness/expectations.json}"
 OUT="${OUT:-.scratch/joined}"
@@ -139,7 +145,8 @@ abspath() {
 }
 
 stage() {
-  env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$1" "$2" ${RECOGNISER:+recogniser} || die "$1: stage failed"
+  env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$1" "$2" ${RECOGNISER:+recogniser} \
+    ${BUFFER:+--buffer "$BUFFER" --window "$WINDOW"} || die "$1: stage failed"
   (cd "$2" && dotnet build -v q --nologo) || die "$1: build failed"
 }
 

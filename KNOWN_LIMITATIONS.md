@@ -209,6 +209,12 @@ model you use.
   - A cross-utterance buffer that merges arbitrarily distant utterances
     was evaluated and deferred: the false-positive risk from concatenating
     genuinely unrelated speech outweighs the benefit for this edge case.
+  - The trailing-silence rules that end an utterance live in the model's
+    `conf/model.conf`, and the recogniser's `endpointerProfile` sets three of them
+    at every load: in `Continuous` mode the default is the `Responsive` preset,
+    rule2 `0.45` s where `vosk-model-small-en-us-0.15` has `0.5`. Choose
+    `ModelDefault` for the model's own values; see
+    `Documentation~/endpointer-profile.md`.
 
 ### Set restriction cannot produce meaningful rejection transcripts
 
@@ -460,6 +466,77 @@ deliberate trade-offs rather than oversights.
   token too, so a plain `touch` on the replacement archive also clears it. If you
   generate model archives from a pipeline that normalises timestamps, make one of
   those part of the swap rather than relying on the identity check.
+
+### Hand-edits to the extracted `conf/model.conf` are reverted at the next model load
+
+- **Symptom**: You edit `conf/model.conf` in the extracted model under
+  `Application.persistentDataPath/VoxrModels/<modelName>/` — a beam, a lattice
+  beam, an endpointer rule — and after the next model load the edit is gone. For
+  an endpointer rule, the `[VoxrSpeechRecogniser] Endpointer profile …` line that
+  load logs reports the preset's or the archive's value, not yours.
+- **Repro**: Load the model once. Edit any line of the extracted
+  `conf/model.conf`. Call `ReleaseNativeResources()` and then `Initialise()`, or
+  relaunch. The conf is back to the archive's own, with the preset applied.
+- **Root cause**: by design. Every load computes the effective conf from
+  `.voxr-archive-model.conf` — the byte copy of the archive's own conf that the
+  first load to find none takes from the extracted conf — and the chosen preset,
+  never from the conf on disk, and replaces the conf whenever its bytes differ.
+  That is what makes `ModelDefault` restore the archive's values exactly after a
+  load under `Responsive`. The cost is that the extracted conf is the SDK's output,
+  not an input.
+- **The one way the baseline goes wrong**: the copy is taken from whatever the
+  extracted conf holds when a load finds no copy. Delete `.voxr-archive-model.conf`
+  on its own after a load under `Responsive`, and the next load takes the
+  `Responsive` conf as the archive's: `ModelDefault` then logs `rule2=0.45`, not
+  the archive's value. A conf edited by hand before any load took a copy becomes
+  the baseline the same way.
+- **Workaround**:
+  - For the three endpointer keys (`--endpoint.rule2/3/4.min-trailing-silence`),
+    choose a preset in the recogniser's `endpointerProfile` field. There is no
+    custom-value preset and nothing public takes a raw value.
+  - For any other value, or any other key, edit `conf/model.conf` inside the
+    `.zip` in `StreamingAssets`. A changed archive is re-extracted and its conf
+    becomes the new copy; choose `ModelDefault` for every one of your values to
+    hold, or `Responsive` to keep yours for everything but rule2. The overlay
+    covers the endpointer's trailing-silence keys only: rule1, rule5, beam,
+    lattice beam and `--max-active` are whatever the archive's conf says.
+  - To recover a wrong baseline, force a re-extraction — delete the extracted
+    folder under `Application.persistentDataPath/VoxrModels/`, or the
+    `.voxr-model-stamp` inside it, as `Documentation~/getting-started.md`
+    describes. The copy goes with the folder and is re-taken from the fresh
+    extraction.
+
+### Under `Automatic`, the endpointer profile is the listening mode's at the moment the model load begins
+
+- **Symptom**: With the recogniser's `endpointerProfile` at `Automatic`, the
+  load-time line reads `ModelDefault (Push-to-talk default)` in a scene that is
+  listening continuously, or `Responsive (Continuous default)` in one whose
+  `VoxrPushToTalkController` is on `PushToTalk`.
+- **Repro**:
+  - Leave the controller on `PushToTalk` with **Initialise On Start**, let the
+    model load, then set `ListeningMode = VoxrListeningMode.Continuous`. The model
+    keeps the `ModelDefault` conf until it is loaded again.
+  - Call `Initialise()` on the recogniser from your own component's `Awake` or
+    `OnEnable`. Where that runs before the controller's `Awake`, the recogniser has
+    not yet been handed a mode and loads as `Continuous`.
+  - Leave the Inspector on `PushToTalk` and assign `Continuous` from your own
+    `Start()` (one of the recipes in `Documentation~/push-to-talk.md`). With
+    **Initialise On Start**, the preset depends on whether the controller's `Start`
+    or yours runs first, which Unity leaves undefined across components.
+- **Root cause**: the profile is resolved once, synchronously, when
+  `InitialiseAsync()` begins, from the field and the mode the controller last
+  handed over; the conf is written once per load and the decoder reads it only when
+  it loads. The recogniser holds no reference to the controller — the controller
+  pushes its mode, from its own `Awake` on, and sets `Continuous` back on its
+  `OnDestroy` — so a load that begins before the hand-off, or a mode change after
+  the load, is not reflected until the next load.
+- **Workaround**:
+  - Set `endpointerProfile` explicitly to `Responsive` or `ModelDefault`; an
+    explicit preset ignores the mode.
+  - To apply a new mode's default now, reload: `ReleaseNativeResources()`, then
+    `Initialise()`.
+  - Begin your own loads from `Start` or later, or leave them to the controller's
+    **Initialise On Start**.
 
 ### Coverage demotes a command when it explains too little of what was said
 

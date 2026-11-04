@@ -4,3 +4,4 @@ Warnings the human has ruled on; `doctor` stays silent on a check while its coun
 
 - CHANGELOG CHANGELOG.md 97 2026-10-01
 - BUDGET Planning~/features/*/architecture.md 8 2026-10-01
+- BUDGET Planning~/features/*/plan-*.md 8 2026-10-17

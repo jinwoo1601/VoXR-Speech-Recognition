@@ -31,6 +31,8 @@ DEFAULT_PEAK = 0.2
 DEFAULT_GAP_S = 0.7
 DEFAULT_SILENCE_S = 3.0
 MIN_PEAK, MAX_PEAK = 0.04, 0.4
+TRIM_FRAME_S = 0.010
+TRIM_DBFS = -40.0
 
 
 def synth(piper_bin, voice, data_dir, text, tmp_path):
@@ -57,6 +59,19 @@ def scale_to_peak(samples, peak):
     return samples * (peak / m)
 
 
+def trim_edges(samples):
+    frame = int(round(TRIM_FRAME_S * TARGET_RATE))
+    n = len(samples) // frame
+    frames = samples[: n * frame].reshape(n, frame)
+    rms = np.sqrt(np.mean(frames * frames, axis=1))
+    with np.errstate(divide="ignore"):
+        dbfs = 20.0 * np.log10(rms)
+    idx = np.flatnonzero(dbfs >= TRIM_DBFS)
+    if idx.size == 0:
+        sys.exit(f"no frame at or above {TRIM_DBFS} dBFS — check the TTS output")
+    return samples[int(idx[0]) * frame:(int(idx[-1]) + 1) * frame]
+
+
 def silence(seconds):
     return np.zeros(int(seconds * TARGET_RATE), dtype=np.float32)
 
@@ -69,8 +84,11 @@ def build_case(case, piper_bin, voice, data_dir, tmp_path):
         for i, seg in enumerate(case["segments"]):
             if i > 0:
                 parts.append(silence(gap))
-            parts.append(scale_to_peak(
-                synth(piper_bin, voice, data_dir, seg, tmp_path), peak))
+            seg_samples = scale_to_peak(
+                synth(piper_bin, voice, data_dir, seg, tmp_path), peak)
+            if case.get("category") == "ladder":
+                seg_samples = trim_edges(seg_samples)
+            parts.append(seg_samples)
         speech = np.concatenate(parts)
     elif case.get("phrase"):
         speech = scale_to_peak(

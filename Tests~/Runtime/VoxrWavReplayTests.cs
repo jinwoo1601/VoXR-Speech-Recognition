@@ -128,7 +128,8 @@ namespace VoXR.Tests.Runtime
         static IEnumerable<string> ManifestFileNames()
         {
             foreach (var c in ManifestCases())
-                yield return c.file;
+                if (c.category != "ladder")
+                    yield return c.file;
         }
 
         // The corpus-wide acoustic regression suite (F5/F8): one test per manifest

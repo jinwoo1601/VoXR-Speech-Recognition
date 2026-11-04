@@ -9,13 +9,30 @@
 # the recogniser-only rig files; without it the stage is the parser's alone.
 set -euo pipefail
 
-USAGE="usage: stage.sh <git-ref|WORKTREE> <outdir> [recogniser]"
+USAGE="usage: stage.sh <git-ref|WORKTREE> <outdir> [recogniser [--buffer time|eager --window <s>]]"
 REF="${1:?$USAGE}"
 OUT="${2:?$USAGE}"
 LAYER="${3:-}"
 if [ -n "$LAYER" ] && [ "$LAYER" != "recogniser" ]; then
   echo "$USAGE" >&2
   exit 2
+fi
+BUFFER=""
+WINDOW=""
+if [ $# -gt 3 ]; then
+  if [ "$LAYER" = "recogniser" ] && [ $# -eq 7 ]; then
+    for i in 4 6; do
+      j=$((i + 1))
+      case "${!i}" in
+        --buffer) BUFFER="${!j}" ;;
+        --window) WINDOW="${!j}" ;;
+      esac
+    done
+  fi
+  if ! [[ "$BUFFER" =~ ^(time|eager)$ && "$WINDOW" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "$USAGE" >&2
+    exit 2
+  fi
 fi
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(git -C "$HERE" rev-parse --show-toplevel)"
@@ -32,6 +49,7 @@ SOURCES=(
   Runtime/Commands/VoxrMatchDiagnostics.cs
   Runtime/VoxrResult.cs
 )
+OPTIONAL=()
 
 # The recogniser stage's closure. Not staged: Runtime/Native/BridgeNative.cs and
 # Runtime/ModelExtractor.cs (the rig's stand-ins take their place); EditorMicBackend.cs,
@@ -55,6 +73,11 @@ if [ "$LAYER" = "recogniser" ]; then
     Runtime/VoxrJsonParser.cs
     Runtime/VoxrGrammarValidator.cs
   )
+  OPTIONAL=(
+    Runtime/EndpointerOverlay.cs
+    Runtime/VoxrEndpointerProfile.cs
+    Runtime/VoxrListeningMode.cs
+  )
 fi
 
 # `rm -rf` is blocked in this environment; `find -delete` is not.
@@ -70,12 +93,45 @@ for src in "${SOURCES[@]}"; do
   fi
 done
 
+for src in "${OPTIONAL[@]}"; do
+  dest="$OUT/$(basename "$src")"
+  if [ "$REF" = "WORKTREE" ]; then
+    if [ -f "$REPO/$src" ]; then
+      cp "$REPO/$src" "$dest"
+    fi
+  elif git -C "$REPO" cat-file -e "$REF:$src" 2>/dev/null; then
+    git -C "$REPO" show "$REF:$src" > "$dest"
+  fi
+done
+
 cp "$HERE/UnityStub.cs" "$HERE/Program.cs" "$HERE/Check.cs" "$HERE/DocCheck.cs" \
    "$HERE/PlayerCheck.cs" "$HERE/Sweep.cs" "$HERE/Rig.csproj" \
    "$HERE/JoinedInput.cs" "$HERE/Joined.cs" "$HERE/JoinedScorer.cs" "$HERE/JoinedReport.cs" \
    "$OUT/"
 if [ "$LAYER" = "recogniser" ]; then
   cp "$HERE/JoinedRecogniser.cs" "$HERE/BridgeNative.cs" "$HERE/ModelExtractor.cs" "$OUT/"
+fi
+
+if [ -n "$BUFFER" ]; then
+  REC="$OUT/VoxrCommandRecogniser.cs"
+  once() {
+    local n
+    n="$(grep -F -c "$1" "$REC" || true)"
+    if [ "$n" != "1" ]; then
+      echo "stage.sh: initializer '$1' matches $n times in $REF's VoxrCommandRecogniser.cs" >&2
+      exit 2
+    fi
+  }
+  once "bufferWindow = 0.5f;"
+  if [ "$BUFFER" = "eager" ]; then
+    once "eagerFlushOnCompleteMatch = false;"
+  fi
+  sed -b -i "s/bufferWindow = 0\.5f;/bufferWindow = ${WINDOW}f;/" "$REC"
+  once "bufferWindow = ${WINDOW}f;"
+  if [ "$BUFFER" = "eager" ]; then
+    sed -b -i "s/eagerFlushOnCompleteMatch = false;/eagerFlushOnCompleteMatch = true;/" "$REC"
+    once "eagerFlushOnCompleteMatch = true;"
+  fi
 fi
 
 # Pin what was staged, so a report can never be attributed to the wrong revision.
@@ -87,4 +143,10 @@ else
   echo "$REF $(git -C "$REPO" rev-parse --short "$REF")" > "$OUT/STAGED_FROM"
 fi
 grep -n 'RequiredLiteralMissPenalty *=' "$OUT/VoxrCommandParser.cs" >> "$OUT/STAGED_FROM"
+if [ -n "$BUFFER" ]; then
+  echo "edit: bufferWindow = 0.5f -> ${WINDOW}f" >> "$OUT/STAGED_FROM"
+  if [ "$BUFFER" = "eager" ]; then
+    echo "edit: eagerFlushOnCompleteMatch = false -> true" >> "$OUT/STAGED_FROM"
+  fi
+fi
 cat "$OUT/STAGED_FROM"
