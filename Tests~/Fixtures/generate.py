@@ -9,8 +9,6 @@
 # (soxr) -> peak-normalize into the Quest 3 mic range (0.04-0.4) -> pad lead/
 # tail silence -> 16-bit mono WAV. Split-command entries synthesize segments
 # and join them with a silence gap; silence entries emit digital silence.
-# Pause-ladder entries also trim each segment's edges after peak scaling, to
-# its first..last 10 ms frame at or above -40 dBFS, so the gap reads bare.
 # Piper synthesis is not bit-deterministic across runs (noise inputs), so
 # regeneration is functionally reproducible, not byte-identical; the committed
 # WAVs are the regression baseline.
@@ -62,7 +60,6 @@ def scale_to_peak(samples, peak):
 
 
 def trim_edges(samples):
-    # 10 ms frames from sample 0; a short final remainder never counts as speech.
     frame = int(round(TRIM_FRAME_S * TARGET_RATE))
     n = len(samples) // frame
     frames = samples[: n * frame].reshape(n, frame)

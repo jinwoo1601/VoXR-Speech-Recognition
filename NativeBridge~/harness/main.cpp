@@ -183,8 +183,6 @@ int RunHarness(int argc, char** argv) {
     if (model_dir.empty() || fixtures_dir.empty() || manifest_path.empty())
         return Fail("--model, --fixtures and --manifest are all required");
 
-    // The decoded model's conf, read as exact bytes (the pin compares them);
-    // a conf that cannot be opened is absent.
     const std::string conf_path = model_dir + "/conf/model.conf";
     std::optional<std::string> conf;
     {
@@ -220,8 +218,6 @@ int RunHarness(int argc, char** argv) {
     if (!manifest.contains("libvosk") || !manifest["libvosk"].is_string() ||
         manifest["libvosk"].get<std::string>().empty())
         return Fail("manifest 'libvosk' pin missing (record the provisioned libvosk version): " + manifest_path);
-    // The conf pin: decode only at the pinned conf; only --write-baseline
-    // writes it, and it has no null form.
     if (!write_baseline) {
         if (!manifest.contains("modelConf") || !manifest["modelConf"].is_string())
             return Fail("manifest 'modelConf' pin missing or not a string (record " + conf_path + " with --write-baseline): " + manifest_path);
@@ -383,7 +379,7 @@ int RunHarness(int argc, char** argv) {
         outcomes.push_back(std::move(r));
     }
     if (write_baseline)
-        manifest["modelConf"] = *conf; // present: validation refused an absent conf
+        manifest["modelConf"] = *conf;
 
     vosk_bridge_destroy();
 

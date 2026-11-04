@@ -135,7 +135,6 @@ namespace VoXR
             _onTalkEnded?.Invoke();
         }
 
-        // Before OnEnable, so a load begun there already carries this controller's mode.
         void Awake()
         {
             HandOffMode();
@@ -213,15 +212,12 @@ namespace VoXR
                 _speechRecogniser.StopRecognition();
         }
 
-        // A recogniser with no controller loads as Continuous, so the hint goes back with it.
         void OnDestroy()
         {
             if (_speechRecogniser != null)
                 _speechRecogniser.ListeningModeHint = VoxrListeningMode.Continuous;
         }
 
-        // The recogniser resolves an Automatic endpointer profile against this mode at load.
-        // An explicit null check, never `?.`, for the reason the ListeningMode setter gives.
         void HandOffMode()
         {
             if (_speechRecogniser != null)

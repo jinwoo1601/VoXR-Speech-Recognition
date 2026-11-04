@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stage the real parser sources at a given revision into a buildable scratch project.
 #
-#   ./stage.sh <git-ref|WORKTREE> <outdir> [recogniser [--buffer time|eager --window <s>]]
+#   ./stage.sh <git-ref|WORKTREE> <outdir> [recogniser]
 #
 # WORKTREE copies the checked-out files, so the "after" build is literally what ships.
 # A git ref uses `git show`, so the "before" build is literally what is on main.
@@ -17,9 +17,6 @@ if [ -n "$LAYER" ] && [ "$LAYER" != "recogniser" ]; then
   echo "$USAGE" >&2
   exit 2
 fi
-# Args 4-7 (endpointer-profile, *Buffer setups*): after `recogniser` only, `--buffer time|eager`
-# and `--window <digits>[.<digits>]`, once each, either order. A repeated flag leaves the
-# other unset and an unknown one sets neither, so each is caught as missing.
 BUFFER=""
 WINDOW=""
 if [ $# -gt 3 ]; then
@@ -52,8 +49,6 @@ SOURCES=(
   Runtime/Commands/VoxrMatchDiagnostics.cs
   Runtime/VoxrResult.cs
 )
-# Staged only when the ref has them (endpointer-profile, *The rig*), so a pre-feature ref
-# still stages; SOURCES still stops on a missing file.
 OPTIONAL=()
 
 # The recogniser stage's closure. Not staged: Runtime/Native/BridgeNative.cs and
@@ -117,12 +112,8 @@ if [ "$LAYER" = "recogniser" ]; then
   cp "$HERE/JoinedRecogniser.cs" "$HERE/BridgeNative.cs" "$HERE/ModelExtractor.cs" "$OUT/"
 fi
 
-# The buffer setup: the staged recogniser's initializers edited, each text on exactly one
-# line before and after its edit, else a stop by name. Literal sed (`.` escaped, no `^`/`$`),
-# in binary mode (`-b`), so each line keeps its CR.
 if [ -n "$BUFFER" ]; then
   REC="$OUT/VoxrCommandRecogniser.cs"
-  # once <text>: exactly one line of the staged recogniser holds <text>.
   once() {
     local n
     n="$(grep -F -c "$1" "$REC" || true)"

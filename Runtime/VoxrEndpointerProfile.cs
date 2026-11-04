@@ -6,7 +6,6 @@
 // ============================================================================
 namespace VoXR
 {
-    // Serialized as the integer: members are appended, never renumbered.
     public enum VoxrEndpointerProfile
     {
         Automatic = 0,

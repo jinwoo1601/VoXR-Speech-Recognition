@@ -121,8 +121,6 @@ namespace VoXR.Tests.Editor
 
             foreach (string newline in new[] { "\n", "\r\n" })
             {
-                // rule3 alone present and no final terminator: rule2 and rule4 are appended,
-                // in rule order, after a terminator the conf's own last line lacked.
                 string conf = "--min-active-rows=200" + newline + Rule3 + "=1.0";
                 string expected =
                     "--min-active-rows=200"
@@ -346,8 +344,6 @@ namespace VoXR.Tests.Editor
             );
         }
 
-        // -------- Presets, choice, resolution, log line --------
-
         [Test]
         public void Enum_IsExactlyThree()
         {
@@ -425,8 +421,6 @@ namespace VoXR.Tests.Editor
         [Test]
         public void NoPublicFloat()
         {
-            // The pre-feature set, read from Runtime/VoxrSpeechRecogniser.cs at merge-base
-            // b255105: the endpointer adds no public float.
             string[] allowlist = { "InputLevel", "CreateSimulatedWords(confidence)" };
 
             CollectionAssert.AreEquivalent(
@@ -554,8 +548,6 @@ namespace VoXR.Tests.Editor
         [Test]
         public void LogLine_NotApplied_NamesReason()
         {
-            // A parse failure serves the copy, so the line carries the copy's real values:
-            // the last of the two rule2 lines, as Kaldi reads it.
             File.WriteAllBytes(CopyPath, Bytes(PristineConf + Rule2 + "=0.6\n"));
             WriteConf(Bytes(PristineConf));
 
@@ -606,8 +598,6 @@ namespace VoXR.Tests.Editor
             Assert.AreEqual("2.0", result.Rule4);
         }
 
-        // The public float-typed members and parameters a type declares, as "Name" or
-        // "Method(parameter)". Accessors are covered by their properties.
         static List<string> FloatSurface(Type type, params Type[] floatTypes)
         {
             var surface = new List<string>();
@@ -664,7 +654,6 @@ namespace VoXR.Tests.Editor
             File.WriteAllBytes(ConfPath, bytes);
         }
 
-        // No preamble: a BOM is in the bytes only when the string starts with U+FEFF.
         static byte[] Bytes(string text) => new UTF8Encoding(false).GetBytes(text);
 
         static string Describe(string conf) =>

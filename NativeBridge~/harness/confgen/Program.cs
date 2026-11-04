@@ -5,18 +5,6 @@
 // Owns:     Program (internal static class)
 // Depends:  EndpointerOverlay, VoxrEndpointerProfile, VoxrListeningMode
 // ============================================================================
-//
-// Usage:
-//   confgen --model <dir> --out <dir> (--profile <name> [--mode Continuous|PushToTalk] | --rule2 <v> [--rule3 <v>] [--rule4 <v>])
-//
-// Copies --model to --out when --out does not exist (an existing --out is the cached
-// path and is not copied over), applies the row to --out's conf/model.conf, and prints
-// "sha256 <64 lowercase hex>" of the resulting conf followed by its --endpoint.rule
-// lines. The row is the preset --profile resolves to in --mode (default Continuous),
-// as the recogniser resolves it at load, or the --rule values. A name is an exact
-// enum member name; each value is ASCII [0-9]+(.[0-9]+)?. Exit 0 on success; 1 when
-// the copy fails or the row is not applied; 2 on a usage problem, before anything is
-// written.
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -43,8 +31,6 @@ namespace VoXR.Confgen
 
         static int Main(string[] args)
         {
-            // Every stdout line ends in "\n" on every platform: the sweep compares runs
-            // byte for byte, and hash.py reads line 1.
             Console.Out.NewLine = "\n";
 
             string[] values = new string[Flags.Length];
@@ -92,7 +78,6 @@ namespace VoXR.Confgen
                     );
             }
 
-            // Exact member names only: an integer, or a name in another case, is refused.
             EndpointerOverlay.Row row = null;
             if (profileGiven)
             {
@@ -147,8 +132,6 @@ namespace VoXR.Confgen
 
             EndpointerOverlay.ApplyResult result = EndpointerOverlay.Apply(outFull, row);
 
-            // A row that was not applied fails the run: a sweep must never decode the
-            // pristine conf under a candidate's name.
             if (result.Reason != null)
             {
                 Console.Error.WriteLine(

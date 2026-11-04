@@ -14,10 +14,8 @@ namespace VoXR.Tests.Runtime
         VoxrSpeechRecogniser _speech;
         VoxrCommandRecogniser _command;
 
-        // Only the authored-Continuous tests build this one; see AuthorContinuousInactive.
         GameObject _authoredGo;
 
-        // Only the destroyed-recogniser tests build this one; see UseCountingRecogniser.
         GameObject _countingGo;
 
         int _startedCount;
@@ -54,8 +52,6 @@ namespace VoXR.Tests.Runtime
                 Object.DestroyImmediate(_countingGo);
             _countingGo = null;
         }
-
-        // -------- Fixtures --------
 
         static VoxrSlotDefinition[] MakeSlots() => new[]
         {
@@ -269,19 +265,6 @@ namespace VoXR.Tests.Runtime
             Assert.AreEqual(startedBefore, _startedCount);
         }
 
-        // -------- Authored Continuous (issue #109) --------
-
-        // Authoring Continuous in the Inspector is not the same as assigning ListeningMode at
-        // runtime, and the difference is the whole bug: the field is already Continuous when
-        // OnEnable first runs, so no press and no mode change ever announce the start. The
-        // property setter every other test here uses cannot reproduce that, because it *is* a
-        // change. Building the object inactive is what holds Awake/OnEnable back until the
-        // mode and the references are in place; the caller activates it to fire them.
-        //
-        // componentEnabled mirrors the component's own Inspector checkbox, which serializes
-        // independently of the GameObject. It is a distinct axis from SetActive: Unity runs
-        // Awake on a disabled component of an active GameObject but never OnEnable, so the
-        // two states diverge — see AuthoredContinuous_ComponentDisabled_* below.
         VoxrPushToTalkController AuthorContinuousInactive(bool componentEnabled = true)
         {
             _authoredGo = new GameObject("AuthoredContinuousPTT");
@@ -358,15 +341,6 @@ namespace VoXR.Tests.Runtime
             );
         }
 
-        // The two tests below pin the one state where this change is not purely additive.
-        // Before it, Awake recorded the want-to-recognise flag for ANY authored-Continuous
-        // component, enabled or not, because Unity runs Awake on a disabled component of an
-        // active GameObject. The flag now rises in OnEnable, which such a component never
-        // reaches — so it stays down until the checkbox is ticked. That was chosen, not
-        // overlooked: the flag's only pre-enable reader is the ListeningMode setter, and what
-        // it did with it was fire an OnTalkEnded that no OnTalkStarted ever paired with, on a
-        // recogniser that had never been started.
-
         [Test]
         public void AuthoredContinuous_ComponentDisabled_AnnouncesOnlyWhenEnabled()
         {
@@ -414,21 +388,6 @@ namespace VoXR.Tests.Runtime
             );
         }
 
-        // -------- Missing or destroyed recogniser (issue #115) --------
-
-        // Unity overloads ==/!= on UnityEngine.Object so a destroyed component compares equal
-        // to null while its managed wrapper is still alive. `?.` does not call that overload,
-        // so the two destroyed-recogniser tests below are the ones the old `?.` in the setter
-        // failed: they destroy the component but keep the C# reference the controller holds.
-        //
-        // They assert the skip by COUNTING CALLS, not by expecting an exception. Dispatching
-        // into a destroyed recogniser never reached this caller in the first place:
-        // StartRecognition hands off to a discarded async Task, and StopRecognitionCore
-        // touches no Unity-side member on any platform. An Assert.DoesNotThrow here would be
-        // structurally incapable of failing — the trap VoxrPushToTalkPauseTests warns about,
-        // an assertion unable to see the very throw it exists to rule out. Counting is also
-        // what separates this from the event assertions: those would still pass if a future
-        // edit kept the events gated but restored `_speechRecogniser?.StartRecognition()`.
         sealed class CountingSpeechRecogniser : VoxrSpeechRecogniser
         {
             internal int StartCalls { get; private set; }
@@ -444,8 +403,6 @@ namespace VoXR.Tests.Runtime
             void OnDestroy() { }
         }
 
-        // The double gets its own GameObject rather than replacing the fixture's _speech,
-        // which SetUp also wires into _command. Only the controller is under test here.
         CountingSpeechRecogniser UseCountingRecogniser()
         {
             _countingGo = new GameObject("CountingRecogniser");
@@ -582,11 +539,6 @@ namespace VoXR.Tests.Runtime
             Assert.AreEqual("set_mode", received.Value.Intent);
         }
 
-        // -------- Listening-mode hint (endpointer-profile) --------
-
-        // The recogniser resolves an Automatic endpointer profile against the hint at load,
-        // so every route that can begin a load must find the controller's mode there.
-
         [Test]
         public void Hint_NoController_Continuous()
         {
@@ -686,6 +638,98 @@ namespace VoXR.Tests.Runtime
                 VoxrListeningMode.Continuous,
                 _speech.ListeningModeHint,
                 "A recogniser whose controller is gone loads as Continuous"
+            );
+        }
+
+        [Test]
+        public void Hint_PressTalk_HandsOff()
+        {
+            _speech.ListeningModeHint = VoxrListeningMode.Continuous;
+
+            _controller.PressTalk();
+
+            Assert.AreEqual(
+                VoxrListeningMode.PushToTalk,
+                _speech.ListeningModeHint,
+                "A press must hand the mode over before the start it begins"
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator Hint_Start_HandsOff()
+        {
+            var go = new GameObject("StartHandOffPTT");
+            go.SetActive(false);
+            try
+            {
+                var speech = go.AddComponent<VoxrSpeechRecogniser>();
+                var controller = go.AddComponent<VoxrPushToTalkController>();
+                controller.SpeechRecogniser = speech;
+                controller.InitialiseOnStart = true;
+                go.SetActive(true);
+
+                speech.ListeningModeHint = VoxrListeningMode.Continuous;
+                yield return null;
+
+                Assert.AreEqual(
+                    VoxrListeningMode.PushToTalk,
+                    speech.ListeningModeHint,
+                    "Start must hand the mode over before the load it begins"
+                );
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Hint_OnEnable_HandsOff()
+        {
+            var controller = AuthorContinuousInactive(componentEnabled: false);
+            var speech = _authoredGo.GetComponent<VoxrSpeechRecogniser>();
+            _authoredGo.SetActive(true);
+
+            speech.ListeningModeHint = VoxrListeningMode.PushToTalk;
+            controller.enabled = true;
+
+            Assert.AreEqual(
+                VoxrListeningMode.Continuous,
+                speech.ListeningModeHint,
+                "An authored-Continuous enable must hand the mode over before its start"
+            );
+        }
+
+        [Test]
+        public void Hint_OnEnableResume_HandsOff()
+        {
+            _controller.PressTalk();
+            _controller.enabled = false;
+
+            _speech.ListeningModeHint = VoxrListeningMode.Continuous;
+            _controller.enabled = true;
+
+            Assert.AreEqual(
+                VoxrListeningMode.PushToTalk,
+                _speech.ListeningModeHint,
+                "A resumed enable must hand the mode over before its start"
+            );
+        }
+
+        [Test]
+        public void Hint_PauseResume_HandsOff()
+        {
+            var counting = UseCountingRecogniser();
+            _controller.PressTalk();
+            _go.SendMessage("OnApplicationPause", true);
+
+            counting.ListeningModeHint = VoxrListeningMode.Continuous;
+            _go.SendMessage("OnApplicationPause", false);
+
+            Assert.AreEqual(
+                VoxrListeningMode.PushToTalk,
+                counting.ListeningModeHint,
+                "A pause resume must hand the mode over before its start"
             );
         }
     }

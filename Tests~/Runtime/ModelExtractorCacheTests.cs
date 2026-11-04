@@ -377,15 +377,6 @@ namespace VoXR.Tests.Runtime
             );
         }
 
-        // Issue #153: hashing the archive to answer "is the cache fresh?" meant reading the
-        // whole ~39 MB of it on every launch — ~719 ms of a 1303 ms time-to-voice-ready on
-        // a Quest 3. The stamp gained a second tier, a cheap source-identity token, and
-        // these tests pin the two-tier contract: a matching token serves the cache with no
-        // archive I/O at all; anything else falls back to the hash, which still decides
-        // re-extraction exactly as issue #145 left it. The token may only ever
-        // over-invalidate — a moved token costs one hash, never a re-extraction, and never
-        // serves a cache the hash would have rejected.
-
         [UnityTest]
         public IEnumerator MatchingSourceToken_SkipsArchiveRead()
         {
@@ -718,11 +709,6 @@ namespace VoXR.Tests.Runtime
             );
         }
 
-        // The endpointer overlay rewrites conf/model.conf inside the cache and keeps a
-        // pristine copy beside the stamp. Validation checks four paths and the stamp is
-        // untouched, so an overlaid cache must still be served by both tiers — never
-        // re-extracted — and Model default must give back the archive's own bytes.
-
         [UnityTest]
         public IEnumerator OverlaidConf_Tier1ReExtract_KeepsCacheAndStamp() =>
             OverlaidConfReExtract(tier1: true);
@@ -794,10 +780,58 @@ namespace VoXR.Tests.Runtime
             Assert.IsEmpty(_errors, $"An overlaid cache hit must raise no error: [{ErrorSummary}]");
         }
 
+        [UnityTest]
+        public IEnumerator OverlaidConf_Tier1ChangedArchive_ModelDefaultGivesNewConf() =>
+            OverlaidConfChangedArchive(tier1: true);
+
+        [UnityTest]
+        public IEnumerator OverlaidConf_Tier2ChangedArchive_ModelDefaultGivesNewConf() =>
+            OverlaidConfChangedArchive(tier1: false);
+
+        IEnumerator OverlaidConfChangedArchive(bool tier1)
+        {
+            const string confA =
+                "--min-active-rows=200\n--endpoint.rule2.min-trailing-silence=0.5\n";
+            const string confB =
+                "--min-active-rows=200\n--endpoint.rule2.min-trailing-silence=0.6\n";
+            var sourceA = new CountingArchiveSource(BuildModelArchive(confA));
+            var sourceB = new CountingArchiveSource(BuildModelArchive(confB));
+
+            Task<string> ExtractOnce(CountingArchiveSource source, string token) =>
+                tier1 ? ExtractWithToken(source.Read, () => token) : ExtractFrom(source.Read);
+
+            var first = ExtractOnce(sourceA, "token-a");
+            while (!first.IsCompleted)
+                yield return null;
+
+            string path = first.Result;
+            Assert.IsNotNull(path, $"First extraction must succeed. Errors: [{ErrorSummary}]");
+
+            var applied = EndpointerOverlay.Apply(path, EndpointerOverlay.Responsive);
+            Assert.IsNull(applied.Reason, "Responsive must apply to archive A's conf.");
+
+            var second = ExtractOnce(sourceB, "token-b");
+            while (!second.IsCompleted)
+                yield return null;
+
+            Assert.IsNotNull(
+                second.Result,
+                $"Re-extraction must succeed. Errors: [{ErrorSummary}]"
+            );
+
+            var restored = EndpointerOverlay.Apply(second.Result, EndpointerOverlay.ModelDefault);
+            Assert.IsNull(restored.Reason, "Model default must apply.");
+            CollectionAssert.AreEqual(
+                Encoding.UTF8.GetBytes(confB),
+                File.ReadAllBytes(Path.Combine(second.Result, "conf", "model.conf")),
+                "Model default after a changed archive must give archive B's conf, not A's copy."
+            );
+            Assert.IsEmpty(_errors, $"A changed archive must re-extract with no error: [{ErrorSummary}]");
+        }
+
         Task<string> Extract(byte[] archiveBytes) =>
             ExtractFrom(() => Task.FromResult(archiveBytes));
 
-        // The seam taken with an arbitrary source, so a throwing read can be injected.
         Task<string> ExtractFrom(Func<Task<byte[]>> archiveSource) =>
             ModelExtractor.ExtractModelAsync(
                 ModelName,
@@ -807,8 +841,6 @@ namespace VoXR.Tests.Runtime
                 (code, msg) => _errors.Add($"{code}: {msg}")
             );
 
-        // The same seam with a source-identity token injected. The ten issue-#145 tests go
-        // on taking the five-argument overload, so they keep pinning the token-less path.
         Task<string> ExtractWithToken(Func<Task<byte[]>> archiveSource, Func<string> sourceToken) =>
             ModelExtractor.ExtractModelAsync(
                 ModelName,
@@ -824,8 +856,6 @@ namespace VoXR.Tests.Runtime
         static string ReadModelConf(string modelPath) =>
             File.ReadAllText(Path.Combine(modelPath, "conf", "model.conf"));
 
-        // The stamp's raw text, so assertions can weigh the presence or absence of the
-        // token line rather than only the hash it sits beside.
         static string ReadStamp(string modelPath) =>
             File.ReadAllText(Path.Combine(modelPath, ModelExtractor.StampFileName));
 
@@ -842,8 +872,6 @@ namespace VoXR.Tests.Runtime
             return null;
         }
 
-        // An archive source that records how often it was actually invoked, so a test can
-        // assert zero archive I/O — the cache path coming back proves nothing on its own.
         sealed class CountingArchiveSource
         {
             readonly byte[] _archiveBytes;
@@ -859,10 +887,6 @@ namespace VoXR.Tests.Runtime
             }
         }
 
-        // Builds a VOSK-shaped archive in memory. The entries sit under a root folder
-        // because real VOSK archives have one and the extractor strips the first path
-        // segment; graph/ needs a file inside it because directory entries are skipped.
-        // A null modelConfContents omits conf/model.conf, producing a corrupt archive.
         static byte[] BuildModelArchive(string modelConfContents)
         {
             using var stream = new MemoryStream();

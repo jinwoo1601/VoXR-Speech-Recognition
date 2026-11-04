@@ -3,7 +3,7 @@
 // Layer:    Tests.Runtime
 // Owns:     VoxrEndpointerProfileLoadTests (public class)
 // Depends:  VoxrSpeechRecogniser, VoxrEndpointerProfile, EndpointerOverlay, ModelExtractor,
-//           VoxrBridgeErrorCode
+//           VoxrBridgeErrorCode, VoxrListeningMode
 // ============================================================================
 #if UNITY_EDITOR_WIN
 using System.Collections;
@@ -16,8 +16,6 @@ using UnityEngine.TestTools;
 
 namespace VoXR.Tests.Runtime
 {
-    // Editor-Windows only for the same reason as the playback-seam suite: a real load needs
-    // a backend that actually initialises, which here is EditorMicBackend.
     public class VoxrEndpointerProfileLoadTests
     {
         const string PlantFileName = "voxr-endpointer-cache-plant";
@@ -35,7 +33,6 @@ namespace VoXR.Tests.Runtime
             _initErrors = new List<string>();
             _speech.OnError += (code, msg) => _initErrors.Add($"{code}: {msg}");
 
-            // The cache directory the recogniser's own load serves.
             string modelRelativePath = (string)
                 typeof(VoxrSpeechRecogniser)
                     .GetField("modelRelativePath", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -106,7 +103,6 @@ namespace VoXR.Tests.Runtime
                 yield return null;
             AssertInitialised();
 
-            // The archive's lines, the rule2 line alone carrying the preset's value.
             string[] expected = File.ReadAllLines(CopyPath);
             for (int i = 0; i < expected.Length; i++)
             {
@@ -158,12 +154,9 @@ namespace VoXR.Tests.Runtime
                 yield return null;
             AssertInitialised();
 
-            // Read only now: a tier-2 hit in load 1 may refresh the stamp's token.
             string stampPath = Path.Combine(_dir, ModelExtractor.StampFileName);
             byte[] stamp = File.ReadAllBytes(stampPath);
 
-            // A re-extraction replaces the directory, so a planted file survives only a
-            // cache serve.
             string plant = Path.Combine(_dir, PlantFileName);
             File.WriteAllText(plant, "planted");
 
@@ -184,6 +177,66 @@ namespace VoXR.Tests.Runtime
                 File.ReadAllBytes(ConfPath),
                 "Model default's conf is the archive's copy."
             );
+        }
+
+        [UnityTest]
+        public IEnumerator Load_PushToTalkHint_ModelDefault()
+        {
+            SetProfile(VoxrEndpointerProfile.Automatic);
+            _speech.ListeningModeHint = VoxrListeningMode.PushToTalk;
+            LogAssert.Expect(
+                LogType.Log,
+                "[VoxrSpeechRecogniser] Endpointer profile ModelDefault (Push-to-talk default): "
+                    + "rule2=0.5 rule3=0.75 rule4=1.0"
+            );
+
+            var init = _speech.InitialiseAsync();
+            while (!init.IsCompleted)
+                yield return null;
+            AssertInitialised();
+
+            CollectionAssert.AreEqual(
+                File.ReadAllBytes(CopyPath),
+                File.ReadAllBytes(ConfPath),
+                "The push-to-talk default is Model default: the archive's own conf."
+            );
+        }
+
+        [UnityTest]
+        public IEnumerator Load_UnparseableConf_Warns()
+        {
+            EndpointerOverlay.Apply(_dir, EndpointerOverlay.ModelDefault);
+            byte[] archive = File.ReadAllBytes(CopyPath);
+            try
+            {
+                File.AppendAllText(CopyPath, "\n" + EndpointerOverlay.Rule2Key + "=0.6\n");
+
+                SetProfile(VoxrEndpointerProfile.Responsive);
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[VoxrSpeechRecogniser] Endpointer profile Responsive (explicit choice): "
+                        + "rule2=0.6 rule3=0.75 rule4=1.0 — not applied: "
+                        + EndpointerOverlay.Rule2Key
+                        + " appears more than once ("
+                        + ConfPath
+                        + ")"
+                );
+
+                var init = _speech.InitialiseAsync();
+                while (!init.IsCompleted)
+                    yield return null;
+                AssertInitialised();
+
+                CollectionAssert.AreEqual(
+                    File.ReadAllBytes(CopyPath),
+                    File.ReadAllBytes(ConfPath),
+                    "A conf that cannot be parsed is served as the archive's own bytes."
+                );
+            }
+            finally
+            {
+                File.WriteAllBytes(CopyPath, archive);
+            }
         }
     }
 }

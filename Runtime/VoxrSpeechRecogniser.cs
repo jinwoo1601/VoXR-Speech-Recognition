@@ -71,9 +71,6 @@ namespace VoXR
         bool _initialising;
         bool _isRecognising;
 
-        // The listening mode an Automatic endpointer profile resolves against at load.
-        // VoxrPushToTalkController hands its mode over; with no controller it stays
-        // Continuous.
         internal VoxrListeningMode ListeningModeHint { get; set; } = VoxrListeningMode.Continuous;
 
 #if UNITY_EDITOR_WIN
@@ -215,7 +212,6 @@ namespace VoXR
             // past the check above (#57).
             s_bridgeOwner = this;
             bool claimHeld = false;
-            // Resolved before the first await, so the load uses the mode it began in.
             EndpointerOverlay.Resolution profile = EndpointerOverlay.Resolve(
                 endpointerProfile,
                 ListeningModeHint
@@ -240,8 +236,6 @@ namespace VoXR
                 if (!OwnsBridge)
                     return;
 
-                // Synchronous, so the ownership re-check above still holds; both backends
-                // below read the conf it leaves. Never throws.
                 EndpointerOverlay.ApplyResult applied = EndpointerOverlay.Apply(
                     modelPath,
                     profile.Row

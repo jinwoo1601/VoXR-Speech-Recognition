@@ -92,7 +92,7 @@ namespace AbRig
             internal double Gain;
             internal string Libvosk;
             internal string[] Grammar;
-            internal string ModelConf; // the header's `modelConf`; null = not recorded
+            internal string ModelConf;
             internal readonly List<DumpCase> Cases = new List<DumpCase>();
         }
 
@@ -218,7 +218,6 @@ namespace AbRig
                     dump.Gain = Num(rec, "gain", where);
                     dump.Libvosk = Str(rec, "libvosk", where);
                     dump.Grammar = StrArray(rec, "grammar", where);
-                    // `modelConf`: the conf's text; null or absent = not recorded.
                     if (
                         rec.TryGetProperty("modelConf", out JsonElement modelConf)
                         && modelConf.ValueKind != JsonValueKind.Null

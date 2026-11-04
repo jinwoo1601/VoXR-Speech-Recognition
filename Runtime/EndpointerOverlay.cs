@@ -17,9 +17,6 @@ namespace VoXR
 {
     internal static class EndpointerOverlay
     {
-        // One preset's values, each a decimal string or null for "the archive's own".
-        // A plain class rather than a record: init accessors need IsExternalInit, which
-        // netstandard 2.1 does not carry.
         internal sealed class Row
         {
             public readonly string Rule2,
@@ -34,15 +31,11 @@ namespace VoXR
             }
         }
 
-        // Reason is null when the row was applied; otherwise it says why the effective
-        // conf is the pristine copy (or, for an IO failure, whatever is on disk).
         internal sealed class ApplyResult
         {
             public readonly string ConfPath,
                 Reason;
 
-            // The effective conf's values, each null when its key is absent or the conf
-            // could not be read.
             public readonly string Rule2,
                 Rule3,
                 Rule4;
@@ -59,7 +52,6 @@ namespace VoXR
             }
         }
 
-        // A preset resolved for one load: the preset applied, its row, and why it was chosen.
         internal sealed class Resolution
         {
             public readonly VoxrEndpointerProfile Preset;
@@ -77,8 +69,6 @@ namespace VoXR
         internal static readonly Row ModelDefault = new Row(null, null, null);
         internal static readonly Row Responsive = new Row("0.45", null, null);
 
-        // The preset table. Automatic, and any value the enum does not define, has no row:
-        // the listening mode decides.
         internal static Row RowOf(VoxrEndpointerProfile profile)
         {
             switch (profile)
@@ -92,7 +82,6 @@ namespace VoXR
             }
         }
 
-        // An explicit choice wins in either mode; otherwise the mode's default applies.
         internal static Resolution Resolve(VoxrEndpointerProfile choice, VoxrListeningMode mode)
         {
             Row row = RowOf(choice);
@@ -106,7 +95,6 @@ namespace VoXR
                     "Push-to-talk default"
                 );
 
-            // Continuous: the tuned preset, Responsive, is the default (adr-0002).
             return new Resolution(
                 VoxrEndpointerProfile.Responsive,
                 Responsive,
@@ -114,8 +102,6 @@ namespace VoXR
             );
         }
 
-        // One line per load. A missing value reads "absent" (Kaldi's default applies); a
-        // row not applied keeps the values the decoder reads and names the reason.
         internal static string LogLine(
             VoxrEndpointerProfile preset,
             string label,
@@ -142,17 +128,12 @@ namespace VoXR
 
         static readonly string[] Keys = { Rule2Key, Rule3Key, Rule4Key };
 
-        // Throws on invalid bytes and writes no preamble, so a valid conf decodes and
-        // re-encodes byte for byte — a leading BOM included, as the U+FEFF it decodes to.
         static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
 
-        // Never throws: an invalid sequence decodes to U+FFFD, and the key lines are ASCII.
         static readonly UTF8Encoding LenientUtf8 = new UTF8Encoding(false, false);
 
         const char ByteOrderMark = '﻿';
 
-        // ASCII digits, optionally a dot and more digits — no sign, exponent, or culture,
-        // so the check reads the same under Mono, IL2CPP and .NET 10.
         internal static bool IsDecimal(string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -186,10 +167,6 @@ namespace VoXR
             return fractionDigits > 0 && i == value.Length;
         }
 
-        // Pure: the effective conf for a pristine conf and a row. A key line is one whose
-        // trimmed text begins "<key>="; a row value replaces that line's text, terminator
-        // kept, or is appended in rule order when the conf lacks the key; every other byte
-        // passes through. A conf that cannot be parsed comes back as pristine, with a reason.
         internal static byte[] Rewrite(byte[] pristine, Row row, out string reason)
         {
             reason = null;
@@ -215,7 +192,6 @@ namespace VoXR
                 return pristine;
             }
 
-            // The BOM passes through but stays outside line 1's key-line test.
             string bom = "";
             if (text.Length > 0 && text[0] == ByteOrderMark)
             {
@@ -223,8 +199,6 @@ namespace VoXR
                 text = text.Substring(1);
             }
 
-            // Split on '\n'; a '\r' before it belongs to the terminator. The last segment
-            // has no terminator, and is no line at all when it is empty.
             string[] segments = text.Split('\n');
             int lineCount =
                 segments[segments.Length - 1].Length == 0 ? segments.Length - 1 : segments.Length;
@@ -309,9 +283,6 @@ namespace VoXR
             return StrictUtf8.GetBytes(builder.ToString());
         }
 
-        // Applies a row to modelDir's conf/model.conf: captures the pristine copy before
-        // the first write, computes from it, and replaces the conf only when its bytes
-        // would change. Logs nothing and never throws; the caller reports the result.
         internal static ApplyResult Apply(string modelDir, Row row)
         {
             string confPath = Path.Combine(modelDir, "conf", "model.conf");
@@ -323,8 +294,6 @@ namespace VoXR
 
             try
             {
-                // Only this overlay writes the conf, so an absent copy means the conf on
-                // disk is still the archive's own.
                 if (!File.Exists(copyPath))
                 {
                     tempPath = copyPath + TempSuffix;
@@ -335,7 +304,7 @@ namespace VoXR
 
                 byte[] effective = Rewrite(File.ReadAllBytes(copyPath), row, out string reason);
 
-                if (!SameBytes(File.ReadAllBytes(confPath), effective))
+                if (!File.ReadAllBytes(confPath).AsSpan().SequenceEqual(effective))
                 {
                     tempPath = confPath + TempSuffix;
                     File.WriteAllBytes(tempPath, effective);
@@ -354,10 +323,8 @@ namespace VoXR
                 }
                 catch
                 {
-                    // Best-effort cleanup
                 }
 
-                // The decoder reads whatever is on disk, so the values come from it.
                 byte[] onDisk = null;
                 try
                 {
@@ -365,15 +332,12 @@ namespace VoXR
                 }
                 catch
                 {
-                    // Best-effort read: an unreadable conf reports no values
                 }
 
                 return new ApplyResult(confPath, $"IO failure: {e.Message}", onDisk);
             }
         }
 
-        // The rule2, rule3 and rule4 values of a conf, each null when its key is absent or
-        // conf is null. A key's last occurrence wins, as Kaldi reads it; values trimmed.
         static string[] KeyValues(byte[] conf)
         {
             string[] values = new string[Keys.Length];
@@ -398,27 +362,12 @@ namespace VoXR
             return values;
         }
 
-        // A crash leaves the old file or the new one, never a truncated or missing target.
         static void Publish(string tempPath, string targetPath)
         {
             if (File.Exists(targetPath))
                 File.Replace(tempPath, targetPath, null);
             else
                 File.Move(tempPath, targetPath);
-        }
-
-        static bool SameBytes(byte[] a, byte[] b)
-        {
-            if (a.Length != b.Length)
-                return false;
-
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i])
-                    return false;
-            }
-
-            return true;
         }
     }
 }

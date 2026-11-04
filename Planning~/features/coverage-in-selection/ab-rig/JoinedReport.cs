@@ -14,11 +14,7 @@
 // names in order. Any defect is a stop, exit 2, naming the file and line or the difference,
 // and leaves no report. Counts sit side by side, never totalled or netted. A recogniser-layer
 // file (feat-joined-rig-recogniser Phase 3) has `layer`, `config` and `tickRate` for `gate`
-// and per scored case the timing keys; both files of one layer and one tick rate. A
-// recogniser-layer report under `vary` decoder (endpointer-profile Phase 3, *Kill criteria in
-// the report*) ends in `## Sweep measures`: the buffer setup and W, finals per utterance, S,
-// KC1 and KC2; there a config lacking `bufferWindow` or `eagerFlushOnCompleteMatch`, or the
-// two sides' configs differing in either, is a stop, exit 2.
+// and per scored case the timing keys; both files of one layer and one tick rate.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -747,17 +743,11 @@ namespace AbRig
                 }
             }
 
-            // 7. Recogniser layer, decoder side only: the sweep measures.
             if (layered && vary == "decoder")
                 AppendSweep(sb, a, b);
             return sb.ToString();
         }
 
-        // *Sweep measures*, cases paired by index: the buffer setup and W off both configs;
-        // per side the mean finals per utterance over scored cases, and Δf, B − A; S, the mean
-        // A delay − B delay over cases correct on both sides with a delay on both (n, printed);
-        // KC1, pass when Δf × W ≤ S, unrounded, not evaluated when n is 0; KC2, every case
-        // scored on both sides whose space-joined finals differ, any one a STOP.
         static void AppendSweep(StringBuilder sb, Side a, Side b)
         {
             string window = SweepConfig(a, b, "bufferWindow");
@@ -835,7 +825,6 @@ namespace AbRig
                     .Append("\"\n");
         }
 
-        // A `config` key's text, present on both sides and equal, else a stop (R3).
         static string SweepConfig(Side a, Side b, string key)
         {
             foreach (Side s in new[] { a, b })
@@ -863,7 +852,6 @@ namespace AbRig
             return a.Header.GetProperty("config").GetProperty(key).GetString();
         }
 
-        // The mean `finalCount` over a side's scored cases.
         static double MeanFinals(Side s)
         {
             double total = 0;
@@ -883,7 +871,6 @@ namespace AbRig
             return cls == "correct-fire" || cls == "correct-no-fire";
         }
 
-        // The finals space-joined (KC2 compares and prints these).
         static string SpaceJoined(JsonElement rec)
         {
             var parts = new List<string>();
@@ -1027,14 +1014,11 @@ namespace AbRig
             return string.Join(" | ", parts);
         }
 
-        // A conf's identity: SHA-256 of its UTF-8 bytes, the first 12 lowercase hex digits.
         internal static string ConfSha12(string conf) =>
             Convert
                 .ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(conf)))
                 .Substring(0, 12);
 
-        // A dump header's `modelConf`: `sha256 <12 hex>` then its `--endpoint.rule` lines in
-        // order, `; `-joined; `not recorded` when the header has none.
         static string ModelConf(JsonElement dumpHeader)
         {
             if (

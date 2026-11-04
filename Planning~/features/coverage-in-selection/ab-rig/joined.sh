@@ -8,11 +8,9 @@
 # feat-joined-rig-parser. Run from the project root in Git Bash, one of two shapes:
 #
 #   bash Planning~/features/coverage-in-selection/ab-rig/joined.sh --vary parser \
-#       --dump D --ref-a R --ref-b R2 [--layer L] [--buffer time|eager --window S] \
-#       [--manifest M] [--pin P] [--out O] [--evaluate]
+#       --dump D --ref-a R --ref-b R2 [--layer L] [--manifest M] [--pin P] [--out O] [--evaluate]
 #   bash Planning~/features/coverage-in-selection/ab-rig/joined.sh --vary decoder \
-#       --dump-a D --dump-b D2 --ref R [--layer L] [--buffer time|eager --window S] \
-#       [--manifest M] [--pin P] [--out O] [--evaluate]
+#       --dump-a D --dump-b D2 --ref R [--layer L] [--manifest M] [--pin P] [--out O] [--evaluate]
 #
 # A ref is a git ref or WORKTREE (stage.sh). --layer is parser (phase 1's, the default) or
 # recogniser (feat-joined-rig-recogniser: each ref staged with stage.sh's `recogniser`
@@ -29,9 +27,6 @@
 #   2. stages each distinct ref (ref-a, or --ref, into <out>/stage-a; ref-b into
 #      <out>/stage-b unless equal), with `recogniser` at that layer, and builds it, all
 #      before any score (else `joined.sh: <ref>: stage failed` / `build failed`, exit 2);
-#      --buffer and --window (endpointer-profile, both or neither, recogniser layer only) go
-#      to stage.sh, which edits the staged recogniser's initializers `bufferWindow = 0.5f`
-#      to the window and, for eager, `eagerFlushOnCompleteMatch = false` to true;
 #   3. scores each side in its stage, side a first, every path in drive-letter form:
 #      --vary parser, the one dump through ref-a (a) and ref-b (b), both pinned;
 #      --vary decoder, dump-a pinned (a) and dump-b unpinned (b) through the one ref.
@@ -119,7 +114,6 @@ case "$LAYER" in
   *) die "--layer must be parser or recogniser, not: $LAYER" ;;
 esac
 
-# --buffer and --window: both or neither, at the recogniser layer; stage.sh checks the values.
 [ -z "$BUFFER" ] || [ -n "$WINDOW" ] || die "--buffer needs --window"
 [ -z "$WINDOW" ] || [ -n "$BUFFER" ] || die "--window needs --buffer"
 [ -z "$BUFFER" ] || [ -n "$RECOGNISER" ] || die "--buffer and --window need --layer recogniser, not: parser"
