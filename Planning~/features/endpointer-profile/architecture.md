@@ -218,7 +218,7 @@ Cites are repo-relative, cited>current. SR `Runtime/VoxrSpeechRecogniser.cs`, PT
 
 ### Citation re-point (2026-11-05)
 
-- **Citations re-pointed to the landed tree.** *Related*'s `Documentation~/getting-started.md` :51 resolves unchanged: the model setup step that places the `.zip` archive under `Assets/StreamingAssets` (the archive *Pristine source* builds on), at :51 since `d068b14` and at this doc's authoring (`e02f784`); :63 is forcing a re-extraction. The 2026-11-04 re-point pass reported :51 unresolved because *Related* names no claim beside it (light-lane deferral EPR-6).
+- **Citations re-pointed to the landed tree.** *Related*'s `Documentation~/getting-started.md` :51 resolves unchanged: the model setup step that places the `.zip` archive under `Assets/StreamingAssets` (the archive *Pristine source* builds on), at :51 since `617b647` and at this doc's authoring (`e02f784`); :63 is forcing a re-extraction. The 2026-11-04 re-point pass reported :51 unresolved because *Related* names no claim beside it (light-lane deferral EPR-6).
 - **Corrections to always-current sections:** none.
 
 ## Related
