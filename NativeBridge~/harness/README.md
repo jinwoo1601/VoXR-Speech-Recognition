@@ -25,11 +25,21 @@ Everything lands in `NativeBridge~/vendor/` (gitignored, never committed). Run e
    unzip vosk-model-small-en-us-0.15.zip
    cd ../..
    ```
-4. **Linux leftovers** — `vendor/libvosk.so`, `vendor/vosk-linux.zip` and `vendor/vosk-linux-x86_64-0.3.45/`, from before the Windows-native build, are unused: delete them.
+4. **AGC2 source** — the two archives the agc-filter feature compiles AGC2 from (adr-0003), each pinned by SHA-256: `webrtc-audio-processing` **2.1** and the abseil archive its `subprojects/abseil-cpp.wrap` names. Download each, then check its SHA-256:
+   ```bash
+   mkdir -p NativeBridge~/vendor && cd NativeBridge~/vendor
+   curl -LO https://freedesktop.org/software/pulseaudio/webrtc-audio-processing/webrtc-audio-processing-2.1.tar.xz
+   echo "ae9302824b2038d394f10213cab05312c564a038434269f11dbf68f511f9f9fe  webrtc-audio-processing-2.1.tar.xz" | sha256sum -c -
+   curl -LO https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz
+   echo "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3  abseil-cpp-20240722.0.tar.gz" | sha256sum -c -
+   cd ../..
+   ```
+   Each check must print `<file>: OK` — `webrtc-audio-processing-2.1.tar.xz: OK` and `abseil-cpp-20240722.0.tar.gz: OK`. The archives are **not** extracted: the build extracts them under its own build directory. On a mismatch, stop: delete the file and raise it. Published checksums: the abseil pin equals the `source_hash` in the 2.1 archive's `subprojects/abseil-cpp.wrap`; none is recorded for `webrtc-audio-processing-2.1.tar.xz`, whose pin is the hash taken 2026-11-06.
+5. **Linux leftovers** — `vendor/libvosk.so`, `vendor/vosk-linux.zip` and `vendor/vosk-linux-x86_64-0.3.45/`, from before the Windows-native build, are unused: delete them.
 
 ## Provisioning a branch tree
 
-A branch tree (`.claude/references/core/trees-contract.md`) is provisioned by copying `vosk-win64-0.3.45/` and `vosk-model-small-en-us-0.15/` from the one checkout's `D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/vendor/` into its own `NativeBridge~/vendor/` as real directories, never links. `overlaid/` and the zips are not copied, since Command 3's `confgen` writes `vendor/overlaid/continuous-default` in that tree. Run the block below from the tree's root in Git Bash:
+A branch tree (`.claude/references/core/trees-contract.md`) is provisioned by copying `vosk-win64-0.3.45/` and `vosk-model-small-en-us-0.15/` from the one checkout's `D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/vendor/` into its own `NativeBridge~/vendor/` as real directories, never links. `overlaid/` and the vosk zips are not copied, since Command 3's `confgen` writes `vendor/overlaid/continuous-default` in that tree. Run the blocks below, in order, from the tree's root in Git Bash:
 
 ```bash
 (H='D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/vendor' V='NativeBridge~/vendor' && test -d 'NativeBridge~/harness' && test -d "$H/vosk-win64-0.3.45" && test -d "$H/vosk-model-small-en-us-0.15" && test ! -e "$V/vosk-win64-0.3.45" && test ! -e "$V/vosk-model-small-en-us-0.15" && test ! -e "$V/.copying" && mkdir -p "$V/.copying" && cp -r "$H/vosk-win64-0.3.45" "$H/vosk-model-small-en-us-0.15" "$V/.copying/" && diff -rq "$H/vosk-win64-0.3.45" "$V/.copying/vosk-win64-0.3.45" && diff -rq "$H/vosk-model-small-en-us-0.15" "$V/.copying/vosk-model-small-en-us-0.15" && mv "$V/.copying/vosk-win64-0.3.45" "$V/.copying/vosk-model-small-en-us-0.15" "$V/" && rmdir "$V/.copying") && echo provisioned || echo 'NOT provisioned'
@@ -37,7 +47,13 @@ A branch tree (`.claude/references/core/trees-contract.md`) is provisioned by co
 
 The block copies into `vendor/.copying/`, checks each copy against the hub's with `diff -rq` (same files, same bytes), and only then moves both into place, so a copy that stops part-way leaves nothing Command 3 reads; it copies nothing where the working directory is not a tree root (no `NativeBridge~/harness/` under it), the hub lacks either directory, or the tree holds either target or `.copying/`. It prints `provisioned` or `NOT provisioned`: with both directories present and no `.copying/`, the tree was already provisioned; otherwise, in a branch tree only, remove its `NativeBridge~/vendor/` and run the block again.
 
-The one checkout copies nothing — its `vendor/` is the one `## One-time provisioning` makes, and the block there prints `NOT provisioned`, changing nothing. Where the hub lacks either directory, the human first runs that section's blocks 2 and 3 from the hub's root (downloads are a human step; agents download nothing), then the block.
+```bash
+(H='D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/vendor' V='NativeBridge~/vendor' && test -d 'NativeBridge~/harness' && test -f "$H/webrtc-audio-processing-2.1.tar.xz" && test -f "$H/abseil-cpp-20240722.0.tar.gz" && test ! -e "$V/webrtc-audio-processing-2.1.tar.xz" && test ! -e "$V/abseil-cpp-20240722.0.tar.gz" && test ! -e "$V/.copying" && mkdir -p "$V/.copying" && cp "$H/webrtc-audio-processing-2.1.tar.xz" "$H/abseil-cpp-20240722.0.tar.gz" "$V/.copying/" && (cd "$V/.copying" && printf '%s  %s\n' ae9302824b2038d394f10213cab05312c564a038434269f11dbf68f511f9f9fe webrtc-audio-processing-2.1.tar.xz f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3 abseil-cpp-20240722.0.tar.gz | sha256sum -c -) && mv "$V/.copying/webrtc-audio-processing-2.1.tar.xz" "$V/.copying/abseil-cpp-20240722.0.tar.gz" "$V/" && rmdir "$V/.copying") && echo provisioned || echo 'NOT provisioned'
+```
+
+The second block, run from the tree's root after the vosk block above (the vosk block runs first), copies both archives into `vendor/.copying/`, checks both against their pins with `sha256sum -c` there, and only then moves them into place; it copies nothing where the working directory is not a tree root (no `NativeBridge~/harness/` under it), the hub lacks either archive, or the tree holds either archive or `.copying/`. It prints `provisioned` or `NOT provisioned`: with both archives present and no `.copying/`, the tree was already provisioned; otherwise, in a branch tree only, remove its `NativeBridge~/vendor/` and run both blocks again, the vosk block first.
+
+The one checkout copies nothing — its `vendor/` is the one `## One-time provisioning` makes, and the block there prints `NOT provisioned`, changing nothing. Where the hub lacks either directory, the human first runs that section's blocks 2 and 3 from the hub's root (downloads are a human step; agents download nothing), then the block. Where the hub lacks either archive, the human first runs that section's item 4 from the hub's root, then the second block.
 
 Writer trees (`<branch>--<unit>`, cut fresh from the branch's tip and removed after the join — `Planning~/design-docs/parallel-trees/decisions/adr-0004-no-writer-pool.md`) are never provisioned, and Command 3 never runs in one; run there, its harness half stops at the configure step on the missing `vendor/vosk-win64-0.3.45/libvosk.lib` (`CMakeLists.txt`'s required-file check), before `confgen`, so nothing under `vendor/` is written.
 
