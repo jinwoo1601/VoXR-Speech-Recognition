@@ -129,7 +129,18 @@ namespace VoXR.Confgen
             }
             else
             {
-                string difference = CopyDifference(modelFull, outFull);
+                string difference;
+                try
+                {
+                    difference = CopyDifference(modelFull, outFull);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine(
+                        $"confgen: --out {outFull} could not be checked against --model {modelFull}: {e.Message}"
+                    );
+                    return 1;
+                }
                 if (difference != null)
                 {
                     Console.Error.WriteLine(
