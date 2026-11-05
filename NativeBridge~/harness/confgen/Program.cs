@@ -6,6 +6,7 @@
 // Depends:  EndpointerOverlay, VoxrEndpointerProfile, VoxrListeningMode
 // ============================================================================
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -126,6 +127,17 @@ namespace VoXR.Confgen
                     return 1;
                 }
             }
+            else
+            {
+                string difference = CopyDifference(modelFull, outFull);
+                if (difference != null)
+                {
+                    Console.Error.WriteLine(
+                        $"confgen: --out {outFull} is not a copy of --model {modelFull}: {difference}"
+                    );
+                    return 1;
+                }
+            }
 
             if (row == null)
                 row = new EndpointerOverlay.Row(values[2], values[3], values[4]);
@@ -134,16 +146,25 @@ namespace VoXR.Confgen
 
             if (result.Reason != null)
             {
-                Console.Error.WriteLine(
-                    $"confgen: not applied: {result.Reason} ({result.ConfPath})"
-                );
+                if (result.NothingToApply)
+                    Console.Error.WriteLine(
+                        $"confgen: nothing to apply, but the conf has a problem: {result.Reason} ({result.ConfPath})"
+                    );
+                else
+                    Console.Error.WriteLine(
+                        $"confgen: not applied: {result.Reason} ({result.ConfPath})"
+                    );
                 return 1;
             }
 
             byte[] conf = File.ReadAllBytes(result.ConfPath);
             Console.Out.WriteLine("sha256 " + Convert.ToHexStringLower(SHA256.HashData(conf)));
 
-            foreach (string line in Encoding.UTF8.GetString(conf).Split('\n'))
+            string text = Encoding.UTF8.GetString(conf);
+            if (text.Length > 0 && text[0] == '﻿')
+                text = text.Substring(1);
+
+            foreach (string line in text.Split('\n'))
             {
                 string trimmed = line.Trim();
                 if (trimmed.StartsWith("--endpoint.rule", StringComparison.Ordinal))
@@ -187,6 +208,88 @@ namespace VoXR.Confgen
 
             foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
                 File.Copy(file, Path.Combine(target, Path.GetRelativePath(source, file)));
+        }
+
+        static string CopyDifference(string model, string outDir)
+        {
+            static List<string> RelativeFiles(string directory)
+            {
+                var files = new List<string>();
+                foreach (
+                    string file in Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
+                )
+                {
+                    string relative = Path.GetRelativePath(directory, file)
+                        .Replace(Path.DirectorySeparatorChar, '/');
+                    if (
+                        !string.Equals(
+                            relative,
+                            EndpointerOverlay.ArchiveCopyFileName,
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
+                        files.Add(relative);
+                }
+
+                files.Sort(StringComparer.OrdinalIgnoreCase);
+                return files;
+            }
+
+            static string Pristine(string directory)
+            {
+                string copy = Path.Combine(directory, EndpointerOverlay.ArchiveCopyFileName);
+                return File.Exists(copy) ? copy : Path.Combine(directory, "conf", "model.conf");
+            }
+
+            List<string> modelFiles = RelativeFiles(model);
+            List<string> outFiles = RelativeFiles(outDir);
+            var modelSet = new HashSet<string>(modelFiles, StringComparer.OrdinalIgnoreCase);
+            var outSet = new HashSet<string>(outFiles, StringComparer.OrdinalIgnoreCase);
+
+            foreach (string relative in modelFiles)
+            {
+                if (!outSet.Contains(relative))
+                    return $"missing {relative}";
+            }
+
+            foreach (string relative in outFiles)
+            {
+                if (!modelSet.Contains(relative))
+                    return $"extra {relative}";
+            }
+
+            foreach (string relative in modelFiles)
+            {
+                if (string.Equals(relative, "conf/model.conf", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (
+                    !File.ReadAllBytes(Path.Combine(model, relative))
+                        .AsSpan()
+                        .SequenceEqual(File.ReadAllBytes(Path.Combine(outDir, relative)))
+                )
+                    return $"differs {relative}";
+            }
+
+            string pristineModel = Pristine(model);
+            string pristineOut = Pristine(outDir);
+            bool modelHas = File.Exists(pristineModel);
+            bool outHas = File.Exists(pristineOut);
+
+            if (!modelHas && !outHas)
+                return null;
+
+            if (modelHas != outHas)
+                return "differs conf/model.conf (archive copy)";
+
+            if (
+                !File.ReadAllBytes(pristineModel)
+                    .AsSpan()
+                    .SequenceEqual(File.ReadAllBytes(pristineOut))
+            )
+                return "differs conf/model.conf (archive copy)";
+
+            return null;
         }
     }
 }

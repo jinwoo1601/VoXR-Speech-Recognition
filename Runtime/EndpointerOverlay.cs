@@ -40,10 +40,18 @@ namespace VoXR
                 Rule3,
                 Rule4;
 
-            public ApplyResult(string confPath, string reason, byte[] effectiveConf)
+            public readonly bool NothingToApply;
+
+            public ApplyResult(
+                string confPath,
+                string reason,
+                bool nothingToApply,
+                byte[] effectiveConf
+            )
             {
                 ConfPath = confPath;
                 Reason = reason;
+                NothingToApply = nothingToApply;
 
                 string[] values = KeyValues(effectiveConf);
                 Rule2 = values[0];
@@ -115,7 +123,13 @@ namespace VoXR
                 + $"rule4={result.Rule4 ?? "absent"}";
 
             if (result.Reason != null)
-                line += $" — not applied: {result.Reason} ({result.ConfPath})";
+            {
+                if (result.NothingToApply)
+                    line +=
+                        $" — nothing to apply, but the conf has a problem: {result.Reason} ({result.ConfPath})";
+                else
+                    line += $" — not applied: {result.Reason} ({result.ConfPath})";
+            }
 
             return line;
         }
@@ -286,8 +300,9 @@ namespace VoXR
         internal static ApplyResult Apply(string modelDir, Row row)
         {
             string confPath = Path.Combine(modelDir, "conf", "model.conf");
+            bool empty = row.Rule2 == null && row.Rule3 == null && row.Rule4 == null;
             if (!File.Exists(confPath))
-                return new ApplyResult(confPath, "no conf/model.conf", null);
+                return new ApplyResult(confPath, "no conf/model.conf", empty, null);
 
             string copyPath = Path.Combine(modelDir, ArchiveCopyFileName);
             string tempPath = null;
@@ -312,7 +327,7 @@ namespace VoXR
                     tempPath = null;
                 }
 
-                return new ApplyResult(confPath, reason, effective);
+                return new ApplyResult(confPath, reason, empty, effective);
             }
             catch (Exception e)
             {
@@ -334,7 +349,7 @@ namespace VoXR
                 {
                 }
 
-                return new ApplyResult(confPath, $"IO failure: {e.Message}", onDisk);
+                return new ApplyResult(confPath, $"IO failure: {e.Message}", false, onDisk);
             }
         }
 

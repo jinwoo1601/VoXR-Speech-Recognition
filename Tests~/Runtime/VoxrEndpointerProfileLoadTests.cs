@@ -238,6 +238,43 @@ namespace VoXR.Tests.Runtime
                 File.WriteAllBytes(CopyPath, archive);
             }
         }
+
+        [UnityTest]
+        public IEnumerator Load_ModelDefaultUnparseableConf_Warns()
+        {
+            EndpointerOverlay.Apply(_dir, EndpointerOverlay.ModelDefault);
+            byte[] archive = File.ReadAllBytes(CopyPath);
+            try
+            {
+                File.AppendAllText(CopyPath, "\n" + EndpointerOverlay.Rule2Key + "=0.6\n");
+
+                SetProfile(VoxrEndpointerProfile.ModelDefault);
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[VoxrSpeechRecogniser] Endpointer profile ModelDefault (explicit choice): "
+                        + "rule2=0.6 rule3=0.75 rule4=1.0 — nothing to apply, but the conf has a problem: "
+                        + EndpointerOverlay.Rule2Key
+                        + " appears more than once ("
+                        + ConfPath
+                        + ")"
+                );
+
+                var init = _speech.InitialiseAsync();
+                while (!init.IsCompleted)
+                    yield return null;
+                AssertInitialised();
+
+                CollectionAssert.AreEqual(
+                    File.ReadAllBytes(CopyPath),
+                    File.ReadAllBytes(ConfPath),
+                    "A conf that cannot be parsed is served as the archive's own bytes."
+                );
+            }
+            finally
+            {
+                File.WriteAllBytes(CopyPath, archive);
+            }
+        }
     }
 }
 #endif
