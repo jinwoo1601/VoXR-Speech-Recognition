@@ -4,7 +4,7 @@ updated: 2026-11-05
 
 ## Current
 
-- **`main` at PR #190 `71ff1ea` (agc-filter G1); `v2.0.0`; next: `feat-agc-filter` at G0; batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
+- **`main` at PR #190 `71ff1ea` (agc-filter G1); `v2.0.0`; running: `feat-agc-filter` (G0), `light-batch-b`; batch C waits.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -13,6 +13,7 @@ updated: 2026-11-05
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 - **`feat-agc-filter`**: feature; agc-filter (backlog `Planning~/design-docs/agc-filter.md` §6); tree `D:\Workspace\VoXR-Speech-Recognition.trees\feat-agc-filter`; next: g0-open SCOPE
+- **`light-batch-b`**: light, class slim, batch EPR-8, EPR-9, EPR-10, WND-2; tree `D:\Workspace\VoXR-Speech-Recognition.trees\light-batch-b`; next: tackle-issue DIAGNOSE
 
 ## Deferred
 
