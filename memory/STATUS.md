@@ -42,3 +42,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **TFL-4** · OPEN · light-lane · v2026-11-05 — vc-git.md drift: Check-in lacks the template's tree-session clauses (review R2); stale trees Interview comment; tree path in 3 bindings
 - **TFL-5** · OPEN · human · v2026-11-05 — snapshot ref `refs/harness/pre-upgrade/6d07a5f` (trees-fill review recompose) kept until the human drops it by `git update-ref -d`
 - **AGF-1** · OPEN · design-relock · v2026-11-05 — locked joined-rig docs cite `native-bridge.md` :61 for the AGC divergence, which it no longer states: re-point at the next unlock
+- **VCG-1** · OPEN · harness-hub · v2026-11-05 — vc-guard READ_VERBS lacks `check-attr`: a subagent's attribute read is refused (light-batch-b WND-2 debugger); add it upstream
