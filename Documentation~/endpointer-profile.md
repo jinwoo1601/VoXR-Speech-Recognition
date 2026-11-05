@@ -53,7 +53,7 @@ For `vosk-model-small-en-us-0.15`, whose own values are rule2 `0.5`, rule3 `0.75
 - A key the preset sets but the conf lacks is appended at the end, using the conf's own line terminator.
 - Where the preset says "the archive's own", the key is left exactly as it is, present or absent. Under `ModelDefault` the effective conf is therefore the archive's conf, byte for byte -- including after a load under `Responsive`.
 
-**When the preset is not applied.** If the copy is not valid UTF-8, if one of the three keys appears more than once, or if one's value is not a non-negative decimal (digits, optionally followed by `.` and more digits), the conf is left as the archive's own, unchanged, and the log line becomes a warning naming the reason. A file-system failure during the overlay is reported the same way, and the decoder reads whatever conf is on disk. No load fails because of the profile.
+**When the conf has a problem.** If the copy is not valid UTF-8, if one of the three keys appears more than once, or if one's value is not a non-negative decimal (digits, optionally followed by `.` and more digits), the conf is left as the archive's own, unchanged, and the log line becomes a warning naming the reason -- under `Responsive`, that the preset was not applied; under `ModelDefault`, which writes no values, that there was nothing to apply but the conf has a problem. A model with no `conf/model.conf` at all, which [validation](getting-started.md#model-validation) normally rules out, is reported the same way, with every value `absent`. A file-system failure during the overlay is logged as not applied under either preset, and the decoder reads whatever conf is on disk. No load fails because of the profile.
 
 ---
 
@@ -71,7 +71,7 @@ The values are read from the effective conf, and `absent` stands for a key the c
 [VoxrSpeechRecogniser] Endpointer profile Responsive (Continuous default): rule2=0.45 rule3=0.75 rule4=1.0
 ```
 
-When the preset was not applied, the line ends `— not applied: <reason> (<conf path>)` and is logged through `Debug.LogWarning` instead.
+When the overlay hits a problem, the line gains a tail naming the reason and the conf's path, and is logged through `Debug.LogWarning` instead. Under `Responsive`, and after a file-system failure under either preset, the tail is `— not applied: <reason> (<conf path>)`. Under `ModelDefault`, which has no values to write, any other problem gives `— nothing to apply, but the conf has a problem: <reason> (<conf path>)`.
 
 ---
 
