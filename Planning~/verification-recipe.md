@@ -52,17 +52,17 @@ A plain Git Bash rewrites `/`-prefixed arguments passed to a Windows program, so
 CMAKE="/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe"
 NDK_WIN="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK"
 
-"$CMAKE" -B "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" \
-         -S "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~" \
+"$CMAKE" -B "NativeBridge~/build" \
+         -S "NativeBridge~" \
          -DCMAKE_TOOLCHAIN_FILE="$NDK_WIN/build/cmake/android.toolchain.cmake" \
          -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-27 -DANDROID_STL=c++_shared \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_MAKE_PROGRAM="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/ninja.exe" \
          -G Ninja
 
-"$CMAKE" --build "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" --config Release -j 4
+"$CMAKE" --build "NativeBridge~/build" --config Release -j 4
 ```
-
+Run the block from the root of the tree under test in Git Bash: its `-S` and `-B` paths are relative to it, so it reads that tree's `NativeBridge~/` and writes only that tree's `NativeBridge~/build/`.
 
 ## Compiling Samples~
 
