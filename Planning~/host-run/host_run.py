@@ -3,8 +3,6 @@
 # Layer:    Planning~.host-run
 # Owns:     (script, no public types)
 # Depends:  (none)
-# Hosts:    HUB, TG and UNITY as .claude/bindings/unity.md Command 1 (:6) names them
-# Wait:     WAIT_DEFAULT 360 s, set by the Phase 4 tuning pass
 # ============================================================================
 import json
 import msvcrt
@@ -359,9 +357,9 @@ def bracket(platforms, target, fd):
         return stop(f"git status --short failed in {TG}")
     old = f'"{PACKAGE}": "file:{HUB}"'
     new = f'"{PACKAGE}": "file:{TREE}"'
-    if '"' in TREE or "\\" in TREE:
+    if '"' in TREE:
         release(fd)
-        return stop(f"tree path {TREE} holds a quote or backslash")
+        return stop(f"tree path {TREE} holds a quote")
     count = files["manifest.json"].count(old.encode())
     if count != 1:
         release(fd)

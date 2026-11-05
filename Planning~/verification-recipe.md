@@ -14,7 +14,7 @@ What the `compile-check` agent runs, in this order. This is a bare UPM package �
    1. From the tree root in Git Bash, `py "Planning~/host-run/host_run.py" EditMode PlayMode` — the full run names both, `Tests/Editor` EditMode, `Tests/Runtime` PlayMode; targeted names only the platform or platforms the target's tests live on, plus `--filter "<target>"`, and a named platform at `total` 0 is not green; `--wait <s>` the lock wait (default 360).
    2. It takes `<hub>/.scratch/host-lock/lock` (holder in `owner`), reads TG at rest (`file:` the hub, `testables` as TG's `HEAD`, `packages-lock.json` on the hub, no `Temp/UnityLockfile`), snapshots both `Packages/` files to `<hub>/.scratch/host-lock/rest/`, points `file:` at the tree, never writes `testables`, renames `Tests~` → `Tests`.
    3. Per platform it deletes the old XML and runs `"/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Workspace\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<tree>\.scratch\test-results\<editmode|playmode>.xml" -logFile "<tree>\.scratch\test-results\<editmode|playmode>.log"`, `-testFilter "<target>"` when targeted, no `-quit`; minutes on first import.
-   4. In a `finally`: `Tests` → `Tests~`, run-created `.meta` deleted (root `Tests.meta` incl.), snapshots written back and checked, at-rest re-read, lock released; exit 0 green, 1 not green, 2 BLOCKED (owner quoted), 3 a stop for the human; a run never repairs.
+   4. In a `finally`: `Tests` → `Tests~`, run-created `.meta` deleted (root `Tests.meta` incl.), snapshots written back and checked, at-rest re-read, lock released; it prints per platform `<platform>: <total>/<passed>/<failed>/<inconclusive> exit=<n> wall=<s>s` (`-/-/-/-` where no XML was read) and last `result: green` or `result: not green`; exit 0 green, 1 not green, 2 BLOCKED (owner quoted), 3 a stop for the human; a run never repairs.
    5. Recovery, the human's, after a killed script or an exit 3 naming `rest/`: with no Unity running and no run holding the lock, copy `rest/manifest.json` and `rest/packages-lock.json` over TG's `Packages/` files and `cmp` each, rename the tree's `Tests` back to `Tests~`, delete its new `.meta` and root `Tests.meta`, clear a stale `Temp/UnityLockfile`; never `git checkout` in TG.
 2. **NativeBridge (only when `NativeBridge~/` or a source `confgen` links (`NativeBridge~/harness/confgen/confgen.csproj`) changed):**
    a. **arm64 build:** CMake/Ninja build per *Building NativeBridge* below. Green = `libvosk-bridge.so` builds with no errors.
@@ -128,9 +128,9 @@ The `Samples~` glob contains a `~` and the samples have no asmdef, so a misconfi
 produces a **green that compiled nothing**. Never report this gate green without first proving it
 can go red:
 
-1. Insert a deliberate error into one sample (e.g. a call to a method that does not exist).
+1. Copy the sample's bytes under `.scratch/`, then insert a deliberate error into the sample (e.g. a call to a method that does not exist).
 2. Rebuild; confirm the failure names **that file and line**.
-3. Restore the sample from the copy of its bytes taken under `.scratch/` before step 1 (not `git checkout`, a git write agents do not run); confirm it byte-identical (`cmp`); rebuild; confirm green returns.
+3. Restore the sample from the copy step 1 took (not `git checkout`, a git write agents do not run); confirm it byte-identical (`cmp`); rebuild; confirm green returns.
 
 A cheap standing sanity check on the compile set itself:
 
