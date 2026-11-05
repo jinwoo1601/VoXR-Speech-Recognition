@@ -70,10 +70,12 @@ Binding 3. Establishes that the seven shipped sample scripts still compile again
 current public API. Verified working 2026-10-14 (native .NET SDK 10.0.300 in Git Bash, Unity 6000.4.7f1).
 
 **The csproj is generated, never committed.** It lives at
-`.scratch/samples-compile/SamplesCompile.csproj` under the project root (`.scratch/` is gitignored)
-and names the package sources, the Unity data folder and the host's assemblies by absolute path
-in drive-letter form (`C:/…`, `D:/…`) — MSBuild reads the file, so `/c/…` forms do not resolve
-there — so nothing is added to the repo; recreate it from the listing each time.
+`.scratch/samples-compile/SamplesCompile.csproj` under the root of the tree it compiles
+(`.scratch/` is gitignored). `PkgRoot` is derived from the file's own location, two directories up,
+so the listing is written verbatim in any tree and compiles that tree, with no path in it edited
+per tree. The Unity data folder and the host's assemblies are named by absolute path in
+drive-letter form (`C:/…`, `D:/…`) — MSBuild reads the file, so `/c/…` forms do not resolve there.
+Recreate it from the listing each time.
 
 ### Command
 
@@ -128,13 +130,13 @@ can go red:
 
 1. Insert a deliberate error into one sample (e.g. a call to a method that does not exist).
 2. Rebuild; confirm the failure names **that file and line**.
-3. `git checkout -- <the sample>`; rebuild; confirm green returns.
+3. Restore the sample from the copy of its bytes taken under `.scratch/` before step 1 (not `git checkout`, a git write agents do not run); confirm it byte-identical (`cmp`); rebuild; confirm green returns.
 
 A cheap standing sanity check on the compile set itself:
 
 ```bash
-(cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
-  | tr '\134' '/' | grep -oiE 'D:/Workspace/VoXR-Speech-Recognition/Samples~/[^ ";]*\.cs' | sort -fu | wc -l)
+(R="$(pwd -W)" && cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
+  | tr '\134' '/' | grep -oiE "$R/Samples~/[^ \";]*\.cs" | sort -fu | wc -l)
 ```
 
 must print **7**.
@@ -150,7 +152,7 @@ at that exact file:line, and green returned after revert.
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Out-of-band compile gate for Samples~ (VoXR Speech Recognition).
-       Nothing here is committed; regenerate from .claude/verification-bindings.md. -->
+       Nothing here is committed; regenerate from Planning~/verification-recipe.md. -->
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -174,7 +176,7 @@ at that exact file:line, and green returned after revert.
 
   <PropertyGroup>
     <UnityData>C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data</UnityData>
-    <PkgRoot>D:/Workspace/VoXR-Speech-Recognition</PkgRoot>
+    <PkgRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))</PkgRoot>
     <HostAsm>D:/Workspace/VoXR TestGround/Library/ScriptAssemblies</HostAsm>
   </PropertyGroup>
 
