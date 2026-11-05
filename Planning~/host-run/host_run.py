@@ -4,7 +4,7 @@
 # Owns:     (script, no public types)
 # Depends:  (none)
 # Hosts:    HUB, TG and UNITY as .claude/bindings/unity.md Command 1 (:6) names them
-# Wait:     WAIT_DEFAULT 1800 s, provisional → Phase 4
+# Wait:     WAIT_DEFAULT 360 s, set by the Phase 4 tuning pass
 # ============================================================================
 import json
 import msvcrt
@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 HUB = "D:/Workspace/VoXR-Speech-Recognition"
 TG = "D:/Workspace/VoXR TestGround"
 UNITY = "C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe"
-WAIT_DEFAULT = 1800
+WAIT_DEFAULT = 360
 POLL_SECONDS = 2
 PACKAGE = "com.jinwoo1601.voxr"
 PLATFORMS = ("EditMode", "PlayMode")
