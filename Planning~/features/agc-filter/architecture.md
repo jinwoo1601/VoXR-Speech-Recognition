@@ -125,6 +125,7 @@ The riskiest unknown — the AGC2 subset's NDK and MSVC builds and the arm64 gro
 - **Phase 6 — Human check on a Quest 3 (§9).** APK builds and installs; the bridge loads; a command after a ~3 s pause fires; the APK size is recorded under 70 MB. *Discharges:* F18.
 - **Assets code cannot author:** the `webrtc-audio-processing` 2.1 tarball and the abseil archive its wrap names, downloaded by the human into the hub's `NativeBridge~/vendor/` with their SHA-256 recorded (the release's published checksum where one exists), the harness README's provisioning extended so branch trees copy them, which lands in Phase 1 (by `doc-writer`); the piper venv and voice (`generate.sh`'s first run); Command 3's toolchains; for Phase 6, a Quest 3 and the human.
 - Phase 1 — persisted plan (2026-11-06): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-11-06): [plan-2.md](plan-2.md)
 
 ## Risks, tradeoffs & open questions
 
