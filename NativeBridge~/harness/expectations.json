@@ -227,6 +227,97 @@
         {
             "expectedFinals": [],
             "file": "silence_negative.wav"
+        },
+        {
+            "expectedFinals": [
+                "launch one missiles target hotel one"
+            ],
+            "file": "pause_lead_launch_one_missiles_target_hotel_one.wav"
+        },
+        {
+            "expectedFinals": [
+                "cease fire"
+            ],
+            "file": "pause_lead_cease_fire.wav"
+        },
+        {
+            "expectedFinals": [
+                "resume fire"
+            ],
+            "file": "pause_lead_resume_fire.wav"
+        },
+        {
+            "expectedFinals": [
+                "approach target alpha one"
+            ],
+            "file": "pause_lead_approach_target_alpha_one.wav"
+        },
+        {
+            "expectedFinals": [
+                "fall back from target bravo two"
+            ],
+            "file": "pause_lead_fall_back_from_target_bravo_two.wav"
+        },
+        {
+            "expectedFinals": [
+                "switch to navigation"
+            ],
+            "file": "pause_lead_switch_to_navigation.wav"
+        },
+        {
+            "expectedFinals": [
+                "navigation mode"
+            ],
+            "file": "pause_lead_navigation_mode.wav"
+        },
+        {
+            "expectedFinals": [
+                "enable all"
+            ],
+            "file": "pause_lead_enable_all.wav"
+        },
+        {
+            "expectedFinals": [
+                "disable all"
+            ],
+            "file": "pause_lead_disable_all.wav"
+        },
+        {
+            "expectedFinals": [
+                "fire two torpedoes at bravo two"
+            ],
+            "file": "pause_lead_fire_two_torpedoes_at_bravo_two.wav"
+        },
+        {
+            "expectedFinals": [
+                "launch jackals target hotel two"
+            ],
+            "file": "pause_lead_launch_jackals_target_hotel_two.wav"
+        },
+        {
+            "expectedFinals": [
+                "set heading two seven zero"
+            ],
+            "file": "pause_lead_set_heading_two_seven_zero.wav"
+        },
+        {
+            "expectedFinals": [
+                "switch to weapons"
+            ],
+            "file": "pause_lead_switch_to_weapons.wav"
+        },
+        {
+            "expectedFinals": [
+                "[unk] launch three torpedoes target alpha three"
+            ],
+            "file": "pause_lead_filler_launch_three_torpedoes_target_alpha_three.wav"
+        },
+        {
+            "expectedFinals": [
+                "close distance safe range",
+                "target hotel one"
+            ],
+            "file": "pause_lead_split_close_distance_safe_range_target_hotel_one.wav"
         }
     ],
     "gain": -18.0,

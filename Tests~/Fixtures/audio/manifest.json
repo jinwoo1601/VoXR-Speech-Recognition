@@ -553,6 +553,230 @@
             "expectedSlots": [],
             "expectedTranscript": "",
             "description": "Silence negative: no command may be recognized; empty expectedIntent means no-command is expected."
+        },
+        {
+            "file": "audio/tts/pause_lead_launch_one_missiles_target_hotel_one.wav",
+            "category": "pause-lead",
+            "phrase": "launch one missiles target hotel one",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "launch",
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "quantity", "value": "one" },
+                { "name": "weapon", "value": "missiles" },
+                { "name": "target", "value": "hotel one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of launch_one_missiles_target_hotel_one.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_cease_fire.wav",
+            "category": "pause-lead",
+            "phrase": "cease fire",
+            "peak": 0.05,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "cease",
+            "expectedIntent": "cease_fire",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of cease_fire.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_resume_fire.wav",
+            "category": "pause-lead",
+            "phrase": "resume fire",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "resume",
+            "expectedIntent": "resume_fire",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of resume_fire.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_approach_target_alpha_one.wav",
+            "category": "pause-lead",
+            "phrase": "approach target alpha one",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "approach",
+            "expectedIntent": "approach_target",
+            "expectedSlots": [
+                { "name": "target", "value": "alpha one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of approach_target_alpha_one.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_fall_back_from_target_bravo_two.wav",
+            "category": "pause-lead",
+            "phrase": "fall back from target bravo two",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "fall",
+            "expectedIntent": "retreat_from_target",
+            "expectedSlots": [
+                { "name": "target", "value": "bravo two" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of fall_back_from_target_bravo_two.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_switch_to_navigation.wav",
+            "category": "pause-lead",
+            "phrase": "switch to navigation",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "switch",
+            "expectedIntent": "mode_navigation",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of switch_to_navigation.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_navigation_mode.wav",
+            "category": "pause-lead",
+            "phrase": "navigation mode",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "navigation",
+            "expectedIntent": "mode_navigation",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of navigation_mode.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_enable_all.wav",
+            "category": "pause-lead",
+            "phrase": "enable all",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "enable",
+            "expectedIntent": "mode_all",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of enable_all.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_disable_all.wav",
+            "category": "pause-lead",
+            "phrase": "disable all",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "disable",
+            "expectedIntent": "mode_disable",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of disable_all.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_fire_two_torpedoes_at_bravo_two.wav",
+            "category": "pause-lead",
+            "phrase": "fire two torpedoes at bravo two",
+            "peak": 0.35,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "fire",
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "quantity", "value": "two" },
+                { "name": "weapon", "value": "torpedoes" },
+                { "name": "target", "value": "bravo two" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of fire_two_torpedoes_at_bravo_two.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_launch_jackals_target_hotel_two.wav",
+            "category": "pause-lead",
+            "phrase": "launch jackals target hotel two",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "launch",
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "weapon", "value": "jackal" },
+                { "name": "target", "value": "hotel two" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of launch_jackals_target_hotel_two.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_set_heading_two_seven_zero.wav",
+            "category": "pause-lead",
+            "phrase": "set heading two seven zero",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "set",
+            "expectedIntent": "set_heading",
+            "expectedSlots": [
+                { "name": "heading", "value": "two seven zero" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of set_heading_two_seven_zero.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_switch_to_weapons.wav",
+            "category": "pause-lead",
+            "phrase": "switch to weapons",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "switch",
+            "expectedIntent": "mode_weapons",
+            "expectedSlots": [],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of switch_to_weapons.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_filler_launch_three_torpedoes_target_alpha_three.wav",
+            "category": "pause-lead",
+            "phrase": "okay so launch three torpedoes target alpha three",
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "launch",
+            "expectedIntent": "launch_weapon",
+            "expectedSlots": [
+                { "name": "quantity", "value": "three" },
+                { "name": "weapon", "value": "torpedoes" },
+                { "name": "target", "value": "alpha three" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of filler_launch_three_torpedoes_target_alpha_three.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
+        },
+        {
+            "file": "audio/tts/pause_lead_split_close_distance_safe_range_target_hotel_one.wav",
+            "category": "pause-lead",
+            "layer": "recogniser",
+            "segments": [
+                "close distance safe range",
+                "target hotel one"
+            ],
+            "gapSeconds": 0.7,
+            "peak": 0.2,
+            "leadSilenceSeconds": 2.0,
+            "noiseFloorDbfs": -60,
+            "firstWord": "close",
+            "expectedIntent": "set_distance_named",
+            "expectedSlots": [
+                { "name": "range", "value": "safe range" },
+                { "name": "target", "value": "hotel one" }
+            ],
+            "expectedTranscript": "",
+            "description": "Pause-lead variant of split_close_distance_safe_range_target_hotel_one.wav: 2.0 s lead over a -60 dBFS noise floor (F12)."
         }
     ]
 }

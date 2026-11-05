@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import wave
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -94,9 +95,24 @@ def build_case(case, piper_bin, voice, data_dir, tmp_path):
         speech = scale_to_peak(
             synth(piper_bin, voice, data_dir, case["phrase"], tmp_path), peak)
     else:
+        if "leadSilenceSeconds" in case or "noiseFloorDbfs" in case:
+            sys.exit(f"{case['file']}: a silence entry takes neither "
+                     "leadSilenceSeconds nor noiseFloorDbfs")
         return silence(case.get("silenceSeconds", DEFAULT_SILENCE_S))
 
-    return np.concatenate([silence(LEAD_SILENCE_S), speech, silence(TAIL_SILENCE_S)])
+    lead = case.get("leadSilenceSeconds", LEAD_SILENCE_S)
+    x = np.concatenate([silence(lead), speech, silence(TAIL_SILENCE_S)])
+    if "noiseFloorDbfs" not in case:
+        return x
+    seed = zlib.crc32(Path(case["file"]).name.encode("utf-8"))
+    noise = np.random.default_rng(seed).standard_normal(len(x))
+    noise *= 10 ** (case["noiseFloorDbfs"] / 20) / np.sqrt(np.mean(noise * noise))
+    x = (x + noise).astype(np.float32)
+    m = float(np.max(np.abs(x)))
+    if not (MIN_PEAK <= m <= MAX_PEAK):
+        sys.exit(f"{case['file']}: noisy peak {m} outside the Quest mic range "
+                 f"[{MIN_PEAK}, {MAX_PEAK}]")
+    return x
 
 
 def write_wav(path, samples):
