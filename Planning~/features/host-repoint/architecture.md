@@ -89,6 +89,7 @@ Lowest-risk-first: the one unknown the evidence rests on is retired first, outsi
 - **Assets the build needs that code cannot author:** the throwaway detached worktrees of Phases 0, 4 and 5 (agents run no git writes; the PM creates and removes them); the hub's provisioned `NativeBridge~/vendor/` as the copy source, else the README's downloads by the human; TestGround imported once and at rest, with Unity 6000.4.7f1 licensed; the human at TestGround's Editor for §9.
 - Phase 0 — persisted plan (2026-11-05): [plan-0.md](plan-0.md)
 - Phase 1 — persisted plan (2026-11-05): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-11-05): [plan-2.md](plan-2.md)
 
 ## Risks, tradeoffs & open questions
 
