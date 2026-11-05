@@ -50,8 +50,10 @@
       "Bash(py scripts/harness.py upgrade --dry-run:*)",
       "Bash(py scripts/hub.py sessions-at:*)",
       "Bash(py scripts/hub.py predecessor:*)",
+      "Bash(py scripts/hub.py items:*)",
       "Bash(py scripts/hub.py write:*)",
       "Bash(py scripts/hub.py scratch-clear:*)",
+      "Bash(py scripts/hub.py merge:*)",
       "Bash(claude agents:*)",
       "Bash(claude stop:*)",
       "Bash(claude --bg:*)",
@@ -99,6 +101,20 @@
       "Bash(git stash create:*)",
       "Bash(git stash store:*)",
       "Bash(git update-ref refs/harness/pre-upgrade/*)",
+      "Bash(git push)",
+      "Bash(git push origin)",
+      "Bash(git push origin *)",
+      "Bash(git push -u origin *)",
+      "Bash(git push --set-upstream origin *)",
+      "Bash(git fetch)",
+      "Bash(git fetch origin)",
+      "Bash(git fetch origin *)",
+      "Bash(git fetch --all)",
+      "Bash(git fetch --all --prune)",
+      "Bash(git fetch --prune)",
+      "Bash(git fetch --prune origin)",
+      "Bash(git fetch -p)",
+      "Bash(git fetch -p origin)",
       "Bash(py ../harness/scripts/harness.py list:*)",
       "Bash(py ../harness/scripts/harness.py validate:*)",
       "Bash(py ../harness/scripts/harness.py doctor:*)",
@@ -108,8 +124,10 @@
       "Bash(py ../harness/scripts/harness.py upgrade --dry-run:*)",
       "Bash(py ../harness/scripts/hub.py sessions-at:*)",
       "Bash(py ../harness/scripts/hub.py predecessor:*)",
+      "Bash(py ../harness/scripts/hub.py items:*)",
       "Bash(py ../harness/scripts/hub.py write:*)",
-      "Bash(py ../harness/scripts/hub.py scratch-clear:*)"
+      "Bash(py ../harness/scripts/hub.py scratch-clear:*)",
+      "Bash(py ../harness/scripts/hub.py merge:*)"
     ],
     "deny": [
       "Bash(curl:*)",
@@ -120,6 +138,7 @@
       "Bash(dd:*)",
       "Bash(claude *dangerously-skip-permissions*)",
       "Bash(claude *bypassPermissions*)",
+      "Bash(*hub.py --human-override*)",
       "Bash(unity command eval)",
       "Bash(unity command eval *)",
       "Bash(unity command * eval)",
@@ -162,7 +181,6 @@
       "Bash(git restore:*)",
       "Bash(git stash drop:*)",
       "Bash(git stash clear:*)",
-      "Bash(git push:*)",
       "Bash(git switch --discard-changes*)",
       "Bash(git switch * --discard-changes*)",
       "Bash(git switch -f*)",
@@ -181,7 +199,39 @@
       "Bash(git branch * -df*)",
       "Bash(git branch -C*)",
       "Bash(git branch * -C*)",
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main)",
+      "Bash(git push *:main *)",
+      "Bash(git push */main)",
+      "Bash(git push */main *)",
+      "Bash(git push * master)",
+      "Bash(git push * master *)",
+      "Bash(git push *:master)",
+      "Bash(git push *:master *)",
+      "Bash(git push */master)",
+      "Bash(git push */master *)",
+      "Bash(git push *--all*)",
+      "Bash(git push *--mirror*)",
+      "Bash(git push *--delete*)",
+      "Bash(git push -d *)",
+      "Bash(git push * -d *)",
+      "Bash(git push * -d)",
+      "Bash(git push * :**)",
+      "Bash(git push *--prune*)",
+      "Bash(git push * +*)",
+      "Bash(git push *--receive-pack*)",
+      "Bash(git push *--exec*)",
+      "Bash(git push *--tags*)",
+      "Bash(git push *--follow-tags*)",
+      "Bash(git push * tag *)",
+      "Bash(git push *refs/tags/*)",
+      "Bash(git fetch *--upload-pack*)",
       "Bash(py ../harness/scripts/hub.py sweep-handoffs:*)"
+    ],
+    "additionalDirectories": [
+      "D:/Workspace/VoXR-Speech-Recognition",
+      "D:/Workspace/VoXR-Speech-Recognition.trees"
     ]
   },
   "hooks": {
@@ -293,6 +343,15 @@
           {
             "type": "command",
             "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/stop-line-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/stop-line-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/harness.json\" ] && [ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/references/core/task-leftover-hook.py\" ] || py \"${CLAUDE_PROJECT_DIR}/.claude/references/core/task-leftover-hook.py\" \"${CLAUDE_PROJECT_DIR}\"",
             "timeout": 10
           }
         ]
