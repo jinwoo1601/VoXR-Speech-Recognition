@@ -50,7 +50,7 @@ A hub session invokes this skill on the human's word, at any boundary, and that 
 <!-- harness:binding:end vc -->
 
 <!-- harness:binding:start trees .claude/bindings/vc-git.md -->
-- Hub: a command runs in another tree by the idiom `git -C "<path>" <command>`, the path quoted, and only there — a command in the session's own tree runs bare from its root; the main checkout is `D:\Workspace\VoXR-Speech-Recognition` — it stays on `main` and holds `memory/`
+- Hub: a command runs in another tree by the idiom `git -C "<path>" <command>`, the path quoted, and only there — a command in the session's own tree runs bare from its root; the main checkout is `D:\Workspace\VoXR-Speech-Recognition` — it stays on `main` and holds `memory/`; every hub write while the hub is on `main` — `scripts/hub.py write --root D:\Workspace\VoXR-Speech-Recognition --main main`, from the hub or from any tree — is preceded by `git pull --no-rebase origin main` in the hub and followed by `git push` there, each run from a tree by this idiom, as the vc Check-in procedure states
 - List read: `git worktree list` — one line per tree, the hub's first
 <!-- harness:binding:end trees -->
 

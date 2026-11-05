@@ -47,7 +47,7 @@ This skill never answers a report, never gives a session work, and writes nothin
 <!-- harness:binding:end verification -->
 
 <!-- harness:binding:start trees .claude/bindings/vc-git.md -->
-- Hub: a command runs in another tree by the idiom `git -C "<path>" <command>`, the path quoted, and only there — a command in the session's own tree runs bare from its root; the main checkout is `D:\Workspace\VoXR-Speech-Recognition` — it stays on `main` and holds `memory/`
+- Hub: a command runs in another tree by the idiom `git -C "<path>" <command>`, the path quoted, and only there — a command in the session's own tree runs bare from its root; the main checkout is `D:\Workspace\VoXR-Speech-Recognition` — it stays on `main` and holds `memory/`; every hub write while the hub is on `main` — `scripts/hub.py write --root D:\Workspace\VoXR-Speech-Recognition --main main`, from the hub or from any tree — is preceded by `git pull --no-rebase origin main` in the hub and followed by `git push` there, each run from a tree by this idiom, as the vc Check-in procedure states
 - List read: `git worktree list` — one line per tree, the hub's first
 - Clean read: `git status --short` in the tree — empty is clean
 - Remove procedure: `py .claude/references/vc-git/tree-remove.py "<path>"`, run as written from the hub or any tree of the repository — one command, never wrapped in the Hub slot's idiom: it waits for the directory's release, runs `git worktree remove "<path>"` (never forced, so a tree with a pending change is refused), reads back, and prints `removed`, `refused`, `absent`, `held` or `half-removed`; the branch is kept

@@ -29,7 +29,7 @@ The key is read from **the project being upgraded**, not from the base, because 
 
 <!-- harness:binding:start vc .claude/bindings/vc-git.md -->
 - System: git; GitHub, remote `origin` `https://github.com/jinwoo1601/VoXR-Speech-Recognition.git`, public; `gh` on the Windows PATH (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `jinwoo1601`
-- Snapshot procedure: `git stash create`, then, where it prints a sha, `git stash store -m "harness pre-upgrade <date>" <sha>` — the working tree and the index are left as they are; where it prints nothing, the snapshot is `git rev-parse HEAD`; confirmed by `git rev-parse --verify <sha>^{commit}`; restored by the human from that sha; `.claude/` and `CLAUDE.md` are tracked from `light-harness-adopt` on, so the record covers them — `.claude/settings.local.json` and `.scratch/` stay ignored and are not covered
+- Snapshot procedure: `git stash create "harness pre-upgrade <date>"`, then, where it prints a sha, `git update-ref refs/harness/pre-upgrade/<sha> <sha>` — a ref of its own keeps the snapshot from garbage collection without touching the stash stack, which every worktree shares, so no parked stash moves; the working tree and the index are left as they are; where it prints nothing, the snapshot is `git rev-parse HEAD`; confirmed by `git rev-parse --verify <sha>^{commit}`; restored by the human from that sha — `git stash apply <sha>` — and the ref then dropped by `git update-ref -d refs/harness/pre-upgrade/<sha>`; `.claude/` and `CLAUDE.md` are tracked from `light-harness-adopt` on, so the record covers them — `.claude/settings.local.json` and `.scratch/` stay ignored and are not covered
 <!-- harness:binding:end vc -->
 
 <!-- harness:binding:start process-docs .claude/bindings/core.md -->
