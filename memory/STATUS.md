@@ -4,7 +4,7 @@ updated: 2026-11-06
 
 ## Current
 
-- **`main` at PR #191 `710e962` (light-batch-b G2); `v2.0.0`; running: `feat-agc-filter`, `light-epr10-docs`; batch C waits.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B.
+- **`main` at PR #192 `f43b9ea` (light-epr10-docs G2); `v2.0.0`; running: `feat-agc-filter`; batch C waits.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -13,7 +13,6 @@ updated: 2026-11-06
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 - **`feat-agc-filter`**: feature; full; path development; stage implement - Phase 1 built `23bc191`, gate green; tree `D:\Workspace\VoXR-Speech-Recognition.trees\feat-agc-filter`; next: architect-reconcile Phase 1, then phase-pickup 2
-- **`light-epr10-docs`**: light, class prose, batch EPR-11; tree `.trees\light-epr10-docs`; PR #192 @ `f408234`; next: g2-lite DELTA · ruling G2 · 2026-11-06 · the human · "Accept (Recommended)"
 
 ## Deferred
 
@@ -39,4 +38,3 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **TFL-5** · OPEN · human · v2026-11-05 — snapshot ref `refs/harness/pre-upgrade/6d07a5f` (trees-fill review recompose) kept until the human drops it by `git update-ref -d`
 - **AGF-1** · OPEN · design-relock · v2026-11-05 — locked joined-rig docs cite `native-bridge.md` :61 for the AGC divergence, which it no longer states: re-point at the next unlock
 - **VCG-1** · OPEN · harness-hub · v2026-11-05 — vc-guard READ_VERBS lacks `check-attr`: a subagent's attribute read is refused (light-batch-b WND-2 debugger); add it upstream
-- **EPR-11** · OPEN · light-lane · v2026-11-06 — EPR-10 wording (#191) falsifies `endpointer-profile.md` :56, :74 and `troubleshooting.md` :27-29: codex-reconcile
