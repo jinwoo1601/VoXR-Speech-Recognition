@@ -90,6 +90,7 @@ Lowest-risk-first: the one unknown the evidence rests on is retired first, outsi
 - Phase 0 — persisted plan (2026-11-05): [plan-0.md](plan-0.md)
 - Phase 1 — persisted plan (2026-11-05): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-11-05): [plan-2.md](plan-2.md)
+- Phase 3 — persisted plan (2026-11-05): [plan-3.md](plan-3.md)
 
 ## Risks, tradeoffs & open questions
 
