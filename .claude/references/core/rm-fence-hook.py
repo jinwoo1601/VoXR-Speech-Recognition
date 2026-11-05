@@ -59,10 +59,39 @@ def parse_payload(data):
     return document if isinstance(document, dict) else None
 
 
+def lexer_text(command):
+    written, quote, index = [], None, 0
+    while index < len(command):
+        character = command[index]
+        if quote == "'":
+            if character == "'":
+                quote = None
+            written.append(character)
+        elif character == "\\":
+            if quote == '"':
+                following = command[index + 1:index + 2]
+                if following == '"':
+                    written.append('\\"')
+                elif following == "\\":
+                    written.append("\\\\\\\\")
+                else:
+                    written.append("\\\\" + following)
+                index += 1
+            else:
+                written.append("\\\\")
+        else:
+            if character in "'\"" and quote in (None, character):
+                quote = character if quote is None else None
+            written.append(character)
+        index += 1
+    return "".join(written)
+
+
 def tokenize(command):
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=PUNCTUATION)
+    lexer = shlex.shlex(lexer_text(command), posix=True, punctuation_chars=PUNCTUATION)
     lexer.whitespace_split = True
-    lexer.escape = ""
+    lexer.escape = "\\"
+    lexer.escapedquotes = '"'
     lexer.commenters = ""
     lexer.whitespace = lexer.whitespace.replace("\n", "")
     try:
@@ -107,6 +136,12 @@ def command_start(segment):
             index += 1
             continue
         name = command_name(token)
+        if token == "command" and any(
+                word[1:2] != "-" and ("v" in word[1:] or "V" in word[1:])
+                for word in itertools.takewhile(
+                    lambda option: option.startswith("-") and option != "--",
+                    segment[index + 1:])):
+            return index
         if token in WRAPPERS:
             valued = frozenset()
         elif name == "env":
@@ -175,7 +210,7 @@ def quotes_open(text):
                 quote = None
         elif character == "\\":
             following = text[index + 1:index + 2]
-            if following == '"' or (quote is None and following == "'"):
+            if quote is None and following in ("'", '"'):
                 return True
             index += 1
         elif character in "'\"" and quote in (None, character):

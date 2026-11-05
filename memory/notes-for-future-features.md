@@ -14,3 +14,4 @@ Process and methodology lessons routed out of architecture docs' `## As-built de
 - 2026-11-04 (endpointer-profile) — `grep -c $'\r$'` misses CRLF in Git Bash; count CR with `grep -U`. GNU `sed -i` strips CR; edit CRLF files with `sed -b -i`.
 - 2026-11-04 (endpointer-profile) — Subagents are refused `git init`: a plan needing a scratch repo names it as a PM step.
 - 2026-11-04 (endpointer-profile) — A review-fix commit after the as-built reconcile stales the architecture doc's cites: re-point them before the G2 preflight.
+- 2026-11-05 (trees-fill) — A plan's runtime claim that the apply's dry run equals a plan-time probe fails when the shared base moves in between: re-run the dry run at apply and plan for a pack bump.

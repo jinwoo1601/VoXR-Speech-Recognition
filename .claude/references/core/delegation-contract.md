@@ -57,6 +57,7 @@ The brief, always, save that a read-only roster agent may take its brief inline,
 - Any looped agent: two fix iterations, then the escalation its skill names.
 - Continue an agent by `SendMessage` only while it is small or the fix needs what it has loaded; otherwise dispatch a fresh short brief naming the delta — a continued agent carries its whole context forward.
 - An agent's own success claim is never the gate.
+- When a notice says a returned agent is waiting on its own background work, the PM stops that agent's task with `TaskStop` once its report is filed, and the task-leftover hook (`.claude/references/core/hooks.md`) blocks a turn end that leaves one running.
 
 ## Modes
 
