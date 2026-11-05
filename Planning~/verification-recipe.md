@@ -10,12 +10,12 @@ Moved verbatim from the project `CLAUDE.md` on 2026-08-23 (session-start token b
 
 What the `compile-check` agent runs, in this order. This is a bare UPM package — no `Assets/` or `ProjectSettings/` — so nothing compiles or tests standalone; all Unity verification goes through the host project.
 
-1. **Unity tests (authoritative):** host project `D:\Workspace\VoXR TestGround` (Unity **6000.4.7f1**), which references this package by local path (`file:D:/Workspace/VoXR-Speech-Recognition` in its manifest) — the checked-out working tree is what's tested. Procedure (full detail in project memory `running-package-tests`):
-   1. Unity editor must be closed (`<host>/Temp/UnityLockfile` gone).
-   2. Rename `Tests~` → `Tests` in this repo; ensure `"testables": ["com.jinwoo1601.voxr"]` in the host manifest.
-   3. Run **both** platforms — `Tests/Editor` is EditMode, `Tests/Runtime` is PlayMode (most parser/command tests are PlayMode; an EditMode-only run misses them):
-      `"/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Workspace\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<win path>.xml" -logFile "<win path>.log"` — no `-quit`; takes minutes on first import. Green = NUnit result XML with `failed="0"`.
-   4. Revert: `Tests` → `Tests~`, delete Unity-generated `.meta` orphans (incl. root `Tests.meta`), restore the manifest.
+1. **Unity tests (authoritative):** host project `D:\Workspace\VoXR TestGround` (Unity **6000.4.7f1**), which references this package by local path (`file:D:/Workspace/VoXR-Speech-Recognition` in its manifest) — the checked-out working tree is what's tested. Procedure, one run of `Planning~/host-run/host_run.py` (binding Commands 1-2):
+   1. From the tree root in Git Bash, `py "Planning~/host-run/host_run.py" EditMode PlayMode` — the full run names both, `Tests/Editor` EditMode, `Tests/Runtime` PlayMode; targeted names only the platform or platforms the target's tests live on, plus `--filter "<target>"`, and a named platform at `total` 0 is not green; `--wait <s>` the lock wait (default 360).
+   2. It takes `<hub>/.scratch/host-lock/lock` (holder in `owner`), reads TG at rest (`file:` the hub, `testables` as TG's `HEAD`, `packages-lock.json` on the hub, no `Temp/UnityLockfile`), snapshots both `Packages/` files to `<hub>/.scratch/host-lock/rest/`, points `file:` at the tree, never writes `testables`, renames `Tests~` → `Tests`.
+   3. Per platform it deletes the old XML and runs `"/c/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe" -runTests -batchmode -projectPath "D:\Workspace\VoXR TestGround" -testPlatform <EditMode|PlayMode> -testResults "<tree>\.scratch\test-results\<editmode|playmode>.xml" -logFile "<tree>\.scratch\test-results\<editmode|playmode>.log"`, `-testFilter "<target>"` when targeted, no `-quit`; minutes on first import.
+   4. In a `finally`: `Tests` → `Tests~`, run-created `.meta` deleted (root `Tests.meta` incl.), snapshots written back and checked, at-rest re-read, lock released; it prints per platform `<platform>: <total>/<passed>/<failed>/<inconclusive> exit=<n> wall=<s>s` (`-/-/-/-` where no XML was read) and last `result: green` or `result: not green`; exit 0 green, 1 not green, 2 BLOCKED (owner quoted), 3 a stop for the human; a run never repairs.
+   5. Recovery, the human's, after a killed script or an exit 3 naming `rest/`: with no Unity running and no run holding the lock, copy `rest/manifest.json` and `rest/packages-lock.json` over TG's `Packages/` files and `cmp` each, rename the tree's `Tests` back to `Tests~`, delete its new `.meta` and root `Tests.meta`, clear a stale `Temp/UnityLockfile`; never `git checkout` in TG.
 2. **NativeBridge (only when `NativeBridge~/` or a source `confgen` links (`NativeBridge~/harness/confgen/confgen.csproj`) changed):**
    a. **arm64 build:** CMake/Ninja build per *Building NativeBridge* below. Green = `libvosk-bridge.so` builds with no errors.
    b. **Desktop harness (Windows-native, Git Bash, from the project root — MSVC from Visual Studio 2022 Community through CMake's "Visual Studio 17 2022" generator; the Unity 6000.3.7f1 Android SDK's `cmake.exe` by absolute path):** `(cd NativeBridge~ && ls -d 'C:/Program Files/Microsoft Visual Studio/2022/Community' 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' >/dev/null && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --preset windows-x64 '-DCMAKE_GENERATOR_INSTANCE=C:/Program Files/Microsoft Visual Studio/2022/Community' && 'C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe' --build --preset windows-x64 && dotnet build harness/confgen/confgen.csproj --artifacts-path build-confgen && dotnet build-confgen/bin/confgen/debug/confgen.dll --model vendor/vosk-model-small-en-us-0.15 --out vendor/overlaid/continuous-default --profile Automatic --mode Continuous && ./build-windows/bin/vosk-bridge-harness.exe --model vendor/overlaid/continuous-default --fixtures "../Tests~/Fixtures/audio/tts" --manifest harness/expectations.json)`. It runs in a subshell, so the shell stays at the project root. The leading `ls -d` fails naming any toolchain path that has moved; the two `cmake.exe` calls configure (preset `windows-x64`, pinned to the VS 2022 Community instance) and build Release; the harness then runs. No argument is one Git Bash path conversion rewrites, so the command behaves the same with or without `MSYS_NO_PATHCONV`. Green = exit 0 (37/37 fixture transcripts match the committed baseline); exit 1 = a transcript mismatch, which stops for the human's ruling and is never re-pinned; exit 2 = an operational error. One-time provisioning (gitignored `NativeBridge~/vendor/`: the pinned `vosk-win64-0.3.45` prebuilt + the small model) per `NativeBridge~/harness/README.md`; ratified as the standing check at Tier C's G2 (2026-07-30, design §12), its host Windows-native under Amendment A2 (`Planning~/design-docs/automated-verification.md` §0a).
@@ -52,17 +52,17 @@ A plain Git Bash rewrites `/`-prefixed arguments passed to a Windows program, so
 CMAKE="/c/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake.exe"
 NDK_WIN="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK"
 
-"$CMAKE" -B "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" \
-         -S "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~" \
+"$CMAKE" -B "NativeBridge~/build" \
+         -S "NativeBridge~" \
          -DCMAKE_TOOLCHAIN_FILE="$NDK_WIN/build/cmake/android.toolchain.cmake" \
          -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-27 -DANDROID_STL=c++_shared \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_MAKE_PROGRAM="C:/Program Files/Unity/Hub/Editor/6000.3.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/ninja.exe" \
          -G Ninja
 
-"$CMAKE" --build "D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/build" --config Release -j 4
+"$CMAKE" --build "NativeBridge~/build" --config Release -j 4
 ```
-
+Run the block from the root of the tree under test in Git Bash: its `-S` and `-B` paths are relative to it, so it reads that tree's `NativeBridge~/` and writes only that tree's `NativeBridge~/build/`.
 
 ## Compiling Samples~
 
@@ -70,10 +70,12 @@ Binding 3. Establishes that the seven shipped sample scripts still compile again
 current public API. Verified working 2026-10-14 (native .NET SDK 10.0.300 in Git Bash, Unity 6000.4.7f1).
 
 **The csproj is generated, never committed.** It lives at
-`.scratch/samples-compile/SamplesCompile.csproj` under the project root (`.scratch/` is gitignored)
-and names the package sources, the Unity data folder and the host's assemblies by absolute path
-in drive-letter form (`C:/…`, `D:/…`) — MSBuild reads the file, so `/c/…` forms do not resolve
-there — so nothing is added to the repo; recreate it from the listing each time.
+`.scratch/samples-compile/SamplesCompile.csproj` under the root of the tree it compiles
+(`.scratch/` is gitignored). `PkgRoot` is derived from the file's own location, two directories up,
+so the listing is written verbatim in any tree and compiles that tree, with no path in it edited
+per tree. The Unity data folder and the host's assemblies are named by absolute path in
+drive-letter form (`C:/…`, `D:/…`) — MSBuild reads the file, so `/c/…` forms do not resolve there.
+Recreate it from the listing each time.
 
 ### Command
 
@@ -126,15 +128,15 @@ The `Samples~` glob contains a `~` and the samples have no asmdef, so a misconfi
 produces a **green that compiled nothing**. Never report this gate green without first proving it
 can go red:
 
-1. Insert a deliberate error into one sample (e.g. a call to a method that does not exist).
+1. Copy the sample's bytes under `.scratch/`, then insert a deliberate error into the sample (e.g. a call to a method that does not exist).
 2. Rebuild; confirm the failure names **that file and line**.
-3. `git checkout -- <the sample>`; rebuild; confirm green returns.
+3. Restore the sample from the copy step 1 took (not `git checkout`, a git write agents do not run); confirm it byte-identical (`cmp`); rebuild; confirm green returns.
 
 A cheap standing sanity check on the compile set itself:
 
 ```bash
-(cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
-  | tr '\134' '/' | grep -oiE 'D:/Workspace/VoXR-Speech-Recognition/Samples~/[^ ";]*\.cs' | sort -fu | wc -l)
+(R="$(pwd -W)" && cd "$SP" && dotnet build SamplesCompile.csproj -nologo -t:CoreCompile -v diag 2>&1 \
+  | tr '\134' '/' | grep -oiE "$R/Samples~/[^ \";]*\.cs" | sort -fu | wc -l)
 ```
 
 must print **7**.
@@ -150,7 +152,7 @@ at that exact file:line, and green returned after revert.
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Out-of-band compile gate for Samples~ (VoXR Speech Recognition).
-       Nothing here is committed; regenerate from .claude/verification-bindings.md. -->
+       Nothing here is committed; regenerate from Planning~/verification-recipe.md. -->
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -174,7 +176,7 @@ at that exact file:line, and green returned after revert.
 
   <PropertyGroup>
     <UnityData>C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Data</UnityData>
-    <PkgRoot>D:/Workspace/VoXR-Speech-Recognition</PkgRoot>
+    <PkgRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))</PkgRoot>
     <HostAsm>D:/Workspace/VoXR TestGround/Library/ScriptAssemblies</HostAsm>
   </PropertyGroup>
 

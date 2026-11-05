@@ -23,6 +23,7 @@ sources:
 **Branch:** `design-parallel-trees`
 **Origin:** the human's ask 2026-11-05 to turn parallelism on, after light-lane batch A merged (PR #186).
 **Status:** **G1 LOCKED 2026-11-05.** Rulings in adr-0001 through adr-0005. This document is immutable from here; a contradiction found during implementation reopens it on a new design branch and re-locks.
+**Amended 2026-11-05** (re-lock of `feat-host-repoint`, branch `design-parallel-trees-at-rest`): at rest keeps `testables` as TestGround's committed manifest has them (`Packages/manifest.json` :52-54), so the bracket no longer adds or removes it — §1's host row and H1. Unlocked for this amendment; re-locked at G1 2026-11-05 by the human's ruling "Lock as amended (Recommended)".
 
 **Scope, agreed at G0 (2026-11-05):** decide how VoXR can run branches in their own git worktrees — so the `trees` binding can be filled — given VoXR TestGround consumes this one checkout by `file:` path and a batchmode test run takes its Editor lock. In scope are: which work may run in a separate tree and which must run in the checkout TestGround tests (docs, bindings and planning; the native harness; Unity tests); how the tested checkout is chosen; every value the `trees` binding needs (hub path, tree location and naming, how a tree is created, listed, checked clean, caught up with `main` and removed, writer pooling, release files); and the knock-on effects on the `verification` binding (`.claude/bindings/unity.md`), the vc binding (`.claude/bindings/vc-git.md`), the hub session (`voxr-hub`) and `memory/`.
 
@@ -79,7 +80,7 @@ One host, TestGround, serves every tree in turn. A Commands 1-2 run is one brack
 |---|---|---|
 | The hub | On `main`, holding `memory/` | Unchanged |
 | Branch trees and writer trees | Zero or more | The tree under test has `Tests~` renamed for the run, reverted after |
-| The host, TestGround | Its manifest `file:` points at the hub, with no `testables` | Its manifest `file:` points at the tree's root, with `testables` added |
+| The host, TestGround | Its manifest `file:` points at the hub, `testables` as its committed manifest has them | Its manifest `file:` points at the tree's root, `testables` unchanged |
 | The host lock | Free | Held by that one tree's run |
 
 | Work | Where it runs (design intent, not yet built) |
@@ -91,7 +92,7 @@ One host, TestGround, serves every tree in turn. A Commands 1-2 run is one brack
 
 **Rules:**
 
-1. **H1 — the bracket.** Commands 1-2 run as one bracket: take the host lock; read that the host is at rest (`file:` is the hub, no `testables`, no `Temp/UnityLockfile`); point `file:` at the tree's root and add `testables`; rename `Tests~` in that tree; run; revert the rename and restore the manifest to rest; release the lock (design intent, not yet built).
+1. **H1 — the bracket.** Commands 1-2 run as one bracket: take the host lock; read that the host is at rest (`file:` is the hub, `testables` as the host's committed manifest has them, no `Temp/UnityLockfile`); point `file:` at the tree's root; rename `Tests~` in that tree; run; revert the rename and restore the manifest to rest; release the lock (design intent, not yet built).
 2. **H2 — wait, then stop.** A run that finds the lock held waits up to a bound (provisional → the tuning pass) and then reports BLOCKED. A run that finds the lock free but the host not at rest stops for the human, because a crashed run may have left it there; it never repairs the host on its own (design intent, not yet built).
 3. **H3 — green needs evidence.** Green for Commands 1-2 also requires the run's own evidence that the package resolved from this tree's path, and the host back at rest after the restore; a results XML from a host pointed elsewhere is never green (design intent, not yet built).
 4. **H4 — results per tree.** Each tree writes its results and logs under its own `.scratch/test-results/`, never the hub's, so concurrent trees never read one another's XML (design intent, not yet built).

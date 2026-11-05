@@ -4,7 +4,8 @@ updated: 2026-11-05
 
 ## Current
 
-- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` G0; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
+- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` G2; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
+- **`feat-host-repoint`**: feature; full; development; stage review - review-cycle done 2026-11-05 (fixes 55fe4f4, CHECK green; R9 → HRP-1); as-built a73a405; next: G2.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -32,3 +33,5 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **EPR-8** · OPEN · light-lane · v2026-11-04 — confgen's echo misses a BOM-prefixed first rule line
 - **EPR-9** · OPEN · light-lane · v2026-11-04 — confgen never re-checks an existing `--out` against `--model`
 - **EPR-10** · OPEN · light-lane · v2026-11-04 — not-applied warning wording does not tell "nothing to apply" from "could not apply" (duplicate key under Model default)
+- **HRP-1** · OPEN · trees-fill · v2026-11-05 — host_run.py runs Unity with no timeout: a hung run holds the host lock; bound it and kill before the restore
+- **HRP-2** · OPEN · light-lane · v2026-11-05 — binding unity.md Command 1 says Commands 1-2 start "in the background"; Claude Code's memory reap can kill an idle run: say foreground
