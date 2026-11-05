@@ -2,7 +2,7 @@
 type: requirements
 feature: trees-fill
 topic: parallel-trees
-status: draft
+status: accepted
 updated: 2026-11-05
 sources:
   - Planning~/design-docs/parallel-trees.md
@@ -105,10 +105,12 @@ The backlog row's criteria (`parallel-trees.md` §6 :162), verbatim:
 - **A3.** the `verification` binding's Run from names the root of the tree the session runs in, and Tree-safe reads `yes` under the host bracket
 - **A4.** the `session-launch` Launch command's `<tree>` note no longer says `trees` is none.
 
-- [ ] Every Must, F1-F8, is checked.
-- [ ] The PM cuts a throwaway branch tree by Create, lists it, and removes it by Remove, from the hub.
-- [ ] `validate` and `doctor` show no new failure.
-- [ ] The verification binding's Commands: none fire. This is said, not run.
+- [x] Every Must, F1-F8, is checked. (the G2 preflight at `1091281`, item 3, read each binding line against the live files; the review-cycle, full, over `4f813da..3be7c3a`)
+- [x] The PM cuts a throwaway branch tree by Create, lists it, and removes it by Remove, from the hub. (run 2026-11-05 before G2: `lab-trees-fill-probe` created at `4f813da`, listed, removed by `tree-remove.py` printing `removed:`; recorded in `memory/2026-11-05.md`, entry "G2 preflight")
+- [x] `validate` and `doctor` show no new failure. (both PASS after Phase 4 and after the review fixes; `doctor` PASS again at `1091281`)
+- [x] The verification binding's Commands: none fire. This is said, not run. (no C# or native file in `4f813da..1091281`; the review's CHECK recorded not run by the maintainer's ruling, "Record not run (Recommended)")
+
+**Ruled at G2 on 2026-11-05** by the maintainer, in conversation (AskUserQuestion, "Accept (Recommended)"): accepted at head `1091281`, with the second preflight in view — the first preflight's STATUS line over its cap trimmed in `1091281`. Open after acceptance: F7's live exercise (pull before and push after a hub write on `main`), observable only once the hub is back on `main`.
 
 ## 10. Open questions
 

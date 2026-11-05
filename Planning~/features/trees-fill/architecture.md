@@ -2,7 +2,7 @@
 type: architecture
 feature: trees-fill
 topic: parallel-trees
-status: draft
+status: accepted
 updated: 2026-11-05
 sources:
   - Planning~/features/trees-fill/requirements.md
