@@ -5,7 +5,7 @@ updated: 2026-11-05
 ## Current
 
 - **`main` at PR #188 `4eac227` (host-repoint G2); `v2.0.0`; next: `trees-fill` G0 (lite); V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
-- **`feat-trees-fill`**: feature; full; path development; stage architecture - PLAN ruled 2026-11-05 (4 phases, F1-F8 placed; sync A); next: phase-pickup P1.
+- **`feat-trees-fill`**: feature; full; path development; stage implement - P1 done b5b2e79 (core.md :22/:27); P2 plan validated (unity.md :5/:14); 4 phases, sync A; next: implement P2.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.

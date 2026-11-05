@@ -193,6 +193,7 @@ The `validate` and `doctor` output is compared with their rows at `bd6f1b3`, rea
   This phase was ruled in at PLAN 2026-11-05 and follows from adr-0005 :23. *Checked by:* no V23 row, and the spliced `trees`, `session-launch`, vc and verification blocks reading the same as the live bindings. *Discharges:* F8.
 - **Assets the build needs that code cannot author:** the human's word at Phase 4's `upgrade` HARD STOP, and the base at `../harness`.
 - Phase 1 — persisted plan (2026-11-05): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-11-05): [plan-2.md](plan-2.md)
 
 Each phase's plan file is written when that phase is picked up, and linked here.
 
