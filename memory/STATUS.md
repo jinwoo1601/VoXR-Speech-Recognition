@@ -4,8 +4,8 @@ updated: 2026-11-05
 
 ## Current
 
-- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` Phase 0; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
-- **`feat-host-repoint`**: feature; full; path development; stage implement - Phase 0 planned and validated 2026-11-05 (`plan-0.md`); next: `implement` Phase 0.
+- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` Phase 1; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
+- **`feat-host-repoint`**: feature; full; path development; stage implement - Phase 0 done 2026-11-05 (probe exit 0, 47.0 s; Commands 1-2 green); next: `phase-pickup` Phase 1.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
