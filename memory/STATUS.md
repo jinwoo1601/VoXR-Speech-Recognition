@@ -4,8 +4,8 @@ updated: 2026-11-05
 
 ## Current
 
-- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` Phase 2 implement; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
-- **`feat-host-repoint`**: feature; full; path development; stage implement - Phase 0 done 2026-11-05 (probe exit 0, 47.0 s; Commands 1-2 green); Phase 1 done 2026-11-05 (Command 4 green from the tree, canary red at :71, sample restored byte-identical; one fix pass, canary moved to `OnEnable()`); Phase 2 planned 2026-11-05 (plan-2.md, validated full, one fix pass; PM moves the ignored `continuous-default` by the human's ruling); next: `implement` Phase 2.
+- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` Phase 3 pickup; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
+- **`feat-host-repoint`**: feature; full; path development; stage implement - Phase 0 done 2026-11-05 (probe exit 0, 47.0 s; Commands 1-2 green); Phase 1 done 2026-11-05 (Command 4 green from the tree, canary red at :71, sample restored byte-identical; one fix pass, canary moved to `OnEnable()`); Phase 2 done 2026-11-05 (README *Provisioning a branch tree*, binding :8/:12 cite it; Command 3 37/37, `continuous-default` regenerated, SO byte-unchanged); next: `phase-pickup` Phase 3.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.

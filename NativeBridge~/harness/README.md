@@ -27,6 +27,20 @@ Everything lands in `NativeBridge~/vendor/` (gitignored, never committed). Run e
    ```
 4. **Linux leftovers** — `vendor/libvosk.so`, `vendor/vosk-linux.zip` and `vendor/vosk-linux-x86_64-0.3.45/`, from before the Windows-native build, are unused: delete them.
 
+## Provisioning a branch tree
+
+A branch tree (`.claude/references/core/trees-contract.md`) is provisioned by copying `vosk-win64-0.3.45/` and `vosk-model-small-en-us-0.15/` from the one checkout's `D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/vendor/` into its own `NativeBridge~/vendor/` as real directories, never links. `overlaid/` and the zips are not copied, since Command 3's `confgen` writes `vendor/overlaid/continuous-default` in that tree. Run the block below from the tree's root in Git Bash:
+
+```bash
+(H='D:/Workspace/VoXR-Speech-Recognition/NativeBridge~/vendor' V='NativeBridge~/vendor' && test -d "$H/vosk-win64-0.3.45" && test -d "$H/vosk-model-small-en-us-0.15" && test ! -e "$V/vosk-win64-0.3.45" && test ! -e "$V/vosk-model-small-en-us-0.15" && test ! -e "$V/.copying" && mkdir -p "$V/.copying" && cp -r "$H/vosk-win64-0.3.45" "$H/vosk-model-small-en-us-0.15" "$V/.copying/" && diff -rq "$H/vosk-win64-0.3.45" "$V/.copying/vosk-win64-0.3.45" && diff -rq "$H/vosk-model-small-en-us-0.15" "$V/.copying/vosk-model-small-en-us-0.15" && mv "$V/.copying/vosk-win64-0.3.45" "$V/.copying/vosk-model-small-en-us-0.15" "$V/" && rmdir "$V/.copying") && echo provisioned || echo 'NOT provisioned'
+```
+
+The block copies into `vendor/.copying/`, checks each copy against the hub's with `diff -rq` (same files, same bytes), and only then moves both into place, so a copy that stops part-way leaves nothing Command 3 reads; it copies nothing where the hub lacks either directory or the tree holds either target or `.copying/`. It prints `provisioned` or `NOT provisioned`: with both directories present and no `.copying/`, the tree was already provisioned; otherwise, in a branch tree only, remove its `NativeBridge~/vendor/` and run the block again.
+
+The one checkout copies nothing — its `vendor/` is the one `## One-time provisioning` makes, and the block there prints `NOT provisioned`, changing nothing. Where the hub lacks either directory, the human first runs that section's blocks 2 and 3 from the hub's root (downloads are a human step; agents download nothing), then the block.
+
+Writer trees (`<branch>--<unit>`, cut fresh from the branch's tip and removed after the join — `Planning~/design-docs/parallel-trees/decisions/adr-0004-no-writer-pool.md`) are never provisioned, and Command 3 never runs in one; run there, its harness half stops at the configure step on the missing `vendor/vosk-win64-0.3.45/libvosk.lib` (`CMakeLists.txt`'s required-file check), before `confgen`, so nothing under `vendor/` is written.
+
 ## Build and Run
 
 From the project root, in Git Bash — this line is copied verbatim from Command 3 of the `unity` verification binding (`.claude/bindings/unity.md`), which is its source:
