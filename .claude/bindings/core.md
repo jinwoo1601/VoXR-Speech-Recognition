@@ -19,12 +19,12 @@
 
 ## session-launch
 <!-- Interview: Does the PM launch sessions itself — by which command a session is started in a given tree for a given branch with a one-line prompt, keeping its transcript and in the permission mode it runs in; under which name the hub session is opened and receives the launched sessions' reports; and by which commands the running sessions are listed and a finished one is stopped; how long a launch or a stop is waited on in that list before it is read as failed; and how long a stopped session may hold its tree's directory; past how many tokens of context a session hands off inside a phase, and by which command it reads its own context — or a single `none` where the human opens every session? -->
-- Launch command: `cd "<tree>" && CLAUDE_CODE_FORCE_SESSION_PERSISTENCE=1 claude --bg --remote-control <branch> -n <branch> --permission-mode auto "<prompt>"`, run in Git Bash from the launching session, `<tree>` the project root in the Path form (`trees` is none) — the CLI's behaviour: `.claude/references/core/claude-code-cli.md`
+- Launch command: `cd "<tree>" && CLAUDE_CODE_FORCE_SESSION_PERSISTENCE=1 claude --bg --remote-control <branch> -n <branch> --permission-mode auto "<prompt>"`, run in Git Bash from the launching session, `<tree>` the branch's tree, `D:\Workspace\VoXR-Speech-Recognition.trees\<branch>` by the Location slot, in the Path form — the CLI's behaviour: `.claude/references/core/claude-code-cli.md`
 - Hub session name: `voxr-hub` — this project's own hub session, which the human opens in the project root with `claude --remote-control voxr-hub -n voxr-hub --autocompact 250k`; the `--autocompact 250k` is the hub's compaction backstop, per launch and never in a settings file
 - List command: `claude agents --json` — one object per running session on this machine, each with its `cwd`; see the reference for its shape
 - Stop command: `claude stop <id>` — the `id` the list command shows
 - Confirm window: 30 seconds (provisional → the tuning pass)
-- Release wait: none — `trees` is none, so no tree is removed
+- Release wait: none — the vc-git Remove procedure (`.claude/references/vc-git/tree-remove.py`) waits for the directory's release itself
 - Context bound: about 200k tokens (provisional → the tuning pass)
 - Context read: `py -c "import glob,json,os;p=glob.glob(os.path.expanduser('~/.claude/projects/*/'+os.environ['CLAUDE_CODE_SESSION_ID']+'.jsonl'))[0];t=[n for n in (u['input_tokens']+u['cache_creation_input_tokens']+u['cache_read_input_tokens'] for u in (e['message']['usage'] for e in map(json.loads,open(p,encoding='utf-8')) if e.get('type')=='assistant')) if n>0];print(t[-1])"` — run in Git Bash from the project root; prints the context of this session's last assistant turn that carries usage, from its transcript under Claude Code's projects directory in the user's home; lags at most one turn
 
