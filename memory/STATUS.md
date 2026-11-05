@@ -4,8 +4,7 @@ updated: 2026-11-05
 
 ## Current
 
-- **`main` at PR #188 `4eac227` (host-repoint G2); `v2.0.0`; next: `trees-fill` G0 (lite); V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
-- **`feat-trees-fill`**: feature; full; path development; stage product-docs - P1-P4, review c640f0a, reconciled; next: RECORD, PR · ruling G2 · 2026-11-05 · the human · "Accept (Recommended)"
+- **`main` at PR #189 `24f9997` (trees-fill G2); `v2.0.0`; next: re-route HRP-1 (left by trees-fill); V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
