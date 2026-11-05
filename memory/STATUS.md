@@ -13,7 +13,7 @@ updated: 2026-11-06
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 - **`feat-agc-filter`**: feature; full; path development; stage implement - plan-1 `8741171`; tree `D:\Workspace\VoXR-Speech-Recognition.trees\feat-agc-filter`; next: implement 1 (blocked: human vendor archives, plan Step 0)
-- **`light-batch-b`**: light, class slim, batch EPR-8, EPR-9, EPR-10, WND-2; tree `D:\Workspace\VoXR-Speech-Recognition.trees\light-batch-b`; PR #191 @ `6250355`; next: g2-lite
+- **`light-batch-b`**: light, class slim, batch EPR-8, EPR-9, EPR-10, WND-2; tree `.trees\light-batch-b`; PR #191 @ `6250355`; next: merge · ruling G2 · 2026-11-06 · the human · "Accept (Recommended)"
 
 ## Deferred
 
