@@ -34,3 +34,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **EPR-9** · OPEN · light-lane · v2026-11-04 — confgen never re-checks an existing `--out` against `--model`
 - **EPR-10** · OPEN · light-lane · v2026-11-04 — not-applied warning wording does not tell "nothing to apply" from "could not apply" (duplicate key under Model default)
 - **HRP-1** · OPEN · trees-fill · v2026-11-05 — host_run.py runs Unity with no timeout: a hung run holds the host lock; bound it and kill before the restore
+- **HRP-2** · OPEN · light-lane · v2026-11-05 — binding unity.md Command 1 says Commands 1-2 start "in the background"; Claude Code's memory reap can kill an idle run: say foreground

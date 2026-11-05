@@ -2,7 +2,7 @@
 type: requirements
 feature: host-repoint
 topic: parallel-trees
-status: draft
+status: accepted
 updated: 2026-11-05
 sources:
   - Planning~/design-docs/parallel-trees.md
@@ -99,9 +99,11 @@ The operator is whoever runs the `verification` binding's Commands — the PM or
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] Every Must in §5 (F1-F8) checked; F3, F4, F5 and F7 from the one checkout and from a throwaway detached worktree of `feat-host-repoint`, created and removed by the PM.
-- [ ] Human-only verification: open TestGround's Editor after an acceptance run and see VoXR resolved from the hub (H7).
-- [ ] The `verification` binding's Commands are green.
+- [x] Every Must in §5 (F1-F8) checked; F3, F4, F5 and F7 from the one checkout and from a throwaway detached worktree of `feat-host-repoint`, created and removed by the PM. (Phase 5 from a throwaway worktree at `f390330`, green and its two mutations not green; the one checkout green at the Phase 5 gate and the review CHECK; record `memory/2026-11-05.md`, "implement Phase 5")
+- [x] Human-only verification: open TestGround's Editor after an acceptance run and see VoXR resolved from the hub (H7). (read by the PM from a batchmode Editor log, `com.jinwoo1601.voxr@file:D:\Workspace\VoXR-Speech-Recognition`, under the human's ruling in Phase 5, "i'm saying you can check this yourself without me"; ruled to stand at G2)
+- [x] The `verification` binding's Commands are green. (review-fix CHECK: Commands 1-4 green on the fixes committed as `55fe4f4`; record `memory/2026-11-05.md`, "review-cycle and as-built reconcile")
+
+**Ruled at G2 on 2026-11-05** by the maintainer, in conversation (AskUserQuestion, "Accept"): accepted at head `9e8d8a6`, with the second preflight in view — the first preflight's as-built entries trimmed to the charter and the dated note and STATUS brought current in `9e8d8a6`. H7's PM read ruled to stand ("Stands as ruled"); the binding's "started in the background" deferred to the light lane ("Defer to light lane").
 
 ## 10. Open questions
 
