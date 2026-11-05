@@ -4,8 +4,8 @@ updated: 2026-11-05
 
 ## Current
 
-- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` Phase 3 implement; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
-- **`feat-host-repoint`**: feature; full; path development; stage implement - Phase 0 done 2026-11-05 (probe exit 0, 47.0 s; Commands 1-2 green); Phase 1 done 2026-11-05 (Command 4 green from the tree, canary red at :71, sample restored byte-identical; one fix pass, canary moved to `OnEnable()`); Phase 2 done 2026-11-05 (README *Provisioning a branch tree*, binding :8/:12 cite it; Command 3 37/37, `continuous-default` regenerated, SO byte-unchanged); Phase 3 planned 2026-11-05 (`plan-3.md`, validated full, one fix pass; OQ1: PM makes the TG mutations, this phase only); next: `implement` Phase 3.
+- **`main` at PR #187 `9a6850a` (parallel-trees G1); `v2.0.0`; next: `host-repoint` Phase 4 pickup; V11, batches B, C wait.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185.
+- **`feat-host-repoint`**: feature; full; path development; stage implement - Phase 0 done 2026-11-05 (probe exit 0, 47.0 s; Commands 1-2 green); Phase 1 done 2026-11-05 (Command 4 green from the tree, canary red at :71, sample restored byte-identical; one fix pass, canary moved to `OnEnable()`); Phase 2 done 2026-11-05 (README *Provisioning a branch tree*, binding :8/:12 cite it; Command 3 37/37, `continuous-default` regenerated, SO byte-unchanged); Phase 3 done 2026-11-05 (`Planning~/host-run/host_run.py`; binding :6/:7/:11-:13, recipe :13-18; Commands 1-2 by the script 230/230 + 724/724, exits 2/3/1 proven, Command 4 green; claim i unchecked by design); next: `phase-pickup` Phase 4 (tuning pass).
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
