@@ -5,7 +5,7 @@ topic: parallel-trees
 status: draft
 updated: 2026-11-05
 sources:
-  - Planning~/design-docs/parallel-trees.md (the backlog, §6)
+  - Planning~/features/trees-fill/requirements.md
   - Planning~/design-docs/parallel-trees/decisions/adr-0003-sibling-trees-directory.md
   - "Planning~/host-run/host_run.py"
   - ".claude/bindings/vc-git.md, .claude/bindings/unity.md, .claude/bindings/core.md"
@@ -16,8 +16,6 @@ sources:
 ## User story
 
 As the VoXR maintainer, I want the `trees` binding filled so each branch runs in its own git worktree, so that branches can run side by side while every Unity test run still goes through the one host by the `host-repoint` bracket.
-
-This feature is lite: it has no requirements doc, and its acceptance is the backlog row's criteria A1-A4 below.
 
 ## Context & scope
 
@@ -61,3 +59,158 @@ The criteria, numbered as the row's (1) to (4):
 - Core-pack changes, which go to harness-hub.
 - Device testing of a branch.
 - The two stale auto-memories §4 names, which are the PM's to update after G2.
+
+## What this implements
+
+The build edits three binding files. Every value it writes is the locked design's: the §1 `trees` values (`Planning~/design-docs/parallel-trees.md` :103-109) and the §4 knock-on sites the row names (:137-147), written in the form of the harness repo's filled binding (`D:\Workspace\harness\.claude\bindings\vc-git.md` :17-28). This section and the register below hold only what the design does not state. The non-functionals and risks stay in the design (§3, §4, *Status / openness*).
+
+| Criterion | Work | Section |
+|---|---|---|
+| A1 | `.claude/bindings/vc-git.md` `## trees`: the `none` line (:19) and its reason comment (:20) are replaced by ten slot lines. Those lines are Hub, Location, Create procedure, List read, Clean read, Catch-up procedure, Remove procedure, Writer-branch naming, Pool and Release files. | Register: *Slot labels*, *Hub line*, *Location line*, *Procedures*, *Writer naming and Pool*, *Release files*, *Comments*; Build plan, Phase 3 |
+| A2 | `.claude/bindings/vc-git.md` :8: the tail "and runs in the one checkout, since `trees` is none" is rewritten. Each branch is cut together with its own tree, from the hub, by the Create procedure of `## trees`, and runs in that tree. | Register: *Branch procedure*; Phase 3 |
+| A3 | `.claude/bindings/unity.md` :5 Run from becomes the root of the tree the session runs in; :14 Tree-safe becomes `yes` under the host bracket. | Register: *Run from*, *Tree-safe*; Phase 2 |
+| A4 | `.claude/bindings/core.md` :22: the Launch command's `<tree>` note "(`trees` is none)" is replaced by the branch's tree. | Register: *Launch note*; Phase 1 |
+| Not in the row | Three sites: `.claude/bindings/core.md` :27, the Release wait's reason; `.claude/bindings/vc-git.md` :9, the hub check-in clause; and the recompose of the composed copies. Each was ruled in at PLAN on 2026-11-05 (F5, F6, F8). | Register: *Release wait*, *§4's other sites*, *Composed copies*; Phases 1, 3 and 4 |
+| F7 | The hub sync rule: every hub write is preceded by `git pull --no-rebase origin main` in the hub and followed by `git push`. PRs still merge on GitHub, by the human. It is stated in the Check-in procedure of `.claude/bindings/vc-git.md`. | Register: *Hub sync*; Phase 3 |
+
+## Decision register
+
+Each entry is a build-time rule that follows from a standing rule of the locked design, or of the contract the filled binding enters (`.claude/references/core/feature-lite.md` `## The escape`). The rule it follows from is named in each entry. None of them is a new choice, save *Hub sync*, which the human ruled at SETTLE on 2026-11-05: it is the choice that returned the feature to full. The entries that name a site the row does not name were ruled in at PLAN on 2026-11-05.
+
+- **Slot labels: the vc-git pack's template labels.** The section has one line per slot of the base's `packs/vc-git/bindings/trees.template.md` (:3-12), and each line is labelled the way the template labels it: Hub, Location, Create procedure, List read, Clean read, Catch-up procedure, Remove procedure, Writer-branch naming, Pool and Release files. A1's "List, Clean … procedures" means the List read and the Clean read. *Follows from:* §1 :107, which says "as in the harness repo's filled binding"; that binding's :19-28 use these labels. `doctor`'s `SLOTS` and `UNFILLED` rows name any template slot that a filled section lacks or leaves unfilled (the base's `scripts/harness.py`, `slot_rows`, :4563-4611). *Rejected:* §1's own words as labels. That would give a `SLOTS` row for each missing label.
+
+- **Hub line: the template's idiom, then "the main checkout is `D:\Workspace\VoXR-Speech-Recognition` — it stays on `main` and holds `memory/`".** The idiom is the template's Hub text (:3), as the harness's :19 has it: `git -C "<path>" <command>`, with the path quoted, used only in another tree. *Follows from:* §1 :105. Two readers find the hub path only as a backticked path after the words "the main checkout is":
+  - `doctor`'s memory root: `scripts/harness.py`, `_trees_hub` :971-974 and `_memory_root` :4700-4711. When it finds no path it prints "the trees binding's Hub line names no main checkout".
+  - The SessionStart hook's base fallback from a tree: `.claude/references/core/doctor-hook.py` :19, :39-42, :56-67. A tree needs this fallback because the manifest's base, `../harness` (`.claude/harness.json` :3), does not resolve from inside the trees directory.
+
+  *Rejected:* §1 :105's wording as it stands. Neither reader would find a hub in it.
+
+- **Location line: both full paths backticked.** The line reads: "trees live beside the hub in the directory `D:\Workspace\VoXR-Speech-Recognition.trees`; a branch tree is `D:\Workspace\VoXR-Speech-Recognition.trees\<branch>`, and a writer tree is `D:\Workspace\VoXR-Speech-Recognition.trees\<branch>--<unit>`". This is the form of the harness's :20. *Follows from:* adr-0003 :22, which gives the writer tree's full path. Two readers depend on that form:
+  - `scripts/harness.py` `_trees_location` (:977-994) takes the trees root from drive-absolute backticked tokens.
+  - The WorktreeCreate hook takes the first backticked token that holds both `<branch>` and `<unit>`. It refuses that token if it is not drive-absolute (`.claude/references/vc-git/worktree-create-hook.py` :101-108, :129-131).
+
+  *Rejected:* §1 :106's short form, writer trees "as `<branch>--<unit>`". The hook would read that relative token and refuse it.
+
+- **Procedures: the harness's lines, with `master` read as `main`.** Create procedure, List read, Clean read, Catch-up procedure and Remove procedure are the harness's :21-25 word for word. The one change is `master` → `main` in Create and Catch-up, where the template has `<main branch>` (:5, :8; this project's main branch is at `.claude/bindings/vc-git.md` :6).
+  - Remove is `py .claude/references/vc-git/tree-remove.py "<path>"`.
+  - Catch-up merges with `-c core.attributesFile=.claude/references/vc-git/merge-attributes.txt`. That file's :1-2 merge `.claude/**` as binary and `.claude/bindings/**` as text, which is the mechanical side of the release rule below.
+
+  *Follows from:* §1 :107.
+
+- **Writer naming and Pool.** Writer-branch naming is `<branch>--<unit>`, cut from the branch's tip. Pool is `none`, backticked as in the harness's :27. *Follows from:* §1 :108, adr-0004 :22.
+
+- **Release files: two entries in the contract's entry form.** The line reads: "`CHANGELOG.md` — keep both sides' `## [Unreleased]` entries, this branch's first; `.claude/`, `.claude/harness.json` included, save `.claude/bindings/*.md` — regenerated by `upgrade`, never hand-merged". `package.json` is not named. *Follows from:* §1 :109, adr-0005 :23. The form comes from `.claude/references/core/trees-contract.md` :27: entries split by `; `, backticked paths, `save` to exclude, then ` — ` and the rule. The line is the harness's :28 without its `PACK.md` entry, which belongs to the base.
+
+- **Comments.** The `none` reason comment (:20) goes with the `none` line. The Interview comment (:18) stays as it is. *Follows from:* the row's ":19-20". The comment's reason, that the host consumes this checkout by path, is the one adr-0002 removed (`parallel-trees.md` :151).
+
+- **Branch procedure: the tail only.** The tail "— and runs in the one checkout, since `trees` is none" is rewritten. It now says that each branch is cut together with its own tree, from the hub, by the Create procedure of `## trees`, and runs in that tree, and that the update of `main` before the cut runs in the hub.
+  - The re-lock clause, the carry clause and the branch names stay word for word.
+  - The carry's "the one checkout where `trees` is absent" stays. A2's words "in the one checkout" are the tail's.
+  - The existing up-to-date step stays as written: `git fetch origin`, then `git merge --ff-only origin/main` on `main`. The design does not fix how the hub's `main` stays level with `origin/main`; that question is ruled in the *Hub sync* entry below.
+
+  *Follows from:*
+  - §4 :141 and adr-0001 :34, which name only the tail.
+  - `.claude/references/core/gate-close.md` :59, which puts the hub on the main branch by "the switch command the `vc` binding's *Branch procedure* shows for another use". The re-lock clause's `git switch <feature-branch>` is that command.
+  - The carry belongs to the prototype path, and no composed pack reads it here (`.claude/bindings/core.md` :11).
+
+  *Rejected:* `git switch -c <branch>` in the hub. It would take the hub off `main`, and adr-0001 :23 keeps the hub on `main`.
+
+- **Run from: the root of the tree the session runs in.** :5's "the project root `D:\Workspace\VoXR-Speech-Recognition`, the one checkout" becomes the root of the tree the session runs in. That is the hub or a tree in the trees directory. The host and recipe clauses stay. *Follows from:* §4 :138 and adr-0001 :34. Three facts make it hold:
+  - Command 1's script takes the tree under test from its own location and writes its results under that tree (`Planning~/host-run/host_run.py` :26, :30). The lock and the snapshot stay in the hub (:16, :27).
+  - `compile-check` runs from the tree its shell starts in (host-repoint's `architecture.md` :61).
+  - host-repoint's *Drift watch* (:104) names this line as the one that keeps `compile-check` on the hub.
+
+  The binding's other "one checkout" phrases (:8, :12) name the hub's provisioning. host-repoint wrote them and they stay.
+
+- **Tree-safe: `yes`, with the bracket as its reason.** :14 reads `yes`. The reason names three things:
+  - Command 1's bracket (`py "Planning~/host-run/host_run.py"`, :6): the host lock, the at-rest read and the restore.
+  - Command 3 never runs in a writer tree.
+  - Command 4 runs without the lock.
+
+  *Follows from:* §4 :140 ("yes, under H1-H6") and host-repoint as built (its `architecture.md` :115, :117). The value's one reader on the split path is `.claude/skills/implement/references/split-path.md` :11. That path is parked while no WorktreeCreate hook is registered (:7), so the value takes effect when the park lifts.
+
+- **Launch note: the branch's tree.** :22's "`<tree>` the project root in the Path form (`trees` is none)" becomes "`<tree>` the branch's tree, `D:\Workspace\VoXR-Speech-Recognition.trees\<branch>` by the Location slot, in the Path form". *Follows from:* adr-0003 :31, §1 :106.
+
+- **Release wait: `none` stands, and only its reason changes. Not in the row; ruled in at PLAN 2026-11-05.** Once `trees` is filled, trees are removed. But `close-tree` RELEASE waits for nothing when the Remove procedure waits for the directory's release itself (`.claude/skills/close-tree/SKILL.md` :70), and `tree-remove.py` does wait (`.claude/references/vc-git/tree-remove.py` :43, :52-57; `--wait` defaults to 30 s). So the value stays `none`, and only the reason "`trees` is none, so no tree is removed" becomes false. The new reason is the harness's: "the vc-git Remove procedure (`.claude/references/vc-git/tree-remove.py`) waits for the directory's release itself" (the harness repo's `.claude/bindings/core.md` :46). *Follows from:* §1 :107, where Remove is by `tree-remove.py`. Neither the row nor §4 names :27.
+
+- **Composed copies: recomposed by `upgrade`, never hand-edited. Not in the row; ruled in at PLAN 2026-11-05.** The skills splice binding blocks into their files:
+  - `trees` is spliced into 12 files: 10 `SKILL.md` files, `implement/references/split-path.md` and `tackle-issue/references/tree-path.md`.
+  - `session-launch` is spliced into 9 files: 8 `SKILL.md` files and `orient/references/trees.md`.
+  - The vc Branch procedure, and the verification Run from and Tree-safe lines, are spliced into others.
+
+  Each copy reads stale until a same-version recompose. Until then, `validate` and `doctor` print V23, "run harness.py upgrade" (`scripts/harness.py` :1537-1540, :4876). The recompose is the `upgrade` skill's dry run, HARD STOP and apply (`.claude/skills/upgrade/SKILL.md` :65-68, :69). *Follows from:* adr-0005 :23, under which `.claude/` is regenerated by `upgrade` and never merged by hand. The layout binding also holds `.claude/**`, save the bindings, as generated (`.claude/bindings/core.md` :42). At `bd6f1b3` the copies already lag host-repoint's edits: `split-path.md` :17 still carries the old Command 2, against `unity.md` :7. The recompose brings those current as well.
+
+- **§4's other sites.**
+  - `unity.md` :6-7 and the recipe were built by host-repoint (its `architecture.md` :115, :117).
+  - The hub roles of `voxr-hub`, and `memory/` writes as hub operations, take effect with the fill itself. The contract's acts and its hub operation apply "where `trees` is filled" (`trees-contract.md` :47, :21), and the Hub session name is already bound (`core.md` :23). No file changes for them.
+  - The two auto-memories were put out of scope at G0 (`## Context & scope`).
+  - The fill leaves one text stale: `.claude/bindings/vc-git.md` :9 names "the base's `scripts/hub.py commit`" for a hub `memory/` check-in. The contract keeps that verb, but no step writes by it (`trees-contract.md` :21). If it is brought into scope, it would name the hub operation `scripts/hub.py write --root D:\Workspace\VoXR-Speech-Recognition` (§4 :146). It is not in the row; it was ruled in at PLAN on 2026-11-05 (F6) and is edited in Phase 3.
+
+- **Hub sync: pull before, push after, every hub write. Not in the row; ruled by the human at SETTLE, 2026-11-05.** Every hub write is preceded by `git pull --no-rebase origin main` in the hub and followed by `git push`. PRs still merge on GitHub, by the human. This is how the hub's `main` stays level with `origin/main`, the question that *Branch procedure* leaves open; its up-to-date step stands as written. The Check-in procedure of `.claude/bindings/vc-git.md` states the rule (Phase 3; `requirements.md` F7).
+  - It is a choice the locked design did not fix. It is what returned the feature to full (`.claude/references/core/feature-lite.md` `## The escape`), and it was ruled by the human, not derived.
+  - *Rejected:* B, merging locally in the hub as the harness repo does, because Claude would then make the merge commit. C, routing memory writes through PRs, as too heavy.
+
+- **WorktreeCreate hook: no change here.** `.claude/settings.json`'s `hooks` block (:187-301) registers SessionStart, PreToolUse, PostToolUse, SubagentStop and Stop. It registers no WorktreeCreate hook. The split path therefore stays parked (`split-path.md` :7), and filling `trees` changes nothing the hook does. If the hook were registered, it would read the Location and Writer-branch naming lines (`worktree-create-hook.py` :126-134), and the lines above meet its form.
+
+## Build plan
+
+There are four phases, ordered lowest-risk-first by how many skills each one changes:
+- Phase 1: one note that a launch reads.
+- Phase 2: the verification binding.
+- Phase 3: the fill, which moves every skill onto its tree path (`trees-contract.md` :7).
+- Phase 4: the recompose, which makes the skills show the new values.
+
+Phases 1-3 are binding prose, so they are `doc-writer` work. Phase 4 is the PM's `upgrade` run.
+
+No phase runs a `verification` Command. A binding-only change fires neither the Command 3 trigger nor the Command 4 trigger (`.claude/bindings/unity.md` :8-9). Each phase is instead checked by:
+- the requirement reads in its row;
+- `harness.py validate --root <project root>`;
+- `harness.py doctor --root <project root>`.
+
+The `validate` and `doctor` output is compared with their rows at `bd6f1b3`, read before Phase 1. A phase passes when there is no new failure and any V23 row is for a copy that Phase 4 recomposes.
+
+- **Phase 1 — `session-launch`.** Edits `.claude/bindings/core.md` :22, the Launch command's `<tree>` note (*Launch note*). It also edits :27's reason (*Release wait*). *Checked by:* reading :22, which no longer says `trees` is none; reading :27, which keeps the value `none` and gives the reason that the Remove procedure (`tree-remove.py`) waits for the directory's release itself (F5); then `validate` and `doctor`. *Discharges:* F4 (A4), F5.
+- **Phase 2 — `verification`.** Edits `.claude/bindings/unity.md` :5 Run from and :14 Tree-safe (*Run from*, *Tree-safe*). *Checked by:* reading :5, which names the root of the tree the session runs in, and :14, which reads `yes` with the bracket as its reason; then `validate` and `doctor`. *Discharges:* F3 (A3).
+- **Phase 3 — `trees` and the Branch procedure.** This is the riskiest phase.
+  - **Edits:** `.claude/bindings/vc-git.md` :19-20 become the ten slot lines. :8's tail is rewritten. :9's hub check-in clause changes too (*§4's other sites*). The Check-in procedure states the hub sync rule (F7).
+  - **Hub sync:** how the hub's `main` stays level with `origin/main` is ruled in the register's *Hub sync* entry: a pull before and a push after every hub write. The up-to-date step of the Branch procedure stays as written.
+  - **Effect on this branch:** from this phase on, `feat-trees-fill` is a branch in the hub with no tree of its own. Its `memory/` writes therefore follow the contract's exception (`trees-contract.md` :23), and its close runs `gate-close.md` :59 ROOT.
+  - **Checked by:**
+    - reading :8, which shows the cut by the Create procedure and no "in the one checkout" (A2);
+    - reading `## trees` line by line against §1 :105-109 (A1);
+    - `doctor` printing no `SLOTS` or `UNFILLED` row that names `trees`, and no "Hub line names no main checkout" row, which is how `doctor` reads `trees` as filled (A1);
+    - reading :9 against `trees-contract.md` (F6);
+    - the sync rule's text being present in the Check-in procedure (F7); its live exercise, after a PR merges on origin, is a G2 item of the requirements doc's §9, not a phase check;
+    - `validate`.
+  - *Discharges:* F1 (A1), F2 (A2), F6, F7.
+- **Phase 4 — recompose.** Runs the `upgrade` skill on this project (*Composed copies*):
+  1. The dry run is shown whole.
+  2. HARD STOP for the human's word.
+  3. Every file the dry run would write must be a `replaced:` file under `.claude/skills/`, beside the `manifest:` line. Any other write stops for the human.
+  4. Apply.
+  5. VERIFY runs `validate`, then `doctor`.
+
+  This phase was ruled in at PLAN 2026-11-05 and follows from adr-0005 :23. *Checked by:* no V23 row, and the spliced `trees`, `session-launch`, vc and verification blocks reading the same as the live bindings. *Discharges:* F8.
+- **Assets the build needs that code cannot author:** the human's word at Phase 4's `upgrade` HARD STOP, and the base at `../harness`.
+
+Each phase's plan file is written when that phase is picked up, and linked here.
+
+## As-built deltas
+
+**Charter:** this section is kept under `.claude/skills/architecture-doc/references/as-built-charter.md`, which says what it admits, what goes to `## Decision register` or is corrected in place, and what is routed out.
+
+Empty: no phase is built yet.
+
+## Related
+
+- Design `Planning~/design-docs/parallel-trees.md`: §1 (:103-109), §4 (:137-147), §6 (:162).
+- adr-0001, adr-0003, adr-0004 and adr-0005, in `Planning~/design-docs/parallel-trees/decisions/`.
+- `.claude/references/core/trees-contract.md`: `## Reading the optional keys`, `## The hub operation`, `## The release files`, `## Who does what`.
+- The bindings this feature edits: `.claude/bindings/vc-git.md`, `.claude/bindings/unity.md`, `.claude/bindings/core.md`.
+- The form to follow: `D:\Workspace\harness\.claude\bindings\vc-git.md` `## trees`.
+- The tools the filled binding names: `.claude/references/vc-git/tree-remove.py`, `.claude/references/vc-git/merge-attributes.txt`, `.claude/references/vc-git/worktree-create-hook.py`.
+- `Planning~/host-run/host_run.py`, the bracket that Tree-safe `yes` rests on.
+- Feature `host-repoint`: `Planning~/features/host-repoint/architecture.md`.
+- `.claude/skills/upgrade/SKILL.md`, the route for the recompose.
+- `.claude/references/core/gate-close.md` `### ROOT`.
+- `.claude/skills/close-tree/SKILL.md` RELEASE.
