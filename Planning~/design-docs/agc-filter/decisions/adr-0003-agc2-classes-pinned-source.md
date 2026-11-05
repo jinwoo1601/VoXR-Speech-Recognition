@@ -23,13 +23,13 @@ The scope agreed at G0 brings the WebRTC APM dependency in as source into the `N
 
 ## Why the rejected branches lost
 
-- **(b) The whole library through the public API** — more code, a meson build or a CMake port to carry, and the public API does not expose the speech probability R16 needs. What would have to change for it to win (proposed, for the human at G1): it wins if the AGC2 subset cannot be cut cleanly from the source, if another APM module (e.g. AEC3) enters scope, or if upstream exposes the speech probability publicly.
+- **(b) The whole library through the public API** — more code, a meson build or a CMake port to carry, and the public API does not expose the speech probability R16 needs. What would have to change for it to win: it wins if the AGC2 subset cannot be cut cleanly from the source, if another APM module (e.g. AEC3) enters scope, or if upstream exposes the speech probability publicly.
 
 ## Consequences
 
 - The design builds on internal classes with no API promise; a version bump re-pins the source and re-checks the subset.
 - The source and abseil download is a human step.
-- The NDK and MSVC builds of the subset are unverified, and the arm64 `.so` growth is unmeasured (estimated ~1–2 MB, `R4-frontend-robustness-personalization.md` :321-322; ceiling 70 MB, today ~49 MB, `05-rulings.md` :55, :57); the first architecture phase proves both (`Planning~/design-docs/agc-filter.md` §6).
+- The NDK and MSVC builds of the subset are unverified, and the arm64 `.so` growth is unmeasured (estimated ~1–2 MB, `R4-frontend-robustness-personalization.md` :321-322; ceiling 70 MB, today ~49 MB, `05-rulings.md` :55, :57); the first architecture phase proves both (`Planning~/design-docs/agc-filter.md` §7).
 - Abseil on Android carries a known duplicate-symbol (ODR) risk, and abseil version drift has needed patches downstream (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research); pinning abseil with the source brings that risk into this build.
 - Licences: WebRTC is BSD-3 with a PATENTS grant that terminates on patent litigation against WebRTC; the RNN voice detector's weights come from rnnoise, BSD-3; abseil is Apache-2.0; pffft and abseil were not read from source (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research).
 - AGC2's internal constants — the voice detector's threshold, the estimators' time constants — are unread (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research).
@@ -37,4 +37,4 @@ The scope agreed at G0 brings the WebRTC APM dependency in as source into the `N
 
 ## Status
 
-Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it is in design, not locked.
+Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it was locked at G1 on 2026-11-05.

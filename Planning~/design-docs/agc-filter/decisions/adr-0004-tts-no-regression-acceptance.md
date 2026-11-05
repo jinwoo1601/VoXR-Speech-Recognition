@@ -23,7 +23,7 @@ The acceptance gate agreed at G0 is "R1 plus the pilot" (`Planning~/design-docs/
 
 ## Why the rejected branches lost
 
-- **(b) G2 waits for the pilot** — it blocks the unit on an unscheduled, human-only session. What would have to change for it to win (proposed, for the human at G1): it wins if the pilot exists by G2 — it is then the gate as ruling 10 wrote it.
+- **(b) G2 waits for the pilot** — it blocks the unit on an unscheduled, human-only session. What would have to change for it to win: it wins if the pilot exists by G2 — it is then the gate as ruling 10 wrote it.
 
 ## Consequences
 
@@ -36,4 +36,4 @@ The acceptance gate agreed at G0 is "R1 plus the pilot" (`Planning~/design-docs/
 
 ## Status
 
-Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it is in design, not locked.
+Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it was locked at G1 on 2026-11-05.

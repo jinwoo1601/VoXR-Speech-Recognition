@@ -25,14 +25,14 @@ The scope agreed at G0 (`Planning~/design-docs/agc-filter.md` §0, In 2) replace
 
 ## Why the rejected branches lost
 
-- **(b) The whole bridge in the Editor** — scope creep: the grammar and result paths move across ~12 `#if UNITY_EDITOR_WIN` branches, a change well beyond the front end. What would have to change for it to win (proposed, for the human at G1): it wins if R16's gate and pre-roll need the bridge's ring buffer in the Editor too, or if the managed grammar and result paths are retired for another reason.
-- **(c) A managed AGC2 port without the RNN voice detector** — it re-creates the divergence R15 exists to fix: the Editor would again validate on an AGC the device does not run (`I1-recognition-core-redesign.md` :393, "validated on the wrong AGC"). What would have to change for it to win (proposed, for the human at G1): it wins only if no native library can load in the Editor — the MSVC build failing beyond repair.
-- **(d) The Editor keeps its old AGC** — it contradicts the scope agreed at G0, which replaces both AGCs (§0, In 2), and Editor replay would measure a front end Quest never runs. What would have to change for it to win (proposed, for the human at G1): it wins only if the scope drops the Editor.
+- **(b) The whole bridge in the Editor** — scope creep: the grammar and result paths move across ~12 `#if UNITY_EDITOR_WIN` branches, a change well beyond the front end. What would have to change for it to win: it wins if R16's gate and pre-roll need the bridge's ring buffer in the Editor too, or if the managed grammar and result paths are retired for another reason.
+- **(c) A managed AGC2 port without the RNN voice detector** — it re-creates the divergence R15 exists to fix: the Editor would again validate on an AGC the device does not run (`I1-recognition-core-redesign.md` :393, "validated on the wrong AGC"). What would have to change for it to win: it wins only if no native library can load in the Editor — the MSVC build failing beyond repair.
+- **(d) The Editor keeps its old AGC** — it contradicts the scope agreed at G0, which replaces both AGCs (§0, In 2), and Editor replay would measure a front end Quest never runs. What would have to change for it to win: it wins only if the scope drops the Editor.
 
 ## Consequences
 
 - The package ships a Windows x64 DLL for the Editor; today it ships none (`Documentation~/native-bridge.md` :61).
-- The MSVC build of the AGC2 subset is unverified (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research); the first architecture phase proves it (`Planning~/design-docs/agc-filter.md` §6).
+- The MSVC build of the AGC2 subset is unverified (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research); the first architecture phase proves it (`Planning~/design-docs/agc-filter.md` §7).
 - The C# `Agc.cs` and `Downsampler.cs` are retired. The tests that pin them today — `Tests~/Editor/DownsamplerTests.cs`, `Tests~/Editor/AgcTests.cs`, and Editor replay in `Tests~/Runtime/VoxrWavReplayTests.cs`, which runs the managed downsampler and AGC (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, Code map) — pin code this decision removes.
 - A test asserts that the Editor's and the native post-front-end samples are identical for the same input; none compares them today (`01-code-audit.md` :497).
 - The non-Windows Editor has no backend today, and this decision leaves it unchanged.
@@ -40,4 +40,4 @@ The scope agreed at G0 (`Planning~/design-docs/agc-filter.md` §0, In 2) replace
 
 ## Status
 
-Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it is in design, not locked.
+Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it was locked at G1 on 2026-11-05.

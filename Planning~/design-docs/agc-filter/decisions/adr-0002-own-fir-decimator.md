@@ -23,7 +23,7 @@ The scope agreed at G0 (`Planning~/design-docs/agc-filter.md` §0, In 1) gives t
 
 ## Why the rejected branches lost
 
-- **(b) APM resamples** — it is unmeasured: its response figures are not published, and it cannot be inspected apart from APM, so the R14 half of the unit could not be verified on its own. What would have to change for it to win (proposed, for the human at G1): it wins if APM's resampler response is measured to cover 7.6 kHz with alias rejection no worse than our FIR's.
+- **(b) APM resamples** — it is unmeasured: its response figures are not published, and it cannot be inspected apart from APM, so the R14 half of the unit could not be verified on its own. What would have to change for it to win: it wins if APM's resampler response is measured to cover 7.6 kHz with alias rejection no worse than our FIR's.
 
 ## Consequences
 
@@ -35,4 +35,4 @@ The scope agreed at G0 (`Planning~/design-docs/agc-filter.md` §0, In 1) gives t
 
 ## Status
 
-Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it is in design, not locked.
+Accepted on 2026-11-05 by the human's (the maintainer's) ruling in conversation. The design doc is `Planning~/design-docs/agc-filter.md`; it was locked at G1 on 2026-11-05.

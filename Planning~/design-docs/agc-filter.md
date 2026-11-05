@@ -20,7 +20,7 @@ sources:
 
 **Branch:** `design-agc-filter`
 **Origin:** next-level plan items R14 and R15 (shortlist items 7–8; Phase D).
-**Status:** In design — opened at G0 2026-11-05; not locked.
+**Status:** **G1 LOCKED 2026-11-05.** Rulings in adr-0001 through adr-0004. This document is immutable from here; a contradiction found during implementation reopens it on a new design branch and re-locks.
 
 > **What's decided.** The front end is one chain: 48 kHz capture → a DC-normalised long FIR of our own that keeps every third sample (adr-0002) → AGC2's adaptive digital controller in 10 ms frames, 16 kHz in and out, whose gain rises only after a run of confident speech frames from its voice detector, falls ungated, is capped by a noise ceiling and is rate-limited → the limiter, so the int16 handed to Vosk cannot overflow. Of APM only AGC2 runs, with fixed gain 0 dB and the input-volume controller, noise suppression and echo cancellation off. The Editor and the device run one native front end, the Editor calling it by P/Invoke from its managed backend, the C# copies retired, and a test asserts their samples identical (adr-0001); AGC2's classes are compiled from pinned `webrtc-audio-processing` 2.1 source through our CMake (adr-0003). The learned level survives stop/start within a session, cleared only by an explicit reset or re-init; `micGainTargetDb` keeps its name and its dBFS meaning, mapped to AGC2's headroom. With no pilot, the 16-fixture TTS joined-rig A/B is a no-regression gate and the two measured defects are verified directly (adr-0004). All numbers on this page are **provisional → the tuning pass** (the design intent is the load-bearing part).
 
@@ -160,20 +160,28 @@ The decoder hears the band its features use, with no DC gain for the AGC to abso
 
 When it goes right, a command after a pause arrives at the level of the speech before it; a cough in a pause is not lifted above speech; the filter's measured response covers the model's band; the joined rig shows no unexplained flips and no rise in false or wrong-intent fires; and the Editor's samples match the device's.
 
-## 6. Status / openness
+## 6. Feature backlog — locked at G1 (2026-11-05)
 
-- **Status: draft — in design, not locked.** The model was settled with the human (the maintainer) on 2026-11-05; its forks are recorded as four accepted ADRs, adr-0001 through adr-0004, and the defaults settled in the same session are rules 6, 8, 10, 11 and 12.
+One feature, because R14 and R15 land as one evaluated unit (ruling 10). It is **Full**: the design leaves the P/Invoke surface, the AGC2 subset's file list and CMake, the filter's implementation and the silence-then-command fixtures to the requirements and architecture docs, so the build writes its own.
+
+| Feature | Scope | Depends on |
+|---|---|---|
+| `agc-filter` | The DC-normalised FIR decimator in place of the 15-tap table (rules 1–2, adr-0002); the AGC2 subset from pinned `webrtc-audio-processing` 2.1 source through our CMake (rules 6, 9, adr-0003); one native front end on device and in the Windows Editor by P/Invoke, the C# `Agc.cs` and `Downsampler.cs` retired, and the parity test (rules 7–8, adr-0001); the learned level kept across stop/start and `micGainTargetDb` mapped to AGC2's headroom (rules 10–11); the silence-then-command fixtures, the joined-rig A/B as a no-regression gate with the kill criteria, and the two measured defects verified directly (rules 12–13, adr-0004). Path: `development`. **Full.** | None. |
+
+## 7. Status / openness
+
+- **Status: locked at G1 2026-11-05.** The model was settled with the human (the maintainer) on 2026-11-05; its forks are recorded as four accepted ADRs, adr-0001 through adr-0004, and the defaults settled in the same session are rules 6, 8, 10, 11 and 12.
 - **The goal:** the accuracy axis (`00-brief.md` :40), through "fix the instrument and the two measured defects" (`04-synthesis.md` :28); no numeric goal is stated.
 - **All numbers provisional → the tuning pass:** the filter's taps, cutoff and window (the R4 candidate, 95-tap Kaiser at 7.8 kHz, β 8.5, `R4` :157-162, is a reference); the headroom and the default of `micGainTargetDb`; the max gain; the noise ceiling; the initial gain; the rate limit.
 - **Hard dependencies / open:**
   - RESOLVED: how the Editor runs AGC2 (adr-0001); who decimates (adr-0002); how the APM dependency is vendored, left to the design at G0 (adr-0003); what G2 rests on with no pilot (adr-0004); how rule 12's "correct fires improve" reads when only TTS exists — ruled by the human on 2026-11-05: improvement is read on the pilot whenever it exists, and before it exists the TTS gate requires correct fires not to fall (rule 12, adr-0004).
   - The NDK and MSVC builds of the AGC2 subset are unverified, and the arm64 `.so` growth is unmeasured (estimated ~1–2 MB, `R4` :321-322; ceiling 70 MB, today ~49 MB, `05-rulings.md` :55, :57) — the first architecture phase proves both; the abseil and source download is a human step (adr-0001, adr-0003).
   - The silence-then-command fixtures the kill criteria read do not exist; today's fixtures carry 0.3 s of lead silence (`Tests~/Fixtures/generate.py:28-29`) — the requirements name them (rule 12, adr-0004).
-  - AGC2's internal constants — the voice detector's threshold, the estimators' time constants — are unread (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research).
+  - AGC2's internal constants — the voice detector's threshold, the estimators' time constants — are unread (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, WebRTC APM research) — the architecture doc reads them when the AGC2 subset is cut (adr-0003).
   - Quest speech level at the mic is unmeasured, so whether the 0 dB gain floor leaves the limiter compressing (failure (e)) is open; the tuning pass reads it.
-  - The non-Windows Editor has no backend today; this unit leaves it unchanged.
-  - The locked joined-rig docs cite `Documentation~/native-bridge.md` :61 for the AGC divergence, which that line no longer states (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, Doc facts) — noted, not amended here.
+  - The non-Windows Editor has no backend today; it is out of scope, not an open item — this unit leaves it unchanged.
+  - The locked joined-rig docs cite `Documentation~/native-bridge.md` :61 for the AGC divergence, which that line no longer states (`Planning~/design-docs/agc-filter/recon-2026-11-05.md`, Doc facts) — noted, not amended here; deferred as `design-relock` entry AGF-1 in `memory/STATUS.md`, re-pointed at the next joined-rig unlock.
 
-## 7. Related
+## 8. Related
 
 `Planning~/design-docs/agc-filter/decisions/adr-0001-editor-native-dsp.md` · `…/adr-0002-own-fir-decimator.md` · `…/adr-0003-agc2-classes-pinned-source.md` · `…/adr-0004-tts-no-regression-acceptance.md` · `Planning~/design-docs/joined-rig.md` (`:77`, `:88`, `:111`, `:118`; rule 10) · `Planning~/design-docs/endpointer-profile.md` (R11) · `Planning~/research/2026-09-05-next-level/00-brief.md` (`:40`) · `…/01-code-audit.md` (`:497`) · `…/03-critique-and-ranking.md` (`:62-67`, `:71`, `:83`, `:85`, `:158`, `:188-189`) · `…/04-synthesis.md` (`:28`) · `…/05-rulings.md` (rulings 5, 6, 10; `:9`, `:55`, `:57`, `:97`, `:98`, `:100`, `:102`) · `…/research/R4-frontend-robustness-personalization.md` (`:128-130`, `:132-135`, `:139-140`, `:157-162`, `:164-167`, `:321-322`, `:324-330`, `:634-638`, `:647-653`, `:660-664`, `:678-681`, `:706-707`) · `…/ideas/I1-recognition-core-redesign.md` (`:59`, `:393`) · `Planning~/design-docs/agc-filter/recon-2026-11-05.md` · `NativeBridge~/src/vosk_bridge.cpp` (`:80`, `:196`) · `NativeBridge~/src/agc.h` · `NativeBridge~/src/downsampler.h` · `Runtime/EditorMicBackend.cs` (`:386-430`) · `Runtime/Dsp/Agc.cs` · `Runtime/Dsp/Downsampler.cs` · `Documentation~/native-bridge.md` (`:61`) · `Tests~/Fixtures/generate.py` (`:28-29`)
