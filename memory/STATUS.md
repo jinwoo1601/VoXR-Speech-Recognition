@@ -13,7 +13,7 @@ updated: 2026-11-06
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 - **`feat-agc-filter`**: feature; full; path development; stage implement - Phase 1 built `23bc191`, gate green; tree `D:\Workspace\VoXR-Speech-Recognition.trees\feat-agc-filter`; next: architect-reconcile Phase 1, then phase-pickup 2
-- **`light-epr10-docs`**: light, class prose, batch EPR-11 (product docs only); tree `D:\Workspace\VoXR-Speech-Recognition.trees\light-epr10-docs`; next: tackle-issue DIAGNOSE
+- **`light-epr10-docs`**: light, class prose, batch EPR-11; tree `.trees\light-epr10-docs`; PR #192 @ `f408234`; next: merge · ruling G2 · 2026-11-06 · the human · "Accept (Recommended)"
 
 ## Deferred
 
