@@ -55,7 +55,7 @@ limitations under the License.
 - **Project:** https://webrtc.org/ (source taken from the webrtc-audio-processing 2.1 release, https://freedesktop.org/software/pulseaudio/webrtc-audio-processing/)
 - **Author:** The WebRTC project authors
 - **License:** BSD 3-Clause License, with the WebRTC Additional IP Rights Grant (Patents)
-- **Usage:** The AGC2 automatic gain controller and the resampler, voice-activity and utility code it depends on are compiled from source into `libvosk-bridge.so` under `Runtime/Plugins/Android/arm64-v8a/`, where they form the bridge's audio front end.
+- **Usage:** The AGC2 automatic gain controller and the resampler, voice-activity and utility code it depends on are compiled from source into `libvosk-bridge.so` under `Runtime/Plugins/Android/arm64-v8a/`, where they form the bridge's audio front end, and into `Runtime/Plugins/x86_64/voxr-frontend.dll`, the same front end for the Windows Editor.
 
 ### BSD 3-Clause License
 
@@ -127,7 +127,7 @@ of the date such litigation is filed.
 - **Project:** https://github.com/xiph/rnnoise
 - **Author:** Mozilla, Jean-Marc Valin, Xiph.Org Foundation, Mark Borgerding
 - **License:** BSD 3-Clause License
-- **Usage:** The RNN voice-activity-detector weights WebRTC carries under `third_party/rnnoise` are compiled into `libvosk-bridge.so` as part of the audio front end.
+- **Usage:** The RNN voice-activity-detector weights WebRTC carries under `third_party/rnnoise` are compiled into `libvosk-bridge.so` and `Runtime/Plugins/x86_64/voxr-frontend.dll` as part of the audio front end.
 
 ### BSD 3-Clause License
 
@@ -172,7 +172,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - **Project:** https://bitbucket.org/jpommier/pffft
 - **Author:** Julien Pommier, based on FFTPACKv4 by Paul Swarztrauber (NCAR)
 - **License:** FFTPACKv5 license (BSD-style)
-- **Usage:** The PFFFT fast Fourier transform WebRTC carries under `third_party/pffft` is compiled into `libvosk-bridge.so` as part of the audio front end.
+- **Usage:** The PFFFT fast Fourier transform WebRTC carries under `third_party/pffft` is compiled into `libvosk-bridge.so` and `Runtime/Plugins/x86_64/voxr-frontend.dll` as part of the audio front end.
 
 ### FFTPACKv5 License
 
@@ -231,4 +231,4 @@ SOFTWARE.
 - **Project:** https://github.com/abseil/abseil-cpp
 - **Author:** The Abseil Authors
 - **License:** Apache License 2.0
-- **Usage:** abseil-cpp 20240722.0 (`absl::strings` and the abseil libraries it depends on), required by the WebRTC code, is compiled into `libvosk-bridge.so` as part of the audio front end. The Apache License 2.0 notice is the one reproduced under VOSK above; abseil ships no NOTICE file.
+- **Usage:** abseil-cpp 20240722.0 (`absl::strings` and the abseil libraries it depends on), required by the WebRTC code, is compiled into `libvosk-bridge.so` and `Runtime/Plugins/x86_64/voxr-frontend.dll` as part of the audio front end. The Apache License 2.0 notice is the one reproduced under VOSK above; abseil ships no NOTICE file.

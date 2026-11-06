@@ -128,7 +128,7 @@ namespace VoXR.Tests.Runtime
         static IEnumerable<string> ManifestFileNames()
         {
             foreach (var c in ManifestCases())
-                if (c.category != "ladder" && c.category != "pause-lead")
+                if (c.category != "ladder")
                     yield return c.file;
         }
 

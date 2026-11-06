@@ -1,14 +1,13 @@
 // ============================================================================
-// Purpose:  Editor-only Windows microphone capture via Unity.Microphone and libvosk P/Invoke
+// Purpose:  Editor-only Windows microphone capture via Unity.Microphone, the voxr-frontend native front end (48→16 kHz filter, AGC2, int16) and libvosk P/Invoke
 // Layer:    Runtime (UNITY_EDITOR_WIN only)
 // Owns:     EditorMicBackend (internal sealed class)
-// Depends:  Downsampler, Agc, VoxrNative, BridgeNative, VoxrBridgeErrorCode
+// Depends:  FrontEndNative, VoxrNative, BridgeNative, VoxrBridgeErrorCode
 // ============================================================================
 #if UNITY_EDITOR_WIN
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
-using VoXR.Dsp;
 using VoXR.Native;
 
 namespace VoXR
@@ -32,8 +31,8 @@ namespace VoXR
         // pool before the UnitySynchronizationContext posts it back to main.
         volatile bool _released;
 
-        readonly Downsampler _downsampler = new Downsampler();
-        readonly Agc _agc = new Agc();
+        IntPtr _frontEnd;
+        voxr_fe_stats _stats;
 
         AudioClip _clip;
         int _lastSamplePos;
@@ -41,7 +40,6 @@ namespace VoXR
 
         float[] _readBuffer;
         float[] _workBuffer;
-        float[] _downsampledBuffer;
         short[] _int16Buffer;
 
         byte[] _lastPartialBuffer;
@@ -51,14 +49,17 @@ namespace VoXR
         // StartPlayback so the microphone path never pays for the mode.
         float[] _playbackSamples;
         float[] _playbackChunk;
+        int _playbackChunkSamples;
         int _playbackPos;
 
         internal bool IsInitialised { get; private set; }
         internal bool IsRunning { get; private set; }
 
-        internal float PreAgcRms { get; private set; }
-        internal float PostAgcRms { get; private set; }
-        internal float AgcGain => _agc.CurrentGain;
+        internal float PreAgcRms => _stats.pre_rms;
+        internal float PostAgcRms => _stats.post_rms;
+        internal float AgcGain =>
+            _frontEnd == IntPtr.Zero ? 1f : (float)Math.Pow(10.0, _stats.gain_db / 20.0);
+        internal voxr_fe_stats FrontEndStats => _stats;
 
         // Rolling ~300 ms RMS of pre-DSP audio, linear 0..1. Mirrors
         // vosk_bridge_get_input_level so the managed and native branches of
@@ -75,18 +76,15 @@ namespace VoXR
 
             _sampleRate = sampleRate;
 
+            if (!ProbeFrontEnd(FrontEndNative.voxr_fe_abi_version, fireError))
+                return false;
+
             try
             {
                 VoxrNative.vosk_set_log_level(-1);
 
-                // vosk_model_new loads and parses the acoustic model from disk
-                // and can take 1–3 seconds. Run on a background thread to keep
-                // the Editor main thread responsive.
                 IntPtr model = await Task.Run(() => VoxrNative.vosk_model_new(modelPath));
 
-                // If Release() fired while the model was loading, the continuation
-                // is resuming on a torn-down instance. Free the just-loaded model
-                // locally to avoid leaking ~150 MB of native memory.
                 if (_released)
                 {
                     if (model != IntPtr.Zero)
@@ -114,7 +112,18 @@ namespace VoXR
 
                 VoxrNative.vosk_recognizer_set_words(_recognizer, 1);
 
-                _agc.Configure(micGainTargetDb, _sampleRate);
+                _frontEnd = FrontEndNative.voxr_fe_create(micGainTargetDb);
+                if (_frontEnd == IntPtr.Zero)
+                {
+                    fireError?.Invoke(VoxrBridgeErrorCode.ModelLoadFailed,
+                        $"voxr_fe_create returned NULL for target {micGainTargetDb} dBFS");
+                    VoxrNative.vosk_recognizer_free(_recognizer);
+                    _recognizer = IntPtr.Zero;
+                    VoxrNative.vosk_model_free(_model);
+                    _model = IntPtr.Zero;
+                    return false;
+                }
+                FrontEndNative.voxr_fe_get_stats(_frontEnd, out _stats);
 
                 IsInitialised = true;
                 return true;
@@ -141,6 +150,36 @@ namespace VoXR
                     $"EditorMicBackend.InitialiseAsync failed: {ex.Message}");
                 return false;
             }
+        }
+
+        internal static bool ProbeFrontEnd(
+            Func<int> abiVersion,
+            Action<VoxrBridgeErrorCode, string> fireError)
+        {
+            string detail;
+            try
+            {
+                int version = abiVersion();
+                if (version == FrontEndNative.AbiVersion)
+                    return true;
+                detail = $"ABI version {version}, expected {FrontEndNative.AbiVersion}";
+            }
+            catch (DllNotFoundException ex)
+            {
+                detail = $"not found: {ex.Message}";
+            }
+            catch (EntryPointNotFoundException ex)
+            {
+                detail = $"missing an expected export: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                detail = ex.Message;
+            }
+            fireError?.Invoke(VoxrBridgeErrorCode.ModelLoadFailed,
+                "voxr-frontend.dll failed to load from Runtime/Plugins/x86_64/; the Editor's " +
+                $"front end is unavailable. Details: {detail}");
+            return false;
         }
 
         internal bool Start(Action<VoxrBridgeErrorCode, string> fireError)
@@ -188,18 +227,14 @@ namespace VoXR
             _firstTick = true;
             _lastPartialLength = 0;
 
-            // Per-frame worst case at 60 fps is ≈ SourceSampleRate / 60 ≈ 800 samples.
-            // Size the work buffer generously at one tenth of the clip (500 ms worth)
-            // so a dropped frame during a GC spike does not overrun.
             int clipSamples = _clip.samples;
             int workSize = Math.Max(clipSamples / 10, SourceSampleRate / 10);
             _readBuffer = new float[clipSamples];
             _workBuffer = new float[workSize];
-            _downsampledBuffer = new float[workSize / Downsampler.DecimationFactor + 1];
-            _int16Buffer = new short[_downsampledBuffer.Length];
+            _int16Buffer = new short[workSize / FrontEndNative.DecimationFactor + FrontEndNative.FrameSamples];
 
-            _downsampler.Reset();
-            _agc.Reset();
+            FrontEndNative.voxr_fe_begin_stream(_frontEnd);
+            FrontEndNative.voxr_fe_get_stats(_frontEnd, out _stats);
             InputLevel = 0f;
             VoxrNative.vosk_recognizer_reset(_recognizer);
 
@@ -235,13 +270,11 @@ namespace VoXR
 
         internal void Reset()
         {
-            // No-op during playback: resetting the recognizer mid-stream would
-            // corrupt the replay's determinism (Reset has no error channel).
             if (!IsInitialised || IsInPlayback)
                 return;
             VoxrNative.vosk_recognizer_reset(_recognizer);
-            _downsampler.Reset();
-            _agc.Reset();
+            FrontEndNative.voxr_fe_reset(_frontEnd);
+            FrontEndNative.voxr_fe_get_stats(_frontEnd, out _stats);
             _lastPartialLength = 0;
         }
 
@@ -304,9 +337,14 @@ namespace VoXR
         internal void Release()
         {
             _released = true;
-            // Release is teardown — the final-utterance flush is best-effort and the
-            // typical caller is OnDestroy, where there is no listener to receive it.
             Stop(dispatch: null);
+
+            if (_frontEnd != IntPtr.Zero)
+            {
+                FrontEndNative.voxr_fe_destroy(_frontEnd);
+                _frontEnd = IntPtr.Zero;
+            }
+            _stats = default;
 
             if (_recognizer != IntPtr.Zero)
             {
@@ -321,7 +359,6 @@ namespace VoXR
 
             _readBuffer = null;
             _workBuffer = null;
-            _downsampledBuffer = null;
             _int16Buffer = null;
             _lastPartialBuffer = null;
             _lastPartialLength = 0;
@@ -379,14 +416,8 @@ namespace VoXR
             ProcessChunk(_workBuffer, available, dispatch);
         }
 
-        // Source-agnostic processing pipeline shared by microphone capture and
-        // WAV playback: Downsampler → AGC → int16 → VOSK → result dispatch.
-        // Requires _downsampledBuffer/_int16Buffer sized for `count` by the caller's
-        // start path (Start for the microphone, StartPlayback for replay).
         void ProcessChunk(float[] samples, int count, EditorJsonDispatcher dispatch)
         {
-            // Measured on the pre-DSP chunk and before the dsCount early-out, which
-            // is where vosk_bridge.cpp:98-113 measures it — right after the read.
             if (count > 0)
             {
                 float chunkRms = ComputeRms(samples, count);
@@ -395,21 +426,17 @@ namespace VoXR
                 InputLevel += alpha * (chunkRms - InputLevel);
             }
 
-            int dsCount = _downsampler.Process(samples, count, _downsampledBuffer);
-            if (dsCount == 0) return;
-
-            PreAgcRms = ComputeRms(_downsampledBuffer, dsCount);
-            _agc.Process(_downsampledBuffer, dsCount);
-            PostAgcRms = ComputeRms(_downsampledBuffer, dsCount);
-
-            FloatToInt16(_downsampledBuffer, _int16Buffer, dsCount);
+            int written = FrontEndNative.voxr_fe_process(
+                _frontEnd, samples, count, _int16Buffer, _int16Buffer.Length);
+            if (written < 0)
+                throw new InvalidOperationException(
+                    $"voxr_fe_process refused {count} samples with capacity {_int16Buffer.Length}.");
+            FrontEndNative.voxr_fe_get_stats(_frontEnd, out _stats);
+            if (written == 0) return;
 
             int result = VoxrNative.vosk_recognizer_accept_waveform_s(
-                _recognizer, _int16Buffer, dsCount);
+                _recognizer, _int16Buffer, written);
 
-            // Spans below wrap libvosk's internal result buffer. They are valid only
-            // until the next vosk_recognizer_*_result call. Consume inline; do not
-            // store, capture, or hold across an await/coroutine yield.
             if (result == 1)
             {
                 ReadOnlySpan<byte> json = BridgeNative.SpanFromNullTerminated(
@@ -429,22 +456,17 @@ namespace VoXR
             }
         }
 
-        // --- WAV playback (test seam; design §6.1) ---------------------------
-
         // Fixed chunk so replay results are machine- and frame-rate-independent:
         // 4800 samples = 100 ms at 48 kHz, divisible by the decimation factor.
         internal const int PlaybackChunkSamples = 4800;
 
         internal bool IsInPlayback => _playbackSamples != null;
 
-        // Arms playback over a 48 kHz mono sample buffer. Mutually exclusive with
-        // microphone capture; re-arming over an active playback discards the prior
-        // session. Resets the full pipeline state (downsampler, AGC, partial-dedup
-        // cache, recognizer) so every replay starts identical.
         internal bool StartPlayback(
             float[] samples,
             int sampleRate,
-            Action<VoxrBridgeErrorCode, string> fireError
+            Action<VoxrBridgeErrorCode, string> fireError,
+            int chunkSamples = PlaybackChunkSamples
         )
         {
             if (!IsInitialised)
@@ -482,23 +504,28 @@ namespace VoXR
                 );
                 return false;
             }
+            if (chunkSamples < 1)
+            {
+                fireError?.Invoke(
+                    VoxrBridgeErrorCode.AudioDeviceUnavailable,
+                    $"EditorMicBackend.StartPlayback called with a {chunkSamples}-sample chunk; "
+                        + "at least 1 is required."
+                );
+                return false;
+            }
 
             _playbackSamples = samples;
             _playbackPos = 0;
-            if (_playbackChunk == null)
-                _playbackChunk = new float[PlaybackChunkSamples];
+            _playbackChunkSamples = chunkSamples;
+            if (_playbackChunk == null || _playbackChunk.Length < chunkSamples)
+                _playbackChunk = new float[chunkSamples];
 
-            // Size the shared pipeline buffers for the fixed chunk. Mic Start()
-            // re-sizes them for the mic clip when it next runs.
-            int dsSize = PlaybackChunkSamples / Downsampler.DecimationFactor + 1;
-            if (_downsampledBuffer == null || _downsampledBuffer.Length < dsSize)
-            {
-                _downsampledBuffer = new float[dsSize];
-                _int16Buffer = new short[dsSize];
-            }
+            int int16Size = chunkSamples / FrontEndNative.DecimationFactor + FrontEndNative.FrameSamples;
+            if (_int16Buffer == null || _int16Buffer.Length < int16Size)
+                _int16Buffer = new short[int16Size];
 
-            _downsampler.Reset();
-            _agc.Reset();
+            FrontEndNative.voxr_fe_reset(_frontEnd);
+            FrontEndNative.voxr_fe_get_stats(_frontEnd, out _stats);
             InputLevel = 0f;
             _lastPartialLength = 0;
             VoxrNative.vosk_recognizer_reset(_recognizer);
@@ -506,10 +533,6 @@ namespace VoXR
             return true;
         }
 
-        // Feeds the next fixed-size chunk through the shared pipeline. Returns
-        // true while more audio remains; on exhaustion flushes the recognizer's
-        // final result once (the same flush Stop() performs), disarms playback,
-        // and returns false.
         internal bool TickPlayback(EditorJsonDispatcher dispatch)
         {
             if (!IsInPlayback)
@@ -518,15 +541,13 @@ namespace VoXR
             int remaining = _playbackSamples.Length - _playbackPos;
             if (remaining > 0)
             {
-                int count = Math.Min(PlaybackChunkSamples, remaining);
+                int count = Math.Min(_playbackChunkSamples, remaining);
                 Array.Copy(_playbackSamples, _playbackPos, _playbackChunk, 0, count);
                 _playbackPos += count;
                 ProcessChunk(_playbackChunk, count, dispatch);
                 return true;
             }
 
-            // The span wraps libvosk's internal result buffer, valid only until
-            // the next vosk_recognizer_*_result call. Consume inline; do not store.
             if (_recognizer != IntPtr.Zero && dispatch != null)
             {
                 ReadOnlySpan<byte> finalJson = BridgeNative.SpanFromNullTerminated(
@@ -570,18 +591,6 @@ namespace VoXR
             for (int i = 0; i < count; i++)
                 sum += samples[i] * samples[i];
             return count > 0 ? (float)Math.Sqrt(sum / count) : 0f;
-        }
-
-        // Float [-1, 1] → int16, with clamping. Matches vosk_bridge.cpp:44-51.
-        static void FloatToInt16(float[] src, short[] dst, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                float v = src[i] * 32767f;
-                if (v > 32767f) v = 32767f;
-                else if (v < -32768f) v = -32768f;
-                dst[i] = (short)v;
-            }
         }
     }
 }
