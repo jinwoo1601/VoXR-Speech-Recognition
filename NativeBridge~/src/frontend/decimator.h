@@ -20,6 +20,7 @@ public:
 
     int Process(const float* in, int n, float* out);
     void Reset();
+    int Phase() const { return phase_; }
 
 private:
     float history_[2 * kDecimatorTapCount];

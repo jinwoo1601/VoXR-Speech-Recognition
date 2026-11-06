@@ -1,7 +1,7 @@
 // ============================================================================
 // Purpose:  EditMode tests of the voxr-frontend unit through its C ABI: layout, int16 bounds, pause and burst gain, lifecycle, target step, chunk invariance
 // Layer:    Tests.Editor
-// Owns:     FrontEndNativeTests (public class)
+// Owns:     FrontEndNativeTests (public class), Frame (nested struct)
 // Depends:  FrontEndNative, voxr_fe_stats, VoxrSpeechRecogniser, VoxrWavReader
 // ============================================================================
 #if UNITY_EDITOR_WIN
@@ -380,13 +380,21 @@ namespace VoXR.Tests.Editor
         [Test]
         public void F10_Lifecycle()
         {
+            float[] wav = Wav(LifecycleFile);
             IntPtr unit = Create(TargetDb);
-            Run(unit, Wav(LifecycleFile), Fixed480, null);
+            Run(unit, wav, Fixed480, null);
             float g1 = Stats(unit).gain_db;
+            ulong coldDigest = Stats(unit).digest;
             Assert.AreNotEqual(InitialGainDb, g1, "the fixture left the gain at 15 dB");
 
             FrontEndNative.voxr_fe_begin_stream(unit);
             Assert.AreEqual(g1, Stats(unit).gain_db, "begin_stream must keep the gain");
+            Run(unit, wav, Fixed480, null);
+            Assert.AreNotEqual(
+                coldDigest,
+                Stats(unit).digest,
+                "after begin_stream the fixture's output matches a fresh unit's: the learned AGC2 state was rebuilt"
+            );
 
             FrontEndNative.voxr_fe_reset(unit);
             Assert.AreEqual(InitialGainDb, Stats(unit).gain_db, "reset must restore 15 dB");
@@ -472,6 +480,67 @@ namespace VoXR.Tests.Editor
                 Assert.AreEqual(results[0].output_samples, results[i].output_samples, $"schedule {i}: output count");
                 Assert.AreEqual(results[0].digest, results[i].digest, $"schedule {i}: digest");
             }
+        }
+
+        ulong DigestAt(float targetDb, float[] signal)
+        {
+            IntPtr unit = Create(targetDb);
+            Run(unit, signal, Fixed480, null);
+            return Stats(unit).digest;
+        }
+
+        [Test]
+        public void Target_AboveZero_ActsAsZero()
+        {
+            float[] wav = Wav(LifecycleFile);
+            Assert.AreEqual(DigestAt(0f, wav), DigestAt(6f, wav), "a +6 dB target must give the 0 dB target's output");
+        }
+
+        [Test]
+        public void Target_NonFinite_UsesDefault()
+        {
+            float[] wav = Wav(LifecycleFile);
+            ulong expected = DigestAt(TargetDb, wav);
+            Assert.AreEqual(expected, DigestAt(float.NaN, wav), "a NaN target must give the -18 dB target's output");
+            Assert.AreEqual(
+                expected,
+                DigestAt(float.PositiveInfinity, wav),
+                "a +Inf target must give the -18 dB target's output"
+            );
+        }
+
+        [Test]
+        public void Process_RefusesBadArguments()
+        {
+            IntPtr unit = Create(TargetDb);
+            int n = 2 * CallSamples;
+            int needed = 2 * FrontEndNative.FrameSamples;
+            var input = new float[n];
+            var output = new short[needed];
+            Assert.AreEqual(-1, FrontEndNative.voxr_fe_process(unit, null, n, output, needed), "null input");
+            Assert.AreEqual(-1, FrontEndNative.voxr_fe_process(unit, input, n, null, needed), "null output");
+            Assert.AreEqual(-1, FrontEndNative.voxr_fe_process(unit, input, -1, output, needed), "negative n");
+            Assert.AreEqual(
+                -1,
+                FrontEndNative.voxr_fe_process(unit, input, n, output, needed - FrontEndNative.FrameSamples),
+                "cap one frame short"
+            );
+        }
+
+        [Test]
+        public void Process_NonFiniteInput_LeavesFiniteGain()
+        {
+            var block = new float[CallSamples];
+            block[0] = float.NaN;
+            block[1] = float.PositiveInfinity;
+            block[2] = float.NegativeInfinity;
+            IntPtr unit = Create(TargetDb);
+            var output = new List<short>();
+            Run(unit, Concat(block, Wav(LifecycleFile)), Fixed480, output);
+
+            Assert.IsNotEmpty(output, "no int16 output");
+            float gain = Stats(unit).gain_db;
+            Assert.IsFalse(float.IsNaN(gain) || float.IsInfinity(gain), $"gain_db is {gain} after finite audio");
         }
     }
 }

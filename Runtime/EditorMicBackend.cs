@@ -57,8 +57,7 @@ namespace VoXR
 
         internal float PreAgcRms => _stats.pre_rms;
         internal float PostAgcRms => _stats.post_rms;
-        internal float AgcGain =>
-            _frontEnd == IntPtr.Zero ? 1f : (float)Math.Pow(10.0, _stats.gain_db / 20.0);
+        internal float AgcGain => (float)Math.Pow(10.0, _stats.gain_db / 20.0);
         internal voxr_fe_stats FrontEndStats => _stats;
 
         // Rolling ~300 ms RMS of pre-DSP audio, linear 0..1. Mirrors
@@ -383,7 +382,7 @@ namespace VoXR
                 {
                     fireError?.Invoke(VoxrBridgeErrorCode.AudioDeviceUnavailable,
                         $"Microphone returned {actualRate} Hz; {SourceSampleRate} Hz is required. " +
-                        "The 48 kHz → 16 kHz downsampler cannot handle other input rates in v3.1.");
+                        "The 48 kHz → 16 kHz front end cannot handle other input rates in v3.1.");
                     Stop(dispatch);
                     return;
                 }
@@ -394,15 +393,9 @@ namespace VoXR
             int available = (currentPos - _lastSamplePos + clipSamples) % clipSamples;
             if (available == 0) return;
 
-            // If this frame produced more samples than the work buffer can hold
-            // (dropped frame / GC spike), cap the pull — the ring buffer has
-            // already advanced past the oldest data anyway.
             if (available > _workBuffer.Length)
                 available = _workBuffer.Length;
 
-            // Read the entire clip once, then copy the new window into the work
-            // buffer with modular-wrap indexing. Reading the full clip is a single
-            // native memcpy and sidesteps AudioClip.GetData's wrap semantics.
             _clip.GetData(_readBuffer, 0);
 
             int firstChunk = Math.Min(available, clipSamples - _lastSamplePos);
@@ -456,6 +449,8 @@ namespace VoXR
             }
         }
 
+        // --- WAV playback (test seam; design §6.1) ---------------------------
+
         // Fixed chunk so replay results are machine- and frame-rate-independent:
         // 4800 samples = 100 ms at 48 kHz, divisible by the decimation factor.
         internal const int PlaybackChunkSamples = 4800;
@@ -499,7 +494,7 @@ namespace VoXR
                 fireError?.Invoke(
                     VoxrBridgeErrorCode.AudioDeviceUnavailable,
                     $"StartPlayback received {sampleRate} Hz audio; {SourceSampleRate} Hz "
-                        + "is required. The 48 kHz → 16 kHz downsampler cannot handle other "
+                        + "is required. The 48 kHz → 16 kHz front end cannot handle other "
                         + "input rates; resample the fixture instead."
                 );
                 return false;

@@ -37,13 +37,17 @@ constexpr float kInitialGainDb = 15.0f;
 constexpr float kMaxGainChangeDbPerSecond = 6.0f;
 constexpr float kMaxOutputNoiseLevelDbfs = -50.0f;
 constexpr float kFixedGainDb = 0.0f;
+constexpr float kDefaultTargetDb = -18.0f;
 constexpr uint64_t kFnvOffsetBasis = 14695981039346656037ull;
 constexpr uint64_t kFnvPrime = 1099511628211ull;
 
 FrontEnd::Configuration MakeConfiguration(float target_db) {
+    if (!std::isfinite(target_db)) {
+        target_db = kDefaultTargetDb;
+    }
     FrontEnd::Configuration config;
     config.adaptive_digital_enabled = true;
-    config.headroom_db = -target_db;
+    config.headroom_db = -std::min(target_db, 0.0f);
     config.max_gain_db = kMaxGainDb;
     config.initial_gain_db = kInitialGainDb;
     config.max_gain_change_db_per_second = kMaxGainChangeDbPerSecond;
@@ -115,7 +119,7 @@ int FrontEnd::Process(const float* in48k, int n, int16_t* out16k, int cap, float
     if (in48k == nullptr || out16k == nullptr || n < 0) {
         return -1;
     }
-    const int64_t pending = static_cast<int64_t>(stats_.input_samples % Decimator::kFactor) + n;
+    const int64_t pending = static_cast<int64_t>(decimator_.Phase()) + n;
     const int64_t frames = (frame_fill_ + pending / Decimator::kFactor) / kFrameSamples;
     if (cap < frames * kFrameSamples) {
         return -1;

@@ -242,7 +242,17 @@ int vosk_bridge_init(const char* model_path, float sample_rate,
 
     vosk_recognizer_set_words(g_recognizer, 1);
 
-    g_frontend = std::make_unique<voxr::FrontEnd>(mic_gain_target_db);
+    try {
+        g_frontend = std::make_unique<voxr::FrontEnd>(mic_gain_target_db);
+    } catch (...) {
+        g_last_error = "voxr::FrontEnd construction failed";
+        LOGE("%s", g_last_error.c_str());
+        vosk_recognizer_free(g_recognizer);
+        g_recognizer = nullptr;
+        vosk_model_free(g_model);
+        g_model = nullptr;
+        return VOSK_BRIDGE_ERR_MODEL_LOAD_FAILED;
+    }
     publish_frontend_stats();
 
     reset_pipeline();

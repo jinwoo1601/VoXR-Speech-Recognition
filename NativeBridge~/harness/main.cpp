@@ -352,6 +352,7 @@ int RunHarness(int argc, char** argv) {
         WavData wav;
         std::string error = LoadWav(fixtures_dir + "/" + check.file, wav);
         float g0 = 0.0f, g1 = 0.0f, g2 = 0.0f, g3 = 0.0f;
+        uint64_t cold_digest = 0, continued_digest = 0;
         if (error.empty()) {
             rc = vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g0, nullptr, nullptr);
             if (rc != VOSK_BRIDGE_OK)
@@ -367,7 +368,7 @@ int RunHarness(int argc, char** argv) {
                 error = check.errors.empty() ? "push failed" : check.errors.back();
         }
         if (error.empty())
-            error = WaitFrontEnd(wav.samples.size(), nullptr, nullptr);
+            error = WaitFrontEnd(wav.samples.size(), nullptr, &cold_digest);
         if (error.empty()) {
             vosk_bridge_stop();
             vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g1, nullptr, nullptr);
@@ -377,6 +378,12 @@ int RunHarness(int argc, char** argv) {
         }
         if (error.empty()) {
             vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g2, nullptr, nullptr);
+            if (!PushAll(wav.samples.data(), wav.samples.size(), check))
+                error = check.errors.empty() ? "push failed" : check.errors.back();
+        }
+        if (error.empty())
+            error = WaitFrontEnd(wav.samples.size(), nullptr, &continued_digest);
+        if (error.empty()) {
             vosk_bridge_stop();
             rc = vosk_bridge_reset();
             if (rc != VOSK_BRIDGE_OK)
@@ -384,11 +391,13 @@ int RunHarness(int argc, char** argv) {
         }
         if (error.empty()) {
             vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g3, nullptr, nullptr);
-            if (!(g1 != g0 && g2 == g1 && g3 == g0)) {
-                char gains[256];
+            if (!(g1 != g0 && g2 == g1 && g3 == g0 && continued_digest != cold_digest)) {
+                char gains[384];
                 std::snprintf(gains, sizeof(gains),
-                              "g0 %.9g, g1 %.9g (must differ from g0), g2 %.9g (must equal g1), g3 %.9g (must equal g0)",
-                              g0, g1, g2, g3);
+                              "g0 %.9g, g1 %.9g (must differ from g0), g2 %.9g (must equal g1), g3 %.9g (must equal g0), "
+                              "cold digest %016llx, continued digest %016llx (must differ from cold)",
+                              g0, g1, g2, g3, static_cast<unsigned long long>(cold_digest),
+                              static_cast<unsigned long long>(continued_digest));
                 error = gains;
             }
         }

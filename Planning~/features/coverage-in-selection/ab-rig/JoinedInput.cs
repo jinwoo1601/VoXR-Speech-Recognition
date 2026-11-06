@@ -164,6 +164,8 @@ namespace AbRig
             "modelConf",
         };
 
+        // --- dump -------------------------------------------------------------------------
+
         internal static Dump ReadDump(string path)
         {
             string text = File.ReadAllText(path, StrictUtf8);
@@ -663,6 +665,8 @@ namespace AbRig
             return pin;
         }
 
+        // --- joins ------------------------------------------------------------------------
+
         // Case sets are the readers' (ruled 2026-10-14, "Exit 2, reader stop"): every dump case
         // in the manifest and the reverse; with `pinned`, the pin's and the dump's sets equal.
         internal static void Join(Dump dump, Manifest manifest, Pin pin, bool pinned)
@@ -709,6 +713,8 @@ namespace AbRig
             if (lines.Count > 0)
                 throw new Stop(2, lines.ToArray());
         }
+
+        // --- JSON helpers: a missing or mistyped field is a stop naming `where` --------------
 
         internal static JsonElement ParseObject(string line, string where)
         {

@@ -83,7 +83,7 @@ def render(name, count, cutoff_hz, beta, taps):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--design", choices=sorted(DESIGNS), default="r4")
+    parser.add_argument("--design", choices=sorted(DESIGNS), default="f1")
     args = parser.parse_args()
     name, count, cutoff_hz, beta = DESIGNS[args.design]()
     taps = design_taps(count, cutoff_hz, beta)

@@ -206,6 +206,8 @@ namespace AbRig
             return options;
         }
 
+        // --- reading ----------------------------------------------------------------------
+
         static Side Read(string path, string side)
         {
             string text;
@@ -448,6 +450,8 @@ namespace AbRig
             }
             return true;
         }
+
+        // --- the two sides agree ----------------------------------------------------------
 
         static void Compare(Side a, Side b)
         {

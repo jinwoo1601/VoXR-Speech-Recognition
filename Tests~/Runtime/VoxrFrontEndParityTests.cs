@@ -1,7 +1,7 @@
 // ============================================================================
 // Purpose:  PlayMode parity of the Editor front end with the desktop harness's pinned per-fixture digests
 // Layer:    Tests.Runtime
-// Owns:     VoxrFrontEndParityTests (public class)
+// Owns:     VoxrFrontEndParityTests (public class), PinFile (nested class), Pin (nested class)
 // Depends:  VoxrSpeechRecogniser, EditorMicBackend, voxr_fe_stats, VoxrWavReader, VoxrAudioTestSuiteAsset, VoxrAudioTestCase
 // ============================================================================
 #if UNITY_EDITOR_WIN
