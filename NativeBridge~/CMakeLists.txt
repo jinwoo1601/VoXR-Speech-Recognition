@@ -27,8 +27,6 @@ set(BRIDGE_SOURCES
 set(BRIDGE_HEADERS
     src/vosk_bridge.h
     src/ring_buffer.h
-    src/downsampler.h
-    src/agc.h
     src/result_queue.h
     src/audio_capture.h
     src/audio_capture_${VOSK_BRIDGE_CAPTURE}.h
@@ -39,6 +37,9 @@ set(BRIDGE_HEADERS
 
 if(MSVC)
     add_compile_options(/utf-8)
+endif()
+if(ANDROID)
+    add_compile_options(-ffile-prefix-map=${CMAKE_SOURCE_DIR}=voxr-src -ffile-prefix-map=${CMAKE_BINARY_DIR}=voxr-build)
 endif()
 if(WIN32)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_BINARY_DIR}/bin>")
@@ -123,6 +124,7 @@ endif()
 
 target_link_libraries(vosk-bridge PRIVATE
     vosk
+    voxr-frontend-core
 )
 
 if(ANDROID)
@@ -135,7 +137,7 @@ set_target_properties(vosk-bridge PROPERTIES
     CXX_VISIBILITY_PRESET hidden
 )
 if(NOT MSVC)
-    set_target_properties(vosk-bridge PROPERTIES LINK_FLAGS "-Wl,--no-undefined -Wl,--strip-all")
+    set_target_properties(vosk-bridge PROPERTIES LINK_FLAGS "-Wl,--no-undefined -Wl,--strip-all -Wl,--exclude-libs,ALL")
 endif()
 
 # LTO via -flto=thin (NDK uses lld, not gold, so CMake's IPO property won't

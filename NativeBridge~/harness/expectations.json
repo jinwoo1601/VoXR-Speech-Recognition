@@ -1,323 +1,427 @@
 {
-    "_comment": "Bridge-level committed baseline for the Tier C harness (see harness/README.md). Relationship to Tests~/Fixtures/audio/manifest.json: that file carries PARSER-level expectations (expectedIntent/expectedSlots; expectedTranscript deliberately empty for filler/split/silence cases), while expectedFinals here are the raw final transcripts the desktop bridge emits — [unk] tokens included — under the exact grammar/gain/libvosk pinned in this file. 'file' is a basename resolved against --fixtures; the corpus manifest's same-named key is Tests~/Fixtures/-relative. Per the Tier B F7-amendment policy, raw transcripts belong to this committed baseline: regenerating the corpus or bumping libvosk re-baselines via --write-baseline as a conscious, reviewed step. grammar is the verbatim output of VoxrCommandParser.GenerateGrammarJson over the demo grammar (contiguous pattern-literal runs + slot values + alias keys, each as a multi-word phrase entry AND as its individual words, plus digit vocabulary + confirm/cancel follow-up words + [unk], ordinal-sorted).",
+    "_comment": "Bridge-level committed baseline for the Tier C harness (see harness/README.md). Relationship to Tests~/Fixtures/audio/manifest.json: that file carries PARSER-level expectations (expectedIntent/expectedSlots; expectedTranscript deliberately empty for filler/split/silence cases), while expectedFinals here are the raw final transcripts the desktop bridge emits — [unk] tokens included — under the exact grammar/gain/libvosk pinned in this file. frontEndSamples and frontEndDigest pin the front end's output per fixture before padding (its int16 sample count and its 64-bit FNV-1a digest as 16 lowercase hex digits); they are harness-written and host-scoped (see harness/README.md). 'file' is a basename resolved against --fixtures; the corpus manifest's same-named key is Tests~/Fixtures/-relative. Per the Tier B F7-amendment policy, raw transcripts belong to this committed baseline: regenerating the corpus (pause-lead cases included), bumping libvosk or changing the front end re-baselines via --write-baseline as a conscious, reviewed step. grammar is the verbatim output of VoxrCommandParser.GenerateGrammarJson over the demo grammar (contiguous pattern-literal runs + slot values + alias keys, each as a multi-word phrase entry AND as its individual words, plus digit vocabulary + confirm/cancel follow-up words + [unk], ordinal-sorted).",
     "cases": [
         {
             "expectedFinals": [
                 "launch one missiles target hotel one"
             ],
-            "file": "launch_one_missiles_target_hotel_one.wav"
+            "file": "launch_one_missiles_target_hotel_one.wav",
+            "frontEndDigest": "0c3e6809d8097c5e",
+            "frontEndSamples": 56640
         },
         {
             "expectedFinals": [
                 "cease fire"
             ],
-            "file": "cease_fire.wav"
+            "file": "cease_fire.wav",
+            "frontEndDigest": "336070b78dc93ac3",
+            "frontEndSamples": 33120
         },
         {
             "expectedFinals": [
                 "resume fire"
             ],
-            "file": "resume_fire.wav"
+            "file": "resume_fire.wav",
+            "frontEndDigest": "2424a9d1984746cf",
+            "frontEndSamples": 40800
         },
         {
             "expectedFinals": [
                 "approach target alpha one"
             ],
-            "file": "approach_target_alpha_one.wav"
+            "file": "approach_target_alpha_one.wav",
+            "frontEndDigest": "a29b74498eea9331",
+            "frontEndSamples": 44800
         },
         {
             "expectedFinals": [
                 "fall back from target bravo two"
             ],
-            "file": "fall_back_from_target_bravo_two.wav"
+            "file": "fall_back_from_target_bravo_two.wav",
+            "frontEndDigest": "43e345191f09749e",
+            "frontEndSamples": 52320
         },
         {
             "expectedFinals": [
                 "switch to navigation"
             ],
-            "file": "switch_to_navigation.wav"
+            "file": "switch_to_navigation.wav",
+            "frontEndDigest": "282f096e1518f1e0",
+            "frontEndSamples": 41920
         },
         {
             "expectedFinals": [
                 "navigation mode"
             ],
-            "file": "navigation_mode.wav"
+            "file": "navigation_mode.wav",
+            "frontEndDigest": "44b27c01e1b6d237",
+            "frontEndSamples": 39680
         },
         {
             "expectedFinals": [
                 "enable all"
             ],
-            "file": "enable_all.wav"
+            "file": "enable_all.wav",
+            "frontEndDigest": "019fd0edac1fbc5a",
+            "frontEndSamples": 35520
         },
         {
             "expectedFinals": [
                 "disable all"
             ],
-            "file": "disable_all.wav"
+            "file": "disable_all.wav",
+            "frontEndDigest": "c1db5e1e09c8762a",
+            "frontEndSamples": 37440
         },
         {
             "expectedFinals": [
                 "fire two torpedoes at bravo two"
             ],
-            "file": "fire_two_torpedoes_at_bravo_two.wav"
+            "file": "fire_two_torpedoes_at_bravo_two.wav",
+            "frontEndDigest": "3ddaeafa28f0d50e",
+            "frontEndSamples": 56000
         },
         {
             "expectedFinals": [
                 "launch jackals target hotel two"
             ],
-            "file": "launch_jackals_target_hotel_two.wav"
+            "file": "launch_jackals_target_hotel_two.wav",
+            "frontEndDigest": "010954f66618f031",
+            "frontEndSamples": 57280
         },
         {
             "expectedFinals": [
                 "set heading two seven zero"
             ],
-            "file": "set_heading_two_seven_zero.wav"
+            "file": "set_heading_two_seven_zero.wav",
+            "frontEndDigest": "40f5e6ad86b3a301",
+            "frontEndSamples": 46560
         },
         {
             "expectedFinals": [
                 "switch to weapons"
             ],
-            "file": "switch_to_weapons.wav"
+            "file": "switch_to_weapons.wav",
+            "frontEndDigest": "151cd82d887ade89",
+            "frontEndSamples": 37280
         },
         {
             "expectedFinals": [
                 "[unk] launch three torpedoes target alpha three"
             ],
-            "file": "filler_launch_three_torpedoes_target_alpha_three.wav"
+            "file": "filler_launch_three_torpedoes_target_alpha_three.wav",
+            "frontEndDigest": "ff4ab1a080770521",
+            "frontEndSamples": 72160
         },
         {
             "expectedFinals": [
                 "close distance safe range",
                 "target hotel one"
             ],
-            "file": "split_close_distance_safe_range_target_hotel_one.wav"
+            "file": "split_close_distance_safe_range_target_hotel_one.wav",
+            "frontEndDigest": "31b0a7d7cba86046",
+            "frontEndSamples": 74080
         },
         {
             "expectedFinals": [
                 "set heading two seven zero"
             ],
-            "file": "ladder_p_set_heading_two_seven_zero_gap200ms.wav"
+            "file": "ladder_p_set_heading_two_seven_zero_gap200ms.wav",
+            "frontEndDigest": "f5bddd3c3123669d",
+            "frontEndSamples": 48320
         },
         {
             "expectedFinals": [
                 "set heading two seven zero"
             ],
-            "file": "ladder_p_set_heading_two_seven_zero_gap300ms.wav"
+            "file": "ladder_p_set_heading_two_seven_zero_gap300ms.wav",
+            "frontEndDigest": "dca8ebe20ba855ea",
+            "frontEndSamples": 50400
         },
         {
             "expectedFinals": [
                 "set heading two seven zero"
             ],
-            "file": "ladder_p_set_heading_two_seven_zero_gap400ms.wav"
+            "file": "ladder_p_set_heading_two_seven_zero_gap400ms.wav",
+            "frontEndDigest": "6db525ad0d4acee6",
+            "frontEndSamples": 51840
         },
         {
             "expectedFinals": [
                 "set heading two",
                 "seven zero"
             ],
-            "file": "ladder_p_set_heading_two_seven_zero_gap600ms.wav"
+            "file": "ladder_p_set_heading_two_seven_zero_gap600ms.wav",
+            "frontEndDigest": "8f26f35314dc241e",
+            "frontEndSamples": 53600
         },
         {
             "expectedFinals": [
                 "orient heading two seven zero mark one five"
             ],
-            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap200ms.wav"
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap200ms.wav",
+            "frontEndDigest": "70190c06b37f9d3b",
+            "frontEndSamples": 64640
         },
         {
             "expectedFinals": [
                 "orient heading two seven zero mark one five"
             ],
-            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap300ms.wav"
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap300ms.wav",
+            "frontEndDigest": "8fa9250f81b0ddac",
+            "frontEndSamples": 64960
         },
         {
             "expectedFinals": [
                 "orient heading two seven zero mark one five"
             ],
-            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap400ms.wav"
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap400ms.wav",
+            "frontEndDigest": "6077d2b9f6203542",
+            "frontEndSamples": 67680
         },
         {
             "expectedFinals": [
                 "orient heading two seven zero mark one five"
             ],
-            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap600ms.wav"
+            "file": "ladder_p_orient_heading_two_seven_zero_mark_one_five_gap600ms.wav",
+            "frontEndDigest": "3bcdb7634a1503f8",
+            "frontEndSamples": 69600
         },
         {
             "expectedFinals": [
                 "orient heading one eight zero"
             ],
-            "file": "ladder_p_orient_heading_one_eight_zero_gap200ms.wav"
+            "file": "ladder_p_orient_heading_one_eight_zero_gap200ms.wav",
+            "frontEndDigest": "e268150a8327f43c",
+            "frontEndSamples": 49440
         },
         {
             "expectedFinals": [
                 "orient heading one eight zero"
             ],
-            "file": "ladder_p_orient_heading_one_eight_zero_gap300ms.wav"
+            "file": "ladder_p_orient_heading_one_eight_zero_gap300ms.wav",
+            "frontEndDigest": "17f3f9b980507a00",
+            "frontEndSamples": 51840
         },
         {
             "expectedFinals": [
                 "orient heading one eight zero"
             ],
-            "file": "ladder_p_orient_heading_one_eight_zero_gap400ms.wav"
+            "file": "ladder_p_orient_heading_one_eight_zero_gap400ms.wav",
+            "frontEndDigest": "328d930ad3b9ef2a",
+            "frontEndSamples": 52000
         },
         {
             "expectedFinals": [
                 "orient heading one",
                 "eight zero"
             ],
-            "file": "ladder_p_orient_heading_one_eight_zero_gap600ms.wav"
+            "file": "ladder_p_orient_heading_one_eight_zero_gap600ms.wav",
+            "frontEndDigest": "fe10f3b998af19cc",
+            "frontEndSamples": 57440
         },
         {
             "expectedFinals": [
                 "launch missiles target hotel one"
             ],
-            "file": "ladder_m_launch_missiles_target_hotel_one_gap300ms.wav"
+            "file": "ladder_m_launch_missiles_target_hotel_one_gap300ms.wav",
+            "frontEndDigest": "572f7470a9f7c759",
+            "frontEndSamples": 53600
         },
         {
             "expectedFinals": [
                 "launch missiles target",
                 "hotel one"
             ],
-            "file": "ladder_m_launch_missiles_target_hotel_one_gap600ms.wav"
+            "file": "ladder_m_launch_missiles_target_hotel_one_gap600ms.wav",
+            "frontEndDigest": "8578c8dfda3bef0c",
+            "frontEndSamples": 56960
         },
         {
             "expectedFinals": [
                 "launch missiles target",
                 "hotel one"
             ],
-            "file": "ladder_m_launch_missiles_target_hotel_one_gap900ms.wav"
+            "file": "ladder_m_launch_missiles_target_hotel_one_gap900ms.wav",
+            "frontEndDigest": "5025570cb5d1df53",
+            "frontEndSamples": 62720
         },
         {
             "expectedFinals": [
                 "fall back from target bravo two"
             ],
-            "file": "ladder_m_fall_back_from_target_bravo_two_gap300ms.wav"
+            "file": "ladder_m_fall_back_from_target_bravo_two_gap300ms.wav",
+            "frontEndDigest": "a7fa556c8191267d",
+            "frontEndSamples": 53120
         },
         {
             "expectedFinals": [
                 "fall back from target bravo two"
             ],
-            "file": "ladder_m_fall_back_from_target_bravo_two_gap600ms.wav"
+            "file": "ladder_m_fall_back_from_target_bravo_two_gap600ms.wav",
+            "frontEndDigest": "ad44e10c71a9b737",
+            "frontEndSamples": 58560
         },
         {
             "expectedFinals": [
                 "fall back from",
                 "target bravo two"
             ],
-            "file": "ladder_m_fall_back_from_target_bravo_two_gap900ms.wav"
+            "file": "ladder_m_fall_back_from_target_bravo_two_gap900ms.wav",
+            "frontEndDigest": "8aaa08aa86072629",
+            "frontEndSamples": 64480
         },
         {
             "expectedFinals": [
                 "approach target alpha one"
             ],
-            "file": "ladder_m_approach_target_alpha_one_gap300ms.wav"
+            "file": "ladder_m_approach_target_alpha_one_gap300ms.wav",
+            "frontEndDigest": "5639886179f38b4f",
+            "frontEndSamples": 44800
         },
         {
             "expectedFinals": [
                 "approach target alpha one"
             ],
-            "file": "ladder_m_approach_target_alpha_one_gap600ms.wav"
+            "file": "ladder_m_approach_target_alpha_one_gap600ms.wav",
+            "frontEndDigest": "f3c1773729a7b5ba",
+            "frontEndSamples": 52000
         },
         {
             "expectedFinals": [
                 "approach",
                 "target alpha one"
             ],
-            "file": "ladder_m_approach_target_alpha_one_gap900ms.wav"
+            "file": "ladder_m_approach_target_alpha_one_gap900ms.wav",
+            "frontEndDigest": "46481e8da218a7a0",
+            "frontEndSamples": 55840
         },
         {
             "expectedFinals": [],
-            "file": "silence_negative.wav"
+            "file": "silence_negative.wav",
+            "frontEndDigest": "5eac53d274f9ef25",
+            "frontEndSamples": 48000
         },
         {
             "expectedFinals": [
                 "launch one missiles target hotel one"
             ],
-            "file": "pause_lead_launch_one_missiles_target_hotel_one.wav"
+            "file": "pause_lead_launch_one_missiles_target_hotel_one.wav",
+            "frontEndDigest": "f8035c1ac6699550",
+            "frontEndSamples": 83360
         },
         {
             "expectedFinals": [
                 "cease fire"
             ],
-            "file": "pause_lead_cease_fire.wav"
+            "file": "pause_lead_cease_fire.wav",
+            "frontEndDigest": "cab9b113db7f043d",
+            "frontEndSamples": 60480
         },
         {
             "expectedFinals": [
                 "resume fire"
             ],
-            "file": "pause_lead_resume_fire.wav"
+            "file": "pause_lead_resume_fire.wav",
+            "frontEndDigest": "c1534e75381933b7",
+            "frontEndSamples": 62720
         },
         {
             "expectedFinals": [
                 "approach target alpha one"
             ],
-            "file": "pause_lead_approach_target_alpha_one.wav"
+            "file": "pause_lead_approach_target_alpha_one.wav",
+            "frontEndDigest": "fb21bb657ab6e180",
+            "frontEndSamples": 73600
         },
         {
             "expectedFinals": [
                 "fall back from target bravo two"
             ],
-            "file": "pause_lead_fall_back_from_target_bravo_two.wav"
+            "file": "pause_lead_fall_back_from_target_bravo_two.wav",
+            "frontEndDigest": "e0d36ff84c5f4ebf",
+            "frontEndSamples": 79520
         },
         {
             "expectedFinals": [
                 "switch to navigation"
             ],
-            "file": "pause_lead_switch_to_navigation.wav"
+            "file": "pause_lead_switch_to_navigation.wav",
+            "frontEndDigest": "6d729cc538de5f22",
+            "frontEndSamples": 68480
         },
         {
             "expectedFinals": [
                 "navigation mode"
             ],
-            "file": "pause_lead_navigation_mode.wav"
+            "file": "pause_lead_navigation_mode.wav",
+            "frontEndDigest": "daaf27fed13fdb90",
+            "frontEndSamples": 67200
         },
         {
             "expectedFinals": [
                 "enable all"
             ],
-            "file": "pause_lead_enable_all.wav"
+            "file": "pause_lead_enable_all.wav",
+            "frontEndDigest": "87ecaa3076b57c35",
+            "frontEndSamples": 62560
         },
         {
             "expectedFinals": [
                 "disable all"
             ],
-            "file": "pause_lead_disable_all.wav"
+            "file": "pause_lead_disable_all.wav",
+            "frontEndDigest": "282151d50e94c928",
+            "frontEndSamples": 61120
         },
         {
             "expectedFinals": [
                 "fire two torpedoes at bravo two"
             ],
-            "file": "pause_lead_fire_two_torpedoes_at_bravo_two.wav"
+            "file": "pause_lead_fire_two_torpedoes_at_bravo_two.wav",
+            "frontEndDigest": "c66d3551f54a9093",
+            "frontEndSamples": 81760
         },
         {
             "expectedFinals": [
                 "launch jackals target hotel two"
             ],
-            "file": "pause_lead_launch_jackals_target_hotel_two.wav"
+            "file": "pause_lead_launch_jackals_target_hotel_two.wav",
+            "frontEndDigest": "8b6ae301f50650dd",
+            "frontEndSamples": 84160
         },
         {
             "expectedFinals": [
                 "set heading two seven zero"
             ],
-            "file": "pause_lead_set_heading_two_seven_zero.wav"
+            "file": "pause_lead_set_heading_two_seven_zero.wav",
+            "frontEndDigest": "aea963ebdd283bb5",
+            "frontEndSamples": 75520
         },
         {
             "expectedFinals": [
                 "switch to weapons"
             ],
-            "file": "pause_lead_switch_to_weapons.wav"
+            "file": "pause_lead_switch_to_weapons.wav",
+            "frontEndDigest": "bc565eb62a47b8b4",
+            "frontEndSamples": 64320
         },
         {
             "expectedFinals": [
                 "[unk] launch three torpedoes target alpha three"
             ],
-            "file": "pause_lead_filler_launch_three_torpedoes_target_alpha_three.wav"
+            "file": "pause_lead_filler_launch_three_torpedoes_target_alpha_three.wav",
+            "frontEndDigest": "173b0600ddd3eaec",
+            "frontEndSamples": 99360
         },
         {
             "expectedFinals": [
                 "close distance safe range",
                 "target hotel one"
             ],
-            "file": "pause_lead_split_close_distance_safe_range_target_hotel_one.wav"
+            "file": "pause_lead_split_close_distance_safe_range_target_hotel_one.wav",
+            "frontEndDigest": "fc9d17765b31ae67",
+            "frontEndSamples": 104320
         }
     ],
     "gain": -18.0,

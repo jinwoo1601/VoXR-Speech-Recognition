@@ -646,7 +646,12 @@ namespace AbRig
                 if (c.ValueKind != JsonValueKind.Object)
                     throw new Stop(2, at + ": not an object");
                 foreach (JsonProperty p in c.EnumerateObject())
-                    if (p.Name != "file" && p.Name != "expectedFinals")
+                    if (
+                        p.Name != "file"
+                        && p.Name != "expectedFinals"
+                        && p.Name != "frontEndDigest"
+                        && p.Name != "frontEndSamples"
+                    )
                         throw new Stop(2, at + ": unknown key \"" + p.Name + "\"");
                 string file = Str(c, "file", at);
                 string[] finals = StrArray(c, "expectedFinals", at);

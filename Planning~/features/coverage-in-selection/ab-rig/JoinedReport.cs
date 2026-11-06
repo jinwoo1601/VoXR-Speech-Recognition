@@ -1033,7 +1033,7 @@ namespace AbRig
                 if (
                     rec.TryGetProperty("finals", out JsonElement finals)
                     && finals.GetArrayLength() > 0
-                    && SpaceJoined(rec).Split(' ')[0] == mc.FirstWord
+                    && Array.Find(SpaceJoined(rec).Split(' '), t => t != "[unk]") == mc.FirstWord
                 )
                     counts[3]++;
             }

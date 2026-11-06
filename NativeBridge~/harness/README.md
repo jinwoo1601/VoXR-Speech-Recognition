@@ -1,6 +1,6 @@
 # Tier C Desktop Harness — WAV → transcript regression on the Windows-native bridge
 
-Replays the committed fixture corpus (`Tests~/Fixtures/audio/tts/`) through the **real native bridge** (ring buffer → downsampler → AGC → int16 → Vosk) compiled Windows-native with MSVC, and compares the final transcripts against the committed baseline in `expectations.json`. Runs entirely on the Windows host in Git Bash — no Unity, no device. Design contract: `Planning~/design-docs/automated-verification.md` §7 (Tier C).
+Replays the committed fixture corpus (`Tests~/Fixtures/audio/tts/`) through the **real native bridge** (ring buffer → front end (`voxr::FrontEnd`: 48 kHz decimated to 16 kHz, buffered into 10 ms frames, levelled by the AGC2 chain, emitted as int16) → Vosk) compiled Windows-native with MSVC, and compares the final transcripts against the committed baseline in `expectations.json`. Runs entirely on the Windows host in Git Bash — no Unity, no device. Design contract: `Planning~/design-docs/automated-verification.md` §7 (Tier C).
 
 What it verifies: bridge *logic* against a real Windows libvosk 0.3.45, the same DLL the Editor ships. What it is blind to: the arm64 binary, JNI AudioRecord capture, and Quest audio routing.
 
@@ -75,12 +75,14 @@ What each part does:
 
 The command behaves the same with or without `MSYS_NO_PATHCONV`. It runs in a subshell, so your shell stays at the project root. The preset selects the **stub** capture backend (`VOSK_BRIDGE_CAPTURE=stub` — no JNI, no Android anywhere) and builds the harness (`VOSK_BRIDGE_BUILD_HARNESS=ON`).
 
-Output: a JSON report (per-fixture expected/actual/pass plus a summary). Exit codes: **0** = all fixtures match the baseline; **1** = at least one transcript mismatch; **2** = operational error (unreadable model/manifest/WAV, schema-invalid manifest, bridge error, `{"error": ...}` result entries such as ring overflow).
+Output: a JSON report (per-fixture expected/actual/pass plus a summary). Exit codes: **0** = all fixtures match the baseline, transcripts and pins alike; **1** = at least one transcript or front-end pin mismatch (a case lacking `frontEndSamples` or `frontEndDigest` counts as a mismatch); **2** = operational error (unreadable model/manifest/WAV, schema-invalid manifest, bridge error, `{"error": ...}` result entries such as ring overflow, a failed front-end lifecycle check, a pin key present with the wrong type — `frontEndSamples` not a non-negative integer, `frontEndDigest` not a string).
 
 Guards that make a green run meaningful (all exit 2 when violated):
 
 - The decode-regime pins `gain`, `grammar`, and `libvosk` are **required** manifest keys — a run without them (e.g. a free decode) would silently invalidate the baseline.
 - The `modelConf` pin, the exact text of `<model>/conf/model.conf`, is a **required** manifest key and must equal the decoded model's conf, checked before any decode — a conf that is absent or different is refused naming the conf. Only `--write-baseline` writes it.
+- The **front-end lifecycle check** runs after `vosk_bridge_init` and before the grammar is set and any case is decoded. It pushes the first case's WAV (dump records off for it): the front end's gain after that stream stops (g1) must differ from its cold gain after init (g0); a stop then `vosk_bridge_start_push` must keep it (g2 equal to g1); `vosk_bridge_reset` must restore the cold gain (g3 equal to g0). Otherwise the harness destroys the bridge and exits 2 naming all four gains. It proves `BeginStream` keeps the learned level and `Reset` clears it.
+- The front-end pin keys' types are checked up front: a case's `frontEndSamples`, when present, must be a non-negative integer, and its `frontEndDigest`, when present, a string. An absent pin is no error here but a mismatch (exit 1).
 - A manifest with zero cases is refused (no vacuous greens).
 - Every `.wav` in the fixtures directory must have a manifest entry (corpus-drift guard — the mirror of Tier B's `EveryCommittedWav_IsListedInTheManifest`).
 
@@ -90,14 +92,16 @@ Fixture WAVs must be 48 kHz mono 16-bit PCM (the corpus format) — anything els
 
 `expectedFinals` per fixture are the **raw bridge-level transcripts** (Vosk `[unk]` tokens included), which deliberately differ from the parser-level expectations in `Tests~/Fixtures/audio/manifest.json` — see the `_comment` in the file. The grammar (verbatim `GenerateGrammarJson` output), AGC gain (−18 dB, the device value), and libvosk version are pinned in-file because the baseline is only meaningful under the exact decode regime that produced it.
 
-**Re-baselining** (after corpus regeneration, a libvosk bump, or a change to the Continuous default's conf) is a conscious, reviewed step, per the Tier B F7-amendment policy. From `NativeBridge~/`:
+Each case also carries two front-end pins: `frontEndSamples`, the front end's int16 output sample count for the fixture before the harness's trailing padding, and `frontEndDigest`, the unit's 64-bit FNV-1a digest of that output, as 16 lowercase hex digits. The harness reads them by waiting until the unit has consumed the whole fixture (no drain), then pushes the padding. A case passes only when its transcripts and both pins equal the baseline. The pins and the `_comment` are **harness-written**: only `--write-baseline` writes them, and `_comment` comes from one constant in `main.cpp` (`kBaselineComment`); neither is hand-edited. The digests are **host-scoped** to the pinning host's CPU features — on x64 the AGC2 wrapper's 16→24 kHz resampler is selected at run time as AVX2, SSE or plain C, with no injection point, and no source patch is made — so a digest pin may fail on a host with different CPU features; such a failure is not a re-baselining occasion (below).
+
+**Re-baselining** (after corpus regeneration — `pause-lead` cases included —, a libvosk bump, a change to the front end, or a change to the Continuous default's conf) is a conscious, reviewed step, per the Tier B F7-amendment policy; a front-end change re-pins only on the human's ruling (the run after the change exits 1 by design until the human has ruled on its A/B). From `NativeBridge~/`:
 
 ```bash
 ./build-windows/bin/vosk-bridge-harness.exe --model vendor/overlaid/continuous-default --fixtures ... \
   --manifest harness/expectations.json --write-baseline
 ```
 
-then review the `expectations.json` diff against the corpus manifest's intents before committing. In that review, `modelConf` changes in the rule lines alone, and a moved `expectedFinals` keeps its joined words (segmentation only); otherwise the human rules. A transcript divergence on the Windows build (exit 1 against the committed baseline) is not a re-baselining occasion: it stops for the human's ruling and is never re-pinned.
+then review the `expectations.json` diff against the corpus manifest's intents before committing. In that review, `modelConf` changes in the rule lines alone, a moved `expectedFinals` keeps its joined words (segmentation only), and the two front-end pins change on every case after a front-end change and on no case otherwise; otherwise the human rules. A transcript divergence on the Windows build (exit 1 against the committed baseline), like a front-end pin divergence against the committed baseline — one on another host included —, is not a re-baselining occasion: it stops for the human's ruling and is never re-pinned.
 
 ## Notes
 

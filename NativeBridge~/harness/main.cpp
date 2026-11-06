@@ -33,16 +33,38 @@ namespace {
 // The bridge's init rate: decoder samples per second (the dump's decoderRate).
 constexpr int kDecoderRate = 16000;
 
+constexpr const char* kBaselineComment =
+    "Bridge-level committed baseline for the Tier C harness (see harness/README.md). "
+    "Relationship to Tests~/Fixtures/audio/manifest.json: that file carries PARSER-level expectations "
+    "(expectedIntent/expectedSlots; expectedTranscript deliberately empty for filler/split/silence cases), "
+    "while expectedFinals here are the raw final transcripts the desktop bridge emits — [unk] tokens included — "
+    "under the exact grammar/gain/libvosk pinned in this file. "
+    "frontEndSamples and frontEndDigest pin the front end's output per fixture before padding "
+    "(its int16 sample count and its 64-bit FNV-1a digest as 16 lowercase hex digits); "
+    "they are harness-written and host-scoped (see harness/README.md). "
+    "'file' is a basename resolved against --fixtures; the corpus manifest's same-named key is Tests~/Fixtures/-relative. "
+    "Per the Tier B F7-amendment policy, raw transcripts belong to this committed baseline: "
+    "regenerating the corpus (pause-lead cases included), bumping libvosk or changing the front end "
+    "re-baselines via --write-baseline as a conscious, reviewed step. "
+    "grammar is the verbatim output of VoxrCommandParser.GenerateGrammarJson over the demo grammar "
+    "(contiguous pattern-literal runs + slot values + alias keys, each as a multi-word phrase entry AND as its individual words, "
+    "plus digit vocabulary + confirm/cancel follow-up words + [unk], ordinal-sorted).";
+
 struct FixtureOutcome {
     std::string file;
     std::vector<std::string> expected;
     std::vector<std::string> actual;
     std::vector<std::string> errors;
     bool pass = false;
-    size_t pushed = 0;     // input samples pushed for this case so far
-    size_t prevPushed = 0; // `pushed` at the previous drain
-    size_t seq = 0;        // results popped for this case so far
-    int64_t consumed = 0;  // --dump: input samples the bridge consumed, at case end
+    size_t pushed = 0;
+    size_t prevPushed = 0;
+    size_t seq = 0;
+    int64_t consumed = 0;
+    std::optional<uint64_t> expectedFrontEndSamples;
+    std::optional<std::string> expectedFrontEndDigest;
+    uint64_t frontEndSamples = 0;
+    std::string frontEndDigest;
+    bool frontEndPass = false;
 };
 
 // Opt-in --dump sink: JSON lines, one record per line, LF only (binary
@@ -160,6 +182,35 @@ bool PushAll(const float* data, size_t count, FixtureOutcome& r) {
     return true;
 }
 
+std::string WaitFrontEnd(uint64_t samples, uint64_t* out_output_samples, uint64_t* out_digest) {
+    uint64_t seen = 0;
+    int rc = vosk_bridge_get_frontend_stats(&seen, out_output_samples, out_digest,
+                                            nullptr, nullptr, nullptr);
+    int stalled = 0;
+    while (rc == VOSK_BRIDGE_OK && seen != samples) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        uint64_t now = 0;
+        rc = vosk_bridge_get_frontend_stats(&now, out_output_samples, out_digest,
+                                            nullptr, nullptr, nullptr);
+        if (now != seen) {
+            seen = now;
+            stalled = 0;
+        } else if (++stalled > 2000) {
+            return "front end stalled: input " + std::to_string(now) + " of " +
+                   std::to_string(samples) + " samples";
+        }
+    }
+    if (rc != VOSK_BRIDGE_OK)
+        return "vosk_bridge_get_frontend_stats failed with code " + std::to_string(rc);
+    return "";
+}
+
+std::string HexDigest(uint64_t digest) {
+    char buf[17];
+    std::snprintf(buf, sizeof(buf), "%016llx", static_cast<unsigned long long>(digest));
+    return buf;
+}
+
 int Fail(const std::string& msg) {
     std::fprintf(stderr, "vosk-bridge-harness: %s\n", msg.c_str());
     return 2;
@@ -198,10 +249,6 @@ int RunHarness(int argc, char** argv) {
     if (manifest.is_discarded())
         return Fail("manifest is not valid JSON: " + manifest_path);
 
-    // Schema validation up front: a hand-edited manifest must fail legibly
-    // (exit 2), never abort mid-run — and the decode-regime pins are REQUIRED,
-    // because a baseline decoded without them is meaningless (a grammar-less
-    // run would free-decode and silently invalidate every expectation).
     if (!manifest.contains("cases") || !manifest["cases"].is_array())
         return Fail("manifest has no 'cases' array: " + manifest_path);
     if (manifest["cases"].empty())
@@ -237,11 +284,12 @@ int RunHarness(int argc, char** argv) {
                     return Fail("case '" + c["file"].get<std::string>() + "': expectedFinals entries must be strings: " + manifest_path);
             }
         }
+        if (c.contains("frontEndSamples") && !c["frontEndSamples"].is_number_unsigned())
+            return Fail("case '" + c["file"].get<std::string>() + "': frontEndSamples must be a non-negative integer: " + manifest_path);
+        if (c.contains("frontEndDigest") && !c["frontEndDigest"].is_string())
+            return Fail("case '" + c["file"].get<std::string>() + "': frontEndDigest must be a string: " + manifest_path);
     }
 
-    // Corpus-drift guard: every WAV in the fixtures dir must be listed, or a
-    // committed fixture could silently go unverified forever (mirror of Tier
-    // B's EveryCommittedWav_IsListedInTheManifest).
     {
         std::set<std::string> listed;
         for (const auto& c : manifest["cases"])
@@ -260,8 +308,6 @@ int RunHarness(int argc, char** argv) {
             return Fail("fixture WAVs have no manifest entry (add cases or remove files): " + unlisted);
     }
 
-    // Opt-in dump: opened before the model loads, so a bad path fails legibly
-    // (exit 2) up front; the header pins the decode regime the dump came from.
     if (dump_writer.enabled) {
         std::filesystem::path parent = std::filesystem::path(dump_path).parent_path();
         if (!parent.empty()) {
@@ -299,6 +345,61 @@ int RunHarness(int argc, char** argv) {
                     " (model: " + model_dir + ")");
 
     {
+        const bool dumping = dump_writer.enabled;
+        dump_writer.enabled = false;
+        FixtureOutcome check;
+        check.file = manifest["cases"][0]["file"].get<std::string>();
+        WavData wav;
+        std::string error = LoadWav(fixtures_dir + "/" + check.file, wav);
+        float g0 = 0.0f, g1 = 0.0f, g2 = 0.0f, g3 = 0.0f;
+        if (error.empty()) {
+            rc = vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g0, nullptr, nullptr);
+            if (rc != VOSK_BRIDGE_OK)
+                error = "vosk_bridge_get_frontend_stats failed with code " + std::to_string(rc);
+        }
+        if (error.empty()) {
+            rc = vosk_bridge_start_push();
+            if (rc != VOSK_BRIDGE_OK)
+                error = "vosk_bridge_start_push failed with code " + std::to_string(rc);
+        }
+        if (error.empty()) {
+            if (!PushAll(wav.samples.data(), wav.samples.size(), check))
+                error = check.errors.empty() ? "push failed" : check.errors.back();
+        }
+        if (error.empty())
+            error = WaitFrontEnd(wav.samples.size(), nullptr, nullptr);
+        if (error.empty()) {
+            vosk_bridge_stop();
+            vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g1, nullptr, nullptr);
+            rc = vosk_bridge_start_push();
+            if (rc != VOSK_BRIDGE_OK)
+                error = "vosk_bridge_start_push failed with code " + std::to_string(rc);
+        }
+        if (error.empty()) {
+            vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g2, nullptr, nullptr);
+            vosk_bridge_stop();
+            rc = vosk_bridge_reset();
+            if (rc != VOSK_BRIDGE_OK)
+                error = "vosk_bridge_reset failed with code " + std::to_string(rc);
+        }
+        if (error.empty()) {
+            vosk_bridge_get_frontend_stats(nullptr, nullptr, nullptr, &g3, nullptr, nullptr);
+            if (!(g1 != g0 && g2 == g1 && g3 == g0)) {
+                char gains[256];
+                std::snprintf(gains, sizeof(gains),
+                              "g0 %.9g, g1 %.9g (must differ from g0), g2 %.9g (must equal g1), g3 %.9g (must equal g0)",
+                              g0, g1, g2, g3);
+                error = gains;
+            }
+        }
+        dump_writer.enabled = dumping;
+        if (!error.empty()) {
+            vosk_bridge_destroy();
+            return Fail("front-end lifecycle check failed on '" + check.file + "': " + error);
+        }
+    }
+
+    {
         std::string grammar = manifest["grammar"].dump();
         rc = vosk_bridge_set_grammar(grammar.c_str());
         if (rc != VOSK_BRIDGE_OK) {
@@ -307,9 +408,6 @@ int RunHarness(int argc, char** argv) {
         }
     }
 
-    // Padding pushed after each fixture: 1 s of silence lets endpointing fire
-    // in sample time, and a further ring-capacity's worth guarantees every
-    // fixture sample was consumed before stop (consumed >= pushed - capacity).
     const std::vector<float> padding(48000 + RingBuffer<float>::kCapacity, 0.0f);
 
     std::vector<FixtureOutcome> outcomes;
@@ -321,13 +419,17 @@ int RunHarness(int argc, char** argv) {
         if (c.contains("expectedFinals") && c["expectedFinals"].is_array())
             for (auto& e : c["expectedFinals"])
                 r.expected.push_back(e.get<std::string>());
+        if (c.contains("frontEndSamples"))
+            r.expectedFrontEndSamples = c["frontEndSamples"].get<uint64_t>();
+        if (c.contains("frontEndDigest"))
+            r.expectedFrontEndDigest = c["frontEndDigest"].get<std::string>();
 
         WavData wav;
         std::string wav_err = LoadWav(fixtures_dir + "/" + r.file, wav);
         if (!wav_err.empty()) {
             r.errors.push_back(wav_err);
             if (dump_writer.enabled)
-                DumpCase(r.file, 0, 0); // the reader still sees every case
+                DumpCase(r.file, 0, 0);
         } else {
             if (dump_writer.enabled)
                 DumpCase(r.file, wav.samples.size(), wav.sample_rate);
@@ -336,12 +438,17 @@ int RunHarness(int argc, char** argv) {
                 r.errors.push_back("vosk_bridge_start_push failed with code " +
                                    std::to_string(rc));
             } else {
-                if (PushAll(wav.samples.data(), wav.samples.size(), r))
-                    PushAll(padding.data(), padding.size(), r);
-                // --dump only: drain until the bridge has consumed every pushed
-                // sample, so stop ends each case at the same point in every run
-                // and every later origin depends on the corpus alone. Same stall
-                // rule as PushAll: ~10 s without progress is a case error.
+                if (PushAll(wav.samples.data(), wav.samples.size(), r)) {
+                    uint64_t fe_samples = 0, fe_digest = 0;
+                    std::string wait_err = WaitFrontEnd(wav.samples.size(), &fe_samples, &fe_digest);
+                    if (wait_err.empty()) {
+                        r.frontEndSamples = fe_samples;
+                        r.frontEndDigest = HexDigest(fe_digest);
+                        PushAll(padding.data(), padding.size(), r);
+                    } else {
+                        r.errors.push_back(wait_err);
+                    }
+                }
                 if (dump_writer.enabled) {
                     int stalled = 0;
                     int64_t seen = vosk_bridge_get_consumed();
@@ -352,7 +459,7 @@ int RunHarness(int argc, char** argv) {
                         if (now != seen) {
                             seen = now;
                             stalled = 0;
-                        } else if (++stalled > 2000) { // ~10 s without progress
+                        } else if (++stalled > 2000) {
                             r.errors.push_back("drain stalled: consumed " +
                                                std::to_string(now) + " of " +
                                                std::to_string(r.pushed) + " pushed");
@@ -362,24 +469,31 @@ int RunHarness(int argc, char** argv) {
                 }
                 DrainResults(r);
                 vosk_bridge_stop();
-                DrainResults(r); // the tail final is flushed during stop's join
+                DrainResults(r);
                 if (dump_writer.enabled)
-                    r.consumed = vosk_bridge_get_consumed(); // held after stop
+                    r.consumed = vosk_bridge_get_consumed();
                 vosk_bridge_reset();
             }
         }
         if (dump_writer.enabled)
-            DumpCaseEnd(r); // every case's frame closes here, on every branch
+            DumpCaseEnd(r);
 
-        r.pass = r.errors.empty() && (write_baseline || r.actual == r.expected);
+        r.frontEndPass = r.expectedFrontEndSamples && *r.expectedFrontEndSamples == r.frontEndSamples &&
+                         r.expectedFrontEndDigest && *r.expectedFrontEndDigest == r.frontEndDigest;
+        r.pass = r.errors.empty() && (write_baseline || (r.actual == r.expected && r.frontEndPass));
         if (!r.errors.empty())
             run_error = true;
-        if (write_baseline)
+        if (write_baseline) {
             c["expectedFinals"] = r.actual;
+            c["frontEndSamples"] = r.frontEndSamples;
+            c["frontEndDigest"] = r.frontEndDigest;
+        }
         outcomes.push_back(std::move(r));
     }
-    if (write_baseline)
+    if (write_baseline) {
         manifest["modelConf"] = *conf;
+        manifest["_comment"] = kBaselineComment;
+    }
 
     vosk_bridge_destroy();
 
@@ -398,12 +512,13 @@ int RunHarness(int argc, char** argv) {
                                    {"pass", r.pass},
                                    {"expected", r.expected},
                                    {"actual", r.actual},
-                                   {"errors", r.errors}});
+                                   {"errors", r.errors},
+                                   {"frontEndSamples", r.frontEndSamples},
+                                   {"frontEndDigest", r.frontEndDigest},
+                                   {"frontEndPass", r.frontEndPass}});
         if (r.pass)
             ++passed;
     }
-    // The trailer proves the dump complete. A bad stream is reported, never a
-    // verdict: the exit code stays the run's.
     if (dump_writer.enabled) {
         ordered_json rec;
         rec["kind"] = "end";
