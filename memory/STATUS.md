@@ -38,5 +38,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **TFL-5** · OPEN · human · v2026-11-05 — snapshot ref `refs/harness/pre-upgrade/6d07a5f` (trees-fill review recompose) kept until the human drops it by `git update-ref -d`
 - **AGF-1** · OPEN · design-relock · v2026-11-05 — locked joined-rig docs cite `native-bridge.md` :61 for the AGC divergence, which it no longer states: re-point at the next unlock
 - **VCG-1** · OPEN · harness-hub · v2026-11-05 — vc-guard READ_VERBS lacks `check-attr`: a subagent's attribute read is refused (light-batch-b WND-2 debugger); add it upstream
-- **AGF-2** · OPEN · feature · v2026-11-06 — agc-filter: x64 AGC2 resampler SIMD is host-selected (no injection point); digests host-scoped unless a source patch pins it: human's call by Phase 4
 - **AGF-3** · OPEN · feature · v2026-11-06 — agc-filter: the arm64 `.so` embeds 4 absolute `__FILE__` build paths, so size/bytes vary by build dir: decide `-ffile-prefix-map` in Phase 4
