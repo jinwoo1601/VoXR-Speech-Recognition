@@ -128,6 +128,7 @@ The riskiest unknown — the AGC2 subset's NDK and MSVC builds and the arm64 gro
 - Phase 2 — persisted plan (2026-11-06): [plan-2.md](plan-2.md)
 - Phase 3 — persisted plan (2026-11-06): [plan-3.md](plan-3.md)
 - Phase 4 — persisted plan (2026-11-06): [plan-4.md](plan-4.md)
+- Phase 5 — persisted plan (2026-11-06): [plan-5.md](plan-5.md)
 
 ## Risks, tradeoffs & open questions
 
