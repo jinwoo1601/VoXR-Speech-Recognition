@@ -337,6 +337,7 @@ namespace VoXR.Tests.Editor
 
             Assert.IsNotNull(result.Reason, "An IO failure must be reported.");
             StringAssert.StartsWith("IO failure: ", result.Reason);
+            Assert.IsFalse(result.NothingToApply);
             CollectionAssert.AreEqual(
                 Bytes(PristineConf),
                 File.ReadAllBytes(ConfPath),
@@ -554,6 +555,7 @@ namespace VoXR.Tests.Editor
             var result = EndpointerOverlay.Apply(_testDir, EndpointerOverlay.Responsive);
 
             Assert.AreEqual(Rule2 + " appears more than once", result.Reason);
+            Assert.IsFalse(result.NothingToApply);
             Assert.AreEqual(
                 "[VoxrSpeechRecogniser] Endpointer profile Responsive (explicit choice): "
                     + "rule2=0.6 rule3=1.0 rule4=2.0 — not applied: "
@@ -563,6 +565,31 @@ namespace VoXR.Tests.Editor
                     + ")",
                 EndpointerOverlay.LogLine(
                     VoxrEndpointerProfile.Responsive,
+                    "explicit choice",
+                    result
+                )
+            );
+        }
+
+        [Test]
+        public void LogLine_ModelDefaultUnparseable_NothingToApply()
+        {
+            File.WriteAllBytes(CopyPath, Bytes(PristineConf + Rule2 + "=0.6\n"));
+            WriteConf(Bytes(PristineConf));
+
+            var result = EndpointerOverlay.Apply(_testDir, EndpointerOverlay.ModelDefault);
+
+            Assert.AreEqual(Rule2 + " appears more than once", result.Reason);
+            Assert.IsTrue(result.NothingToApply);
+            Assert.AreEqual(
+                "[VoxrSpeechRecogniser] Endpointer profile ModelDefault (explicit choice): "
+                    + "rule2=0.6 rule3=1.0 rule4=2.0 — nothing to apply, but the conf has a problem: "
+                    + Rule2
+                    + " appears more than once ("
+                    + result.ConfPath
+                    + ")",
+                EndpointerOverlay.LogLine(
+                    VoxrEndpointerProfile.ModelDefault,
                     "explicit choice",
                     result
                 )
