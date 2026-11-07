@@ -1,6 +1,6 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-11-06
+updated: 2026-11-07
 
 ## Current
 
@@ -12,7 +12,7 @@ updated: 2026-11-06
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-agc-filter`**: feature; full; path development; stage implement - plan-6.md validated, committed 8a49ba0; next: implement 6 (Quest 3 human check)
+- **`feat-agc-filter`**: feature; full; path development; stage implement - Phase 6 Steps 1-8 done, APK on Quest; next: implement 6 Step 9, F18 ruling (brief session-brief.md)
 
 ## Deferred
 
