@@ -17,6 +17,8 @@ HUB = "D:/Workspace/VoXR-Speech-Recognition"
 TG = "D:/Workspace/VoXR TestGround"
 UNITY = "C:/Program Files/Unity/Hub/Editor/6000.4.7f1/Editor/Unity.exe"
 WAIT_DEFAULT = 360
+UNITY_TIMEOUT = 180
+KILL_WAIT = 60
 POLL_SECONDS = 2
 PACKAGE = "com.jinwoo1601.voxr"
 PLATFORMS = ("EditMode", "PlayMode")
@@ -288,22 +290,40 @@ def run_platform(platform, target):
         pass
     deleted = not os.path.lexists(results)
     start = time.monotonic()
-    code = subprocess.run(
+    process = subprocess.Popen(
         unity_argv(platform, target),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-    ).returncode
+    )
+    halted = None
+    try:
+        code = process.wait(timeout=UNITY_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True)
+        halted = f"{platform} Unity killed after timeout {UNITY_TIMEOUT}s"
+        try:
+            code = process.wait(timeout=KILL_WAIT)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            try:
+                code = process.wait(timeout=KILL_WAIT)
+            except subprocess.TimeoutExpired:
+                code = "-"
+                halted = f"{platform} Unity not confirmed dead after timeout {UNITY_TIMEOUT}s"
     wall = round(time.monotonic() - start)
     counts = read_counts(results) if deleted else None
     version = resolved_version()
     shown = "/".join(str(n) for n in counts) if counts is not None else "-/-/-/-"
     out(f"{platform}: {shown} exit={code} wall={wall}s")
-    reason = not_green_reason(code, counts, version)
+    if halted is not None:
+        reason = f"timeout {UNITY_TIMEOUT}s"
+    else:
+        reason = not_green_reason(code, counts, version)
     if reason is not None:
         out(f"{platform}: not green — {reason}")
     out(f"resolved: {version if version is not None else '-'} (packages-lock.json)")
-    return reason is None
+    return reason is None, halted
 
 
 def restore_tree(renamed, before):
@@ -366,16 +386,24 @@ def bracket(platforms, target, fd):
         return stop(f"manifest.json holds {count} occurrences of {old}, not 1")
     before = listing(TESTS_TILDE)
     results = []
+    halted = None
     renamed = False
     try:
         if not same_path(TREE, HUB):
             write_bytes(MANIFEST, files["manifest.json"].replace(old.encode(), new.encode()))
         os.rename(TESTS_TILDE, TESTS)
         renamed = True
-        for platform in platforms:
-            results.append(run_platform(platform, target))
+        for index, platform in enumerate(platforms):
+            passed, halted = run_platform(platform, target)
+            results.append(passed)
+            if halted is not None:
+                for later in platforms[index + 1:]:
+                    out(f"{later}: not run — {platform} timeout {UNITY_TIMEOUT}s")
+                break
     finally:
         found, kept = restore_tree(renamed, before)
+        if halted is not None:
+            found.insert(0, halted)
         found += restore_host(files)
         found += at_rest()[1]
         status = status_line(baseline, host_status())
