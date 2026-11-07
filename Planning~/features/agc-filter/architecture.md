@@ -105,7 +105,7 @@ On the device the front end sits in `recognition_loop` (`NativeBridge~/src/vosk_
 
 ## Non-functional realization
 
-- **Size (§6; F18).** Only the subset's link closure compiles; LTO, `--strip-all`, hidden symbols and `--exclude-libs` let the linker drop the rest. Probe (Phase 1): arm64 growth 100,632 bytes (`libbridge-with.so` 157,384 against `libbridge-bare.so` 56,752; `probe/report.md` `## Sizes (bytes)`), DLL 316,416; four absolute `__FILE__` paths in its `.so` made the growth build-path dependent. Shipped: `.so` (Phase 4, `build.sh`) 159,928 bytes, 103,176 over today's 56,752; DLL (the Phase 3 Release build) 320,512; APK (Phase 6): contribution 44,162,646 stored / 50,228,787 uncompressed under 70,000,000 (F18), whole 99,483,877.
+- **Size (§6; F18).** Only the subset's link closure compiles; LTO, `--strip-all`, hidden symbols and `--exclude-libs` let the linker drop the rest. Probe (Phase 1): arm64 growth 100,632 bytes (`libbridge-with.so` 157,384 against `libbridge-bare.so` 56,752; `probe/report.md` `## Sizes (bytes)`), DLL 316,416; four absolute `__FILE__` paths in its `.so` made the growth build-path dependent. Shipped: `.so` (Phase 4, `build.sh`) 159,928 bytes, 103,176 over today's 56,752; DLL (Release) 320,512; APK (Phase 6): contribution 44,162,646 stored / 50,228,787 uncompressed under 70,000,000 (F18), whole 99,483,877.
 - **Cost and ≤ 15 ms added latency (§6).** 219 multiply-adds per output sample, AGC2 once per frame, no allocation or lock in `Process`. `fe-probe` measures host cost per frame and the added latency — filter delay plus the worst-case remainder — recorded here in Phase 3; the bridge's read size is unchanged and not the front end's.
 - **Arbitrary chunk lengths (§6).** Structural: the accumulator makes output a function of the stream; the stats' counts expose a dropped or duplicated sample, and the parity test feeds non-multiples of 3 and 480.
 - **DLL load failure (§4.2).** Initialisation fails with a named error before any audio flows; the static runtime removes a dependency that could fail to load.
@@ -188,7 +188,7 @@ The riskiest unknown — the AGC2 subset's NDK and MSVC builds and the arm64 gro
 
 - *WRAP-1, PM-2 (PM takes, awaiting the human).* A non-finite `target_db` maps to −18 dBFS, one above 0 to 0, so headroom stays ≥ 0 (*Configuration* differs out of range only); `vosk_bridge_init` frees model and recogniser, returns `VOSK_BRIDGE_ERR_MODEL_LOAD_FAILED` when `FrontEnd` throws.
 - *ALT-1 (human ruling).* `Process`'s guard reads `Decimator::Phase()`, not `input_samples % 3`. *XFILE-1.* `design_decimator.py` defaults to `f1`. *GAP-1, 2.* Lifecycle checks replay after restart; tests for the −1 guards, NaN/Inf.
-- *Citation re-pointing.* `vosk_bridge.cpp` :278, :319, :245 now :288, :329, :246; `EditorMicBackend.cs` :372-417, :419-457, :461, :421-427, :79, :115, :429, :437 now :371-410, :412-450, :456, :414-420, :78, :114, :422, :430; `main.cpp`'s stay, as in Phase 4.
+- *Citation re-pointing.* `vosk_bridge.cpp` :278, :319, :245 now :288, :329, :246; `EditorMicBackend.cs` :372-417, :419-457, :461, :421-427, :79, :115, :429, :437 now :371-410, :412-450, :456, :414-420, :78, :114, :422, :430; `main.cpp` :377-383, :334-368 now `RunHarness` :425-500, :495-499.
 - *Corrections in place.* *Size*: 159,928 bytes, 103,176 over 56,752. *Bridge ABI → harness*: adds the replay.
 
 **Phase 6 — Quest 3 (2026-11-07).**

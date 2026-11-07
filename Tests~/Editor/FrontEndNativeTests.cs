@@ -528,6 +528,30 @@ namespace VoXR.Tests.Editor
         }
 
         [Test]
+        public void Process_CapCountsPhaseAndPartialFrame()
+        {
+            IntPtr unit = Create(TargetDb);
+            int frame = FrontEndNative.FrameSamples;
+            var output = new short[2 * frame];
+            Assert.AreEqual(
+                0,
+                FrontEndNative.voxr_fe_process(unit, new float[241], 241, output, output.Length),
+                "241 samples leave phase 1 and 80 samples of a frame, completing none"
+            );
+            var input = new float[239];
+            Assert.AreEqual(
+                -1,
+                FrontEndNative.voxr_fe_process(unit, input, input.Length, output, frame - 1),
+                "a cap one sample under the frame the phase and partial frame complete"
+            );
+            Assert.AreEqual(
+                frame,
+                FrontEndNative.voxr_fe_process(unit, input, input.Length, output, frame),
+                "a cap exactly the frame the phase and partial frame complete"
+            );
+        }
+
+        [Test]
         public void Process_NonFiniteInput_LeavesFiniteGain()
         {
             var block = new float[CallSamples];
