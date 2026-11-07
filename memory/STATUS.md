@@ -12,7 +12,7 @@ updated: 2026-11-07
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`light-batch-d`**: light, class slim, batch HRP-1, HRP-2, TFL-4, AGF-3, AGF-4, human-check; PR #195 at ec7966f, review fixed, re-gate green; next: g2-lite HARD STOP
+- **`light-batch-d`**: light, class slim, batch HRP-1, HRP-2, TFL-4, AGF-3, AGF-4, human-check; PR #195 at ec7966f; next: g2-lite CHANGELOG · ruling G2 · 2026-11-07 · the human · "Accept"
 
 ## Deferred
 
