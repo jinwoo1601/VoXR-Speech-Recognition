@@ -153,7 +153,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 8, z: -8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1001}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
 --- !u!20 &102
@@ -836,8 +837,8 @@ RectTransform:
   m_GameObject: {fileID: 1000}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 1}
+  m_LocalScale: {x: 0.001, y: 0.001, z: 0.001}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1101}
@@ -845,13 +846,13 @@ RectTransform:
   - {fileID: 1301}
   - {fileID: 1401}
   - {fileID: 1501}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0, y: 0}
+  m_SizeDelta: {x: 1200, y: 700}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &1002
 Canvas:
   m_ObjectHideFlags: 0
@@ -861,8 +862,8 @@ Canvas:
   m_GameObject: {fileID: 1000}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
-  m_Camera: {fileID: 0}
+  m_RenderMode: 2
+  m_Camera: {fileID: 102}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -887,7 +888,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  m_UiScaleMode: 1
+  m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1280, y: 720}
@@ -896,7 +897,7 @@ MonoBehaviour:
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
-  m_DynamicPixelsPerUnit: 1
+  m_DynamicPixelsPerUnit: 3
   m_PresetInfoIsWorld: 0
 --- !u!114 &1004
 MonoBehaviour:
@@ -1234,7 +1235,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'COMMAND LOG\n(speak a command...)'
+  m_Text: "COMMAND LOG\n(speak a command...)"
 --- !u!1 &1500
 GameObject:
   m_ObjectHideFlags: 0
@@ -1314,7 +1315,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'LAST COMMAND\n(awaiting input...)'
+  m_Text: "LAST COMMAND\n(awaiting input...)"
 --- !u!1 &1600
 GameObject:
   m_ObjectHideFlags: 0
@@ -1509,7 +1510,6 @@ SceneRoots:
   - {fileID: 701}
   - {fileID: 801}
   - {fileID: 901}
-  - {fileID: 1001}
   - {fileID: 1601}
   - {fileID: 1701}
   - {fileID: 1801}
