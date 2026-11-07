@@ -280,6 +280,26 @@ def not_green_reason(code, counts, version):
     return None
 
 
+def kill_argv(pid):
+    return ["taskkill", "/T", "/F", "/PID", str(pid)]
+
+
+def kill_tree(process):
+    try:
+        tree = subprocess.run(kill_argv(process.pid), capture_output=True).returncode
+    except OSError:
+        tree = None
+    try:
+        code = process.wait(timeout=KILL_WAIT)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        try:
+            code = process.wait(timeout=KILL_WAIT)
+        except subprocess.TimeoutExpired:
+            code = None
+    return code, tree
+
+
 def run_platform(platform, target):
     name = platform.lower()
     results = f"{RES}/{name}.xml"
@@ -300,17 +320,17 @@ def run_platform(platform, target):
     try:
         code = process.wait(timeout=UNITY_TIMEOUT)
     except subprocess.TimeoutExpired:
-        subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True)
-        halted = f"{platform} Unity killed after timeout {UNITY_TIMEOUT}s"
-        try:
-            code = process.wait(timeout=KILL_WAIT)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            try:
-                code = process.wait(timeout=KILL_WAIT)
-            except subprocess.TimeoutExpired:
-                code = "-"
-                halted = f"{platform} Unity not confirmed dead after timeout {UNITY_TIMEOUT}s"
+        code, tree = kill_tree(process)
+        if code is None:
+            code = "-"
+            halted = f"{platform} Unity not confirmed dead after timeout {UNITY_TIMEOUT}s"
+        elif tree != 0:
+            halted = f"{platform} Unity killed after timeout {UNITY_TIMEOUT}s, but taskkill /T exited {tree if tree is not None else 'unrun'}: its child processes not confirmed dead"
+        else:
+            halted = f"{platform} Unity killed after timeout {UNITY_TIMEOUT}s"
+    except BaseException:
+        kill_tree(process)
+        raise
     wall = round(time.monotonic() - start)
     counts = read_counts(results) if deleted else None
     version = resolved_version()
