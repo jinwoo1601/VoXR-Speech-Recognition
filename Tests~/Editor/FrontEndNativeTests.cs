@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  EditMode tests of the voxr-frontend unit through its C ABI: layout, int16 bounds, pause and burst gain, lifecycle, target step, chunk invariance
+// Purpose:  EditMode tests of the voxr-frontend unit through its C ABI: layout, int16 bounds, pause and burst gain, lifecycle, target step, target mapping, chunk invariance
 // Layer:    Tests.Editor
 // Owns:     FrontEndNativeTests (public class), Frame (nested struct)
 // Depends:  FrontEndNative, voxr_fe_stats, VoxrSpeechRecogniser, VoxrWavReader
@@ -506,6 +506,22 @@ namespace VoXR.Tests.Editor
                 expected,
                 DigestAt(float.PositiveInfinity, wav),
                 "a +Inf target must give the -18 dB target's output"
+            );
+            Assert.AreEqual(
+                expected,
+                DigestAt(float.NegativeInfinity, wav),
+                "a -Inf target must give the -18 dB target's output"
+            );
+        }
+
+        [Test]
+        public void Target_ZeroAndDefault_Differ()
+        {
+            float[] wav = Wav(LifecycleFile);
+            Assert.AreNotEqual(
+                DigestAt(TargetDb, wav),
+                DigestAt(0f, wav),
+                "the 0 dB and -18 dB targets give the same output: the target tests cannot tell a mapping from none"
             );
         }
 
