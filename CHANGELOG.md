@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Tactical sample's log panels show their line break, not a literal `\n`, and its UI is a World Space canvas on Main Camera, so it shows on Quest (EPR-3).
 
+- The Tactical sample README no longer says its panels are head-locked on Quest: the scene has no TrackedPoseDriver or XR Origin, so that depends on your XR setup (LBC-1).
+
 - Under the `ModelDefault` profile, a conf problem now logs `— nothing to apply, but the conf has a problem:`, not `— not applied:`; no preset was asked for (EPR-10).
 
 - The desktop harness's `confgen` echoes a BOM-prefixed first rule line, and refuses (exit 1) an existing `--out` that is not a copy of `--model` (EPR-8, EPR-9).
