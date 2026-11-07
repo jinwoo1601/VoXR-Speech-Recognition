@@ -48,7 +48,7 @@ mode there is no such retry, so prefer the explicit `ReleaseNativeResources()` h
 | `modelRelativePath` | `string` | `"vosk-model-small-en-us-0.15"` | Path within StreamingAssets (without `.zip` extension) |
 | `endpointerProfile` | [`VoxrEndpointerProfile`](data-types.md#voxrendpointerprofile) | `Automatic` | Endpointer preset written into the extracted model's `conf/model.conf` at each model load. `Automatic` lets the listening mode at load decide: `Responsive` in `Continuous` mode, and with no `VoxrPushToTalkController` driving the recogniser; `ModelDefault` in `PushToTalk`. An explicit preset overrides the mode. Read when a load begins; a change reaches the next load. Each load logs the resolved preset and its values. Serialized only -- there is no public property. See [Endpointer Profile](../endpointer-profile.md) |
 | `sampleRate` | `float` | `16000` | VOSK recogniser sample rate in Hz |
-| `micGainTargetDb` | `float` | `-18` | AGC target level in dB (calibrated for Quest 3) |
+| `micGainTargetDb` | `float` | `-18` | AGC target level in dBFS (calibrated for Quest 3). The native [front end](../native-bridge.md#configuration) takes it as AGC2's headroom, `-micGainTargetDb` dB, on device and in the Windows Editor alike. Read once, when the recogniser initialises; a change reaches the next initialisation. A non-finite value falls back to `-18`, and a value above `0` is treated as `0` |
 
 ## Events
 
@@ -78,8 +78,8 @@ mode there is no such retry, so prefer the explicit `ReleaseNativeResources()` h
 | `ReleaseNativeResources()` | Frees this component's own resources unconditionally — the Editor backend, plus its `IsRecognising` and `IsModelReady` state — and drops the bridge claim if it holds it. The process-wide native bridge is destroyed too, *unless* another live component currently owns the claim; with no live owner, a call from a non-owner does destroy the bridge. Safe to call multiple times. |
 | `StartRecognition()` | Starts audio capture and recognition. Calls `Initialise()` if needed. Fire-and-forget async wrapper. |
 | `StartRecognitionAsync()` | `async Task`. Asynchronously starts recognition with permission handling. |
-| `StopRecognition()` | Stops audio capture. Model stays loaded for fast restart. |
-| `ResetRecogniser()` | Clears recogniser state without stopping audio. |
+| `StopRecognition()` | Stops audio capture. Model stays loaded for fast restart, and the gain level the audio front end has learned is kept for the next start. |
+| `ResetRecogniser()` | Clears recogniser state without stopping audio, and returns the audio front end to its cold start, discarding the gain level it has learned. |
 | `SetGrammar(string grammarJson)` | Sets a VOSK grammar JSON string for constrained recognition. Typically called by `VoxrCommandRecogniser` internally. A grammar that is not a non-empty JSON array of strings is rejected before it reaches the decoder: `OnError` fires with `ModelLoadFailed`, an error naming the fault is logged, and any grammar already in use is left untouched. `null` or `""` still means "clear the grammar" and returns the decoder to free dictation. |
 
 ### Injection Methods

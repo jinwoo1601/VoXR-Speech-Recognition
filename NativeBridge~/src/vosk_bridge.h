@@ -73,6 +73,9 @@ VOSK_BRIDGE_EXPORT void    vosk_bridge_get_result_position(int64_t* out_consumed
 // Input samples the recognition thread has consumed this session; held after
 // vosk_bridge_stop until the next start.
 VOSK_BRIDGE_EXPORT int64_t vosk_bridge_get_consumed(void);
+VOSK_BRIDGE_EXPORT int vosk_bridge_get_frontend_stats(uint64_t* out_input_samples, uint64_t* out_output_samples,
+                                                      uint64_t* out_digest, float* out_gain_db,
+                                                      float* out_pre_rms, float* out_post_rms);
 
 // Status
 VOSK_BRIDGE_EXPORT int vosk_bridge_is_running();

@@ -33,10 +33,10 @@
 - Slim angles: default (LINE, GONE, XFILE)
 - Prose angles: default (LINE, GONE, XFILE, CONV)
 - Full angles: default (the composed roster set)
-- Hot paths: `Runtime/VoxrSpeechRecogniser.cs`, `Runtime/Dsp/**`, `Runtime/Native/**`, `Runtime/Commands/**`, `NativeBridge~/src/**` — the per-frame poll, the per-chunk audio path, the bridge, and the per-utterance parser
+- Hot paths: `Runtime/VoxrSpeechRecogniser.cs`, `Runtime/EditorMicBackend.cs`, `Runtime/Native/**`, `Runtime/Commands/**`, `NativeBridge~/src/**` — the per-frame poll, the per-chunk audio path, the bridge, and the per-utterance parser
 
 ## layout
 <!-- Interview: Which directories hold this project's source, which its tests, and which are generated or composed output never edited by hand — or a single `none`? -->
 - Source: `Runtime/**`, `Editor/**`, `NativeBridge~/src/**`, `NativeBridge~/include/**`
 - Tests: `Tests~/**`, `NativeBridge~/harness/**`
-- Generated: `.claude/**` except `.claude/bindings/**` (composed by `harness.py`); `Runtime/Plugins/Android/arm64-v8a/*.so` (built from `NativeBridge~/` by its `build.sh`); `NativeBridge~/build*/` and `NativeBridge~/vendor/` (ignored)
+- Generated: `.claude/**` except `.claude/bindings/**` (composed by `harness.py`); `Runtime/Plugins/Android/arm64-v8a/*.so` (built from `NativeBridge~/` by its `build.sh`); `Runtime/Plugins/x86_64/voxr-frontend.dll` (built from `NativeBridge~/` by the `windows-x64` preset); `NativeBridge~/build*/` and `NativeBridge~/vendor/` (ignored)

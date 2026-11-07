@@ -127,6 +127,8 @@ namespace AbRig
         };
         const int NotScoredRow = 7;
 
+        static readonly string[] F13Labels = { "correct fires", "wrong-intent", "false-fire" };
+
         internal sealed class Side
         {
             internal string Path;
@@ -139,8 +141,6 @@ namespace AbRig
             Dictionary<string, string> o = ParseOptions(args);
             string outPath = o["--out"];
 
-            // No stale report survives a stop after the options parse; then both files are read
-            // before anything else.
             try
             {
                 if (File.Exists(outPath))
@@ -153,8 +153,24 @@ namespace AbRig
             Side a = Read(o["--a"], "a");
             Side b = Read(o["--b"], "b");
             Compare(a, b);
+            JoinedInput.Manifest manifest = JoinedInput.ReadManifest(
+                a.Header.GetProperty("manifest").GetString()
+            );
+            var cases = new Dictionary<string, JoinedInput.ManifestCase>(StringComparer.Ordinal);
+            foreach (JoinedInput.ManifestCase c in manifest.Cases)
+                cases.Add(c.Name, c);
+            foreach (JsonElement rec in a.Cases)
+                if (!cases.ContainsKey(CaseName(rec)))
+                    throw new JoinedInput.Stop(
+                        2,
+                        a.Path
+                            + ": case \""
+                            + CaseName(rec)
+                            + "\" is not in the manifest "
+                            + manifest.Path
+                    );
 
-            string text = Render(a, b);
+            string text = Render(a, b, cases);
             try
             {
                 File.WriteAllBytes(outPath, new UTF8Encoding(false).GetBytes(text));
@@ -527,16 +543,12 @@ namespace AbRig
                 );
         }
 
-        // --- rendering --------------------------------------------------------------------
-
-        static string Render(Side a, Side b)
+        static string Render(Side a, Side b, Dictionary<string, JoinedInput.ManifestCase> cases)
         {
             var sb = new StringBuilder();
             string vary = a.Header.GetProperty("vary").GetString();
             bool layered = Layered(a);
 
-            // 1. Header: corpus, provenance, the side varied and both identities, kill check, gate
-            // (at the recogniser layer: the layer, tick rate, configurations, the one-read note).
             sb.Append("# Joined report\n\n");
             if (Bool(a.Header, "evaluate") || Bool(b.Header, "evaluate"))
                 sb.Append("**HOLDOUT EVALUATION**\n\n");
@@ -648,7 +660,6 @@ namespace AbRig
                 sb.Append('\n');
             }
 
-            // 2. Counts, A and B columns (no not-scored row at the recogniser layer).
             int[] ca = Counts(a);
             int[] cb = Counts(b);
             sb.Append("\n## Counts\n\n| | A | B |\n|---|---|---|\n");
@@ -662,7 +673,34 @@ namespace AbRig
                         .Append(cb[i])
                         .Append(" |\n");
 
-            // 3. Cases, in file order; `*` marks a flip.
+            bool pauseLead = false;
+            foreach (JsonElement rec in a.Cases)
+                if (cases[CaseName(rec)].Category == "pause-lead")
+                    pauseLead = true;
+            if (pauseLead)
+            {
+                int[] fa = F13Counts(a, cases);
+                int[] fb = F13Counts(b, cases);
+                sb.Append("\n## F13 (non-ladder cases)\n\n| | A | B |\n|---|---|---|\n");
+                for (int i = 0; i < F13Labels.Length; i++)
+                    sb.Append("| ")
+                        .Append(F13Labels[i])
+                        .Append(" | ")
+                        .Append(fa[i])
+                        .Append(" | ")
+                        .Append(fb[i])
+                        .Append(" |\n");
+                sb.Append("| first-word retention | ")
+                    .Append(fa[F13Labels.Length])
+                    .Append('/')
+                    .Append(fa[F13Labels.Length + 1])
+                    .Append(" | ")
+                    .Append(fb[F13Labels.Length])
+                    .Append('/')
+                    .Append(fb[F13Labels.Length + 1])
+                    .Append(" |\n");
+            }
+
             var flips = new List<int>();
             sb.Append("\n## Cases\n\n| case | A | A credit | B | B credit | flip |\n");
             sb.Append("|---|---|---|---|---|---|\n");
@@ -688,8 +726,6 @@ namespace AbRig
                     .Append(" |\n");
             }
 
-            // 4. Not scored at this layer; at the recogniser layer, which scores every non-sealed
-            // case, the timing measures instead (*Timing measures*), never a flip.
             if (layered)
             {
                 sb.Append("\n## Timing\n\n");
@@ -722,7 +758,6 @@ namespace AbRig
                     sb.Append("(none)\n");
             }
 
-            // 5. Flips, each with both sides' transcript and outcome (raw JSON).
             sb.Append("\n## Flips: ").Append(flips.Count).Append('\n');
             foreach (int i in flips)
             {
@@ -731,7 +766,6 @@ namespace AbRig
                 AppendFlipSide(sb, "B", b.Cases[i]);
             }
 
-            // 6. Decoder side only: every case's A and B transcripts (F4).
             if (vary == "decoder")
             {
                 sb.Append("\n## Transcripts\n");
@@ -972,6 +1006,40 @@ namespace AbRig
                     }
                     counts[6] += rec.GetProperty("extraFires").GetInt32();
                 }
+            }
+            return counts;
+        }
+
+        static int[] F13Counts(Side s, Dictionary<string, JoinedInput.ManifestCase> cases)
+        {
+            var counts = new int[F13Labels.Length + 2];
+            foreach (JsonElement rec in s.Cases)
+            {
+                JoinedInput.ManifestCase mc = cases[CaseName(rec)];
+                if (mc.Category != "ladder" && Disposition(rec) == "scored")
+                {
+                    switch (rec.GetProperty("class").GetString())
+                    {
+                        case "correct-fire":
+                            counts[0]++;
+                            break;
+                        case "wrong-intent":
+                            counts[1]++;
+                            break;
+                        case "false-fire":
+                            counts[2]++;
+                            break;
+                    }
+                }
+                if (mc.Category != "pause-lead")
+                    continue;
+                counts[4]++;
+                if (
+                    rec.TryGetProperty("finals", out JsonElement finals)
+                    && finals.GetArrayLength() > 0
+                    && Array.Find(SpaceJoined(rec).Split(' '), t => t != "[unk]") == mc.FirstWord
+                )
+                    counts[3]++;
             }
             return counts;
         }

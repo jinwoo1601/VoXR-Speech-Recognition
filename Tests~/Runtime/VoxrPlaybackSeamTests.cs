@@ -114,19 +114,26 @@ namespace VoXR.Tests.Runtime
         }
 
         [UnityTest]
-        public IEnumerator Playback_QuietSine_EngagesAgc()
+        public IEnumerator Playback_QuietSine_DoesNotRaiseGain()
         {
             var backend = _speech.EditorBackend;
             Assert.IsTrue(backend.StartPlayback(Sine(1f, 0.05f), 48000, null));
+            Assert.AreEqual(
+                Mathf.Pow(10f, 15f / 20f),
+                _speech.EditorAgcGain,
+                1e-4f,
+                "reset must leave the front end at its 15 dB initial gain"
+            );
 
             while (backend.TickPlayback(_speech.EditorDispatcher))
                 yield return null;
 
-            Assert.Greater(
-                _speech.EditorAgcGain,
-                1f,
-                "AGC must have amplified a 0.05-peak signal — pre-DSP entry (F2)"
+            double gainDb = System.Math.Round(
+                20.0 * System.Math.Log10(_speech.EditorAgcGain),
+                2,
+                System.MidpointRounding.AwayFromZero
             );
+            Assert.LessOrEqual(gainDb, 15.00, "a 220 Hz sine is not speech: the gain must not rise above 15 dB");
         }
 
         [UnityTest]

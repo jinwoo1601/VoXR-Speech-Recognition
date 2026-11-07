@@ -12,7 +12,7 @@ Open **Window > VoXR > Command Debug** during Play Mode to inspect the full comm
 
 ### Left Panel (recognition state)
 
-- **Audio level meters** -- pre-AGC RMS, post-AGC RMS, and current AGC gain. Useful for verifying microphone input and AGC behaviour. Windows Editor only, like the [live-mic backend](#live-microphone-windows-editor) they measure -- macOS and Linux Editors show *Audio levels: Editor-Win only* in their place.
+- **Audio level meters** -- pre-AGC RMS, post-AGC RMS, and current AGC gain, as the native [front end](native-bridge.md#audio-front-end) reports them for its last 10 ms frame (the gain shown as a linear factor). Useful for verifying microphone input and AGC behaviour. Windows Editor only, like the [live-mic backend](#live-microphone-windows-editor) they measure -- macOS and Linux Editors show *Audio levels: Editor-Win only* in their place.
 - **Partial result** -- the live VOSK partial transcript, updated continuously as you speak.
 - **Final result** -- the completed transcript text at utterance boundaries.
 - **Per-word confidence bars** -- each word with a colour-coded confidence bar (green > yellow > red).
@@ -81,13 +81,13 @@ Like the rest of the diagnostics, the collector is Editor-only and compiled out 
 
 ## Live Microphone (Windows Editor)
 
-On Windows, `VoxrSpeechRecogniser.StartRecognition()` transparently auto-routes audio through `UnityEngine.Microphone` and a desktop build of `libvosk.dll` via P/Invoke. Existing scenes and user code work with zero changes -- speak into your PC microphone and watch commands fire in the Console.
+On Windows, `VoxrSpeechRecogniser.StartRecognition()` transparently auto-routes audio through `UnityEngine.Microphone`, the native front end in `voxr-frontend.dll`, and a desktop build of `libvosk.dll`, both via P/Invoke. Existing scenes and user code work with zero changes -- speak into your PC microphone and watch commands fire in the Console.
 
-The required Windows DLLs (`libvosk.dll` plus three MinGW runtime dependencies) ship inside the package under `Runtime/Plugins/x86_64/`. No manual download or extra setup is needed -- press Play in the Editor and the live-mic backend takes over.
+The required Windows DLLs (`voxr-frontend.dll`, and `libvosk.dll` with its three MinGW runtime dependencies) ship inside the package under `Runtime/Plugins/x86_64/`. No manual download or extra setup is needed -- press Play in the Editor and the live-mic backend takes over. If `voxr-frontend.dll` cannot be loaded, initialisation fails with `ModelLoadFailed` and an error naming the DLL and that folder; there is no managed fallback.
 
 ### How It Works
 
-The Editor backend (`EditorMicBackend`) captures audio via `UnityEngine.Microphone` at the system's default sample rate, applies C# ports of the native bridge's DSP (48 kHz -> 16 kHz FIR downsampler and AGC with soft saturation), and feeds the processed audio to `libvosk.dll` via P/Invoke. Model loading is offloaded to a background thread to avoid main-thread hitches.
+The Editor backend (`EditorMicBackend`) captures audio via `UnityEngine.Microphone` at 48 kHz (a device that delivers another rate stops capture with `AudioDeviceUnavailable`), passes each chunk to the same native [front end](native-bridge.md#audio-front-end) the device runs -- a 48 kHz -> 16 kHz FIR decimator, WebRTC AGC2, and int16 conversion, in `voxr-frontend.dll` -- and feeds its output to `libvosk.dll` via P/Invoke. The gain level AGC2 learns survives `StopRecognition()` / `StartRecognition()`; `ResetRecogniser()` returns it to the cold start. Model loading is offloaded to a background thread to avoid main-thread hitches.
 
 ### Scope and Limitations
 
@@ -97,7 +97,7 @@ The Editor backend (`EditorMicBackend`) captures audio via `UnityEngine.Micropho
 
 ### WAV Replay (Repository Tests)
 
-The same backend carries an internal playback mode used by the repository's acoustic regression suite: committed WAV fixtures (48 kHz mono 16-bit, amplitude-scaled to the measured Quest 3 microphone range) replay through the identical downsampler -> AGC -> VOSK pipeline as live microphone audio, and PlayMode tests assert the recognized command per fixture. The test-data containers ([`VoxrAudioTestSuiteAsset` / `VoxrAudioTestCase`](api/scriptable-objects.md#voxraudiotestsuiteasset)) ship with the package, though nothing in the shipped package runs them -- the only consumer is this repository's WAV-replay suite, and the Batch Test Window accepts a `VoxrTestSuiteAsset` only; the fixture corpus, its reproducible TTS generation script, and the replay tests live under the repository's `Tests~/` folder and are stripped from the published package. Replay results are a regression baseline against committed audio -- TTS speech is cleaner than human speech, so the suite detects changes in behaviour, not absolute recognition quality.
+The same backend carries an internal playback mode used by the repository's acoustic regression suite: committed WAV fixtures (48 kHz mono 16-bit, amplitude-scaled to the measured Quest 3 microphone range) replay through the identical front end -> VOSK pipeline as live microphone audio, each replay starting the front end cold, and PlayMode tests assert the recognized command per fixture. The test-data containers ([`VoxrAudioTestSuiteAsset` / `VoxrAudioTestCase`](api/scriptable-objects.md#voxraudiotestsuiteasset)) ship with the package, though nothing in the shipped package runs them -- the only consumer is this repository's WAV-replay suite, and the Batch Test Window accepts a `VoxrTestSuiteAsset` only; the fixture corpus, its reproducible TTS generation script, and the replay tests live under the repository's `Tests~/` folder and are stripped from the published package. Replay results are a regression baseline against committed audio -- TTS speech is cleaner than human speech, so the suite detects changes in behaviour, not absolute recognition quality.
 
 ---
 

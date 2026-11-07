@@ -99,11 +99,13 @@ namespace AbRig
         internal sealed class ManifestCase
         {
             internal string File;
-            internal string Name; // the join key: `file` after its last '/'
+            internal string Name;
             internal bool Sealed;
-            internal string Layer; // "parser" or "recogniser"; absent = parser
-            internal string ExpectedIntent; // "" = a negative
-            internal KeyValuePair<string, string>[] ExpectedSlots; // ordered {name, value}
+            internal string Layer;
+            internal string Category = "";
+            internal string FirstWord;
+            internal string ExpectedIntent;
+            internal KeyValuePair<string, string>[] ExpectedSlots;
         }
 
         internal sealed class Manifest
@@ -130,7 +132,6 @@ namespace AbRig
 
         internal static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
 
-        // Today's corpus manifest keys plus the two marks; any other key stops the run.
         static readonly HashSet<string> ManifestCaseKeys = new HashSet<string>(
             StringComparer.Ordinal
         )
@@ -148,6 +149,9 @@ namespace AbRig
             "description",
             "sealed",
             "layer",
+            "leadSilenceSeconds",
+            "noiseFloorDbfs",
+            "firstWord",
         };
 
         static readonly string[] PinKeys =
@@ -458,8 +462,6 @@ namespace AbRig
             return words;
         }
 
-        // --- corpus manifest --------------------------------------------------------------
-
         internal static Manifest ReadManifest(string path)
         {
             JsonElement root = ParseFile(path);
@@ -536,6 +538,28 @@ namespace AbRig
                             );
                         mc.Layer = layer;
                     }
+                    else if (p.Name == "category")
+                    {
+                        if (p.Value.ValueKind != JsonValueKind.String)
+                            throw new Stop(2, named + ": key `category` is not a string");
+                        mc.Category = p.Value.GetString();
+                    }
+                    else if (p.Name == "leadSilenceSeconds" || p.Name == "noiseFloorDbfs")
+                    {
+                        if (p.Value.ValueKind != JsonValueKind.Number)
+                            throw new Stop(2, named + ": key `" + p.Name + "` is not a number");
+                    }
+                    else if (p.Name == "firstWord")
+                    {
+                        string word =
+                            p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() : null;
+                        if (
+                            string.IsNullOrEmpty(word)
+                            || Array.Exists(word.ToCharArray(), char.IsWhiteSpace)
+                        )
+                            throw new Stop(2, named + ": key `firstWord` is not a single word");
+                        mc.FirstWord = word;
+                    }
                     else if (p.Name == "expectedIntent")
                     {
                         if (p.Value.ValueKind != JsonValueKind.String)
@@ -545,11 +569,14 @@ namespace AbRig
                     else if (p.Name == "expectedSlots")
                         mc.ExpectedSlots = ReadExpectedSlots(p.Value, named);
                 }
-                // The scorer's inputs are required: an absent one is never a silent negative.
                 if (mc.ExpectedIntent == null)
                     throw new Stop(2, named + ": no key `expectedIntent`");
                 if (mc.ExpectedSlots == null)
                     throw new Stop(2, named + ": no key `expectedSlots`");
+                if (mc.Category == "pause-lead" && mc.FirstWord == null)
+                    throw new Stop(2, named + ": no key `firstWord` on a `pause-lead` case");
+                if (mc.Category != "pause-lead" && mc.FirstWord != null)
+                    throw new Stop(2, named + ": key `firstWord` on a case not `pause-lead`");
 
                 mc.Name = mc.File.Substring(mc.File.LastIndexOf('/') + 1);
                 if (!byName.Add(mc.Name))
@@ -594,8 +621,6 @@ namespace AbRig
             return slots;
         }
 
-        // --- pin (expectations.json) ------------------------------------------------------
-
         internal static Pin ReadPin(string path)
         {
             JsonElement root = ParseFile(path);
@@ -623,7 +648,12 @@ namespace AbRig
                 if (c.ValueKind != JsonValueKind.Object)
                     throw new Stop(2, at + ": not an object");
                 foreach (JsonProperty p in c.EnumerateObject())
-                    if (p.Name != "file" && p.Name != "expectedFinals")
+                    if (
+                        p.Name != "file"
+                        && p.Name != "expectedFinals"
+                        && p.Name != "frontEndDigest"
+                        && p.Name != "frontEndSamples"
+                    )
                         throw new Stop(2, at + ": unknown key \"" + p.Name + "\"");
                 string file = Str(c, "file", at);
                 string[] finals = StrArray(c, "expectedFinals", at);
