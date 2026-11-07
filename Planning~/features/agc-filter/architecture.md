@@ -3,7 +3,7 @@ type: architecture
 feature: agc-filter
 topic: agc-filter
 status: draft
-updated: 2026-11-06
+updated: 2026-11-07
 sources:
   - Planning~/features/agc-filter/requirements.md
   - Planning~/design-docs/agc-filter.md
@@ -105,7 +105,7 @@ On the device the front end sits in `recognition_loop` (`NativeBridge~/src/vosk_
 
 ## Non-functional realization
 
-- **Size (§6; F18).** Only the subset's link closure compiles; LTO, `--strip-all`, hidden symbols and `--exclude-libs` let the linker drop the rest. Probe (Phase 1): arm64 growth 100,632 bytes (`libbridge-with.so` 157,384 against `libbridge-bare.so` 56,752; `probe/report.md` `## Sizes (bytes)`), DLL 316,416; four absolute `__FILE__` paths in its `.so` made the growth build-path dependent. Shipped: `.so` (Phase 4, `build.sh`) 159,928 bytes, 103,176 over today's 56,752; DLL (the Phase 3 Release build) 320,512; the APK under 70 MB is F18's.
+- **Size (§6; F18).** Only the subset's link closure compiles; LTO, `--strip-all`, hidden symbols and `--exclude-libs` let the linker drop the rest. Probe (Phase 1): arm64 growth 100,632 bytes (`libbridge-with.so` 157,384 against `libbridge-bare.so` 56,752; `probe/report.md` `## Sizes (bytes)`), DLL 316,416; four absolute `__FILE__` paths in its `.so` made the growth build-path dependent. Shipped: `.so` (Phase 4, `build.sh`) 159,928 bytes, 103,176 over today's 56,752; DLL (the Phase 3 Release build) 320,512; APK (Phase 6): contribution 44,162,646 stored / 50,228,787 uncompressed under 70,000,000 (F18), whole 99,483,877.
 - **Cost and ≤ 15 ms added latency (§6).** 219 multiply-adds per output sample, AGC2 once per frame, no allocation or lock in `Process`. `fe-probe` measures host cost per frame and the added latency — filter delay plus the worst-case remainder — recorded here in Phase 3; the bridge's read size is unchanged and not the front end's.
 - **Arbitrary chunk lengths (§6).** Structural: the accumulator makes output a function of the stream; the stats' counts expose a dropped or duplicated sample, and the parity test feeds non-multiples of 3 and 480.
 - **DLL load failure (§4.2).** Initialisation fails with a named error before any audio flows; the static runtime removes a dependency that could fail to load.
@@ -190,6 +190,13 @@ The riskiest unknown — the AGC2 subset's NDK and MSVC builds and the arm64 gro
 - *ALT-1 (human ruling).* `Process`'s guard reads `Decimator::Phase()`, not `input_samples % 3`. *XFILE-1.* `design_decimator.py` defaults to `f1`. *GAP-1, 2.* Lifecycle checks replay after restart; tests for the −1 guards, NaN/Inf.
 - *Citation re-pointing.* `vosk_bridge.cpp` :278, :319, :245 now :288, :329, :246; `EditorMicBackend.cs` :372-417, :419-457, :461, :421-427, :79, :115, :429, :437 now :371-410, :412-450, :456, :414-420, :78, :114, :422, :430; `main.cpp`'s stay, as in Phase 4.
 - *Corrections in place.* *Size*: 159,928 bytes, 103,176 over 56,752. *Bridge ABI → harness*: adds the replay.
+
+**Phase 6 — Quest 3 (2026-11-07).**
+
+- *Bridge.* Claim 3 false: the bridge's sha256 differs (section names): "Accept, install".
+- *F18.* Size on the package's contribution, not the whole APK: "Pass on contribution"; tries "Pass as run".
+- *Built as planned.* Release APK built in the Editor (batchmode `-build` refused), installed; `agc_target=-18.0 dB` at init; heading 3 of 3 fired, mode decoded; PM-2's failure path unrun.
+- *Corrections in place.* *Size*: APK under 70 MB, now measured.
 
 ## Related
 
