@@ -4,7 +4,7 @@ updated: 2026-11-07
 
 ## Current
 
-- **`main` at PR #194 `1e8d1b5` (light-batch-c G2); `v2.0.0`; running: `light-batch-d`; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193, batch C.
+- **`main` at PR #195 `3590827` (light-batch-d G2); `v2.0.0`; running: none; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193, batch C, batch D.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,7 +12,6 @@ updated: 2026-11-07
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`light-batch-d`**: light, class slim, batch HRP-1, HRP-2, TFL-4, AGF-3, AGF-4, human-check; PR #195 at ec7966f; next: g2-lite CHANGELOG · ruling G2 · 2026-11-07 · the human · "Accept"
 
 ## Deferred
 
@@ -27,17 +26,13 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **JRR-2** · OPEN · human · v2026-10-15 — joined-rig-recogniser: human read of the 16-fixture recogniser-layer report (split case, flips legible) not stated at G2
 - **EPR-1** · OPEN · design-relock · v2026-11-04 — locked `joined-rig.md` rule 2 (:66, :84, :108): kill check compares final texts; `ab-rig/Joined.cs` :214-277 also compares gain, libvosk, conf
 - **EPR-5** · OPEN · human · v2026-11-04 — TestGround's modified `OpenXRPackageSettings.asset` and `EditorBuildSettings.asset` from the Phase 8 sitting: keep or revert in the host
-- **HRP-1** · OPEN · light-lane · v2026-11-05 — host_run.py runs Unity with no timeout: a hung run holds the host lock; bound it and kill before the restore
-- **HRP-2** · OPEN · light-lane · v2026-11-05 — binding unity.md Command 1 says Commands 1-2 start "in the background"; Claude Code's memory reap can kill an idle run: say foreground
 - **TFL-1** · OPEN · harness-hub · v2026-11-05 — vc Merge procedure flagged `slots to revisit` at vc-git 0.47.0, not acted on in trees-fill P4: rule adopt/merge/keep at the next upgrade
 - **TFL-2** · OPEN · harness-hub · v2026-11-05 — generated settings.json: no allow for `git pull`, `git merge`, `git -C`; `hub.py write` allows miss from a `.trees` tree: fix in the base template
 - **TFL-3** · OPEN · harness-hub · v2026-11-05 — `chore/release-X.Y.Z` yields a nested tree dir under the trees Location; `tree-remove.py` leaves an empty `chore\`
-- **TFL-4** · OPEN · light-lane · v2026-11-05 — vc-git.md drift: Check-in lacks the template's tree-session clauses (review R2); stale trees Interview comment; tree path in 3 bindings
 - **TFL-5** · OPEN · human · v2026-11-05 — snapshot ref `refs/harness/pre-upgrade/6d07a5f` (trees-fill review recompose) kept until the human drops it by `git update-ref -d`
 - **AGF-1** · OPEN · design-relock · v2026-11-05 — locked joined-rig docs cite `native-bridge.md` :61 for the AGC divergence, which it no longer states: re-point at the next unlock
 - **VCG-1** · OPEN · harness-hub · v2026-11-05 — vc-guard READ_VERBS lacks `check-attr`: a subagent's attribute read is refused (light-batch-b WND-2 debugger); add it upstream
 - **AGF-2** · OPEN · human · v2026-11-07 — agc-filter PM-2: `vosk_bridge_init`'s failure path when `FrontEnd` throws (frees model and recogniser, MODEL_LOAD_FAILED) is unrun on device and untested
-- **AGF-3** · OPEN · light-lane · v2026-11-07 — agc-filter WRAP-1: `MakeConfiguration`'s out-of-range target mapping (non-finite → -18, above 0 → 0) has no test
-- **AGF-4** · OPEN · light-lane · v2026-11-07 — agc-filter architecture register *Symbols* says the `.so` exports 17 names; `llvm-nm -D` lists 18 (17 `vosk_bridge_*` + `JNI_OnLoad`): correct it
 - **LBC-1** · OPEN · light-lane · v2026-11-07 — Tactical README :19 says panels show "head-locked"; the scene has no TrackedPoseDriver/XR Origin: say only what the scene guarantees
 - **LBC-2** · OPEN · human · v2026-11-07 — EPR-3 (#194) Editor scene-open + Play (line breaks, five panels) and Quest check (both eyes, legible at 1 m, head-follow) not stated at G2
+- **LBD-1** · OPEN · human · v2026-11-07 — HRP-1 (#195): a real hung Unity on the host, and whether `taskkill /T` reaches every Unity child (AssetImportWorker), never run
