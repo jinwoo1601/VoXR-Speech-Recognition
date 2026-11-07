@@ -12,7 +12,7 @@ updated: 2026-11-07
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-agc-filter`**: feature; full; path development; stage product-docs - review done a705a1e; G2 preflight 1 items 3, 4 being remediated; next: preflight 2, G2 packet
+- **`feat-agc-filter`**: feature; full; path development; stage product-docs - review done a705a1e; G2 PRESENT: item-3 charter fixes 78db1d3, a803f18 and one more; next: preflight 4, G2 packet
 
 ## Deferred
 
