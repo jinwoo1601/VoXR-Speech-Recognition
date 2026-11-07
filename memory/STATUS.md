@@ -4,7 +4,7 @@ updated: 2026-11-07
 
 ## Current
 
-- **`main` at PR #193 `a1414a3` (agc-filter G2); `v2.0.0`; running: none; batch C waits.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193.
+- **`main` at PR #193 `a1414a3` (agc-filter G2); `v2.0.0`; running: `light-batch-c`; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,6 +12,7 @@ updated: 2026-11-07
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
+- **`light-batch-c`**: light, class slim, batch EPR-3, EPR-4, human-check; tree `D:\Workspace\VoXR-Speech-Recognition.trees\light-batch-c`; next: tackle-issue DIAGNOSE
 
 ## Deferred
 
