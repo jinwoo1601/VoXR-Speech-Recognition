@@ -4,7 +4,7 @@ updated: 2026-11-07
 
 ## Current
 
-- **`main` at PR #193 `a1414a3` (agc-filter G2); `v2.0.0`; running: `light-batch-c`; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193.
+- **`main` at PR #194 `1e8d1b5` (light-batch-c G2); `v2.0.0`; running: none; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193, batch C.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,7 +12,6 @@ updated: 2026-11-07
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`light-batch-c`**: light, class slim, batch EPR-3, EPR-4, human-check; PR #194 merged 1e8d1b5 by the human; next: g2-lite RECORD · ruling G2 · 2026-11-07 · the human · "go for g2. i merged already"
 
 ## Deferred
 
@@ -26,8 +25,6 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **JRR-1** · OPEN · human · v2026-10-15 — joined-rig-recogniser bridge change (2 exports, rebuilt `.so`): Quest on-device check not stated at G2
 - **JRR-2** · OPEN · human · v2026-10-15 — joined-rig-recogniser: human read of the 16-fixture recogniser-layer report (split case, flips legible) not stated at G2
 - **EPR-1** · OPEN · design-relock · v2026-11-04 — locked `joined-rig.md` rule 2 (:66, :84, :108): kill check compares final texts; `ab-rig/Joined.cs` :214-277 also compares gain, libvosk, conf
-- **EPR-3** · OPEN · light-lane · v2026-11-04 — Tactical sample shows a literal `\n` placeholder; its Quest setup works on a flat screen only
-- **EPR-4** · OPEN · light-lane · v2026-11-04 — `MetaQuestFeatureBuildHooks` throws a NullReferenceException on every Android build (host TestGround)
 - **EPR-5** · OPEN · human · v2026-11-04 — TestGround's modified `OpenXRPackageSettings.asset` and `EditorBuildSettings.asset` from the Phase 8 sitting: keep or revert in the host
 - **HRP-1** · OPEN · light-lane · v2026-11-05 — host_run.py runs Unity with no timeout: a hung run holds the host lock; bound it and kill before the restore
 - **HRP-2** · OPEN · light-lane · v2026-11-05 — binding unity.md Command 1 says Commands 1-2 start "in the background"; Claude Code's memory reap can kill an idle run: say foreground
@@ -41,3 +38,5 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **AGF-2** · OPEN · human · v2026-11-07 — agc-filter PM-2: `vosk_bridge_init`'s failure path when `FrontEnd` throws (frees model and recogniser, MODEL_LOAD_FAILED) is unrun on device and untested
 - **AGF-3** · OPEN · light-lane · v2026-11-07 — agc-filter WRAP-1: `MakeConfiguration`'s out-of-range target mapping (non-finite → -18, above 0 → 0) has no test
 - **AGF-4** · OPEN · light-lane · v2026-11-07 — agc-filter architecture register *Symbols* says the `.so` exports 17 names; `llvm-nm -D` lists 18 (17 `vosk_bridge_*` + `JNI_OnLoad`): correct it
+- **LBC-1** · OPEN · light-lane · v2026-11-07 — Tactical README :19 says panels show "head-locked"; the scene has no TrackedPoseDriver/XR Origin: say only what the scene guarantees
+- **LBC-2** · OPEN · human · v2026-11-07 — EPR-3 (#194) Editor scene-open + Play (line breaks, five panels) and Quest check (both eyes, legible at 1 m, head-follow) not stated at G2
