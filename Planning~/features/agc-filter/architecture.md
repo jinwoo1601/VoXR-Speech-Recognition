@@ -160,7 +160,7 @@ The riskiest unknown — the AGC2 subset's NDK and MSVC builds and the arm64 gro
 **Phase 2 — `pause-lead` fixtures, the rig's F13 block, side A (2026-11-06).** Plan: `plan-2.md`, unchanged; the loop-report correction governs where named.
 
 - *Plan correction — the comment ban.* The first dispatch stopped at Step 5: the plan's comment conflicted with the coding conventions' comment ban; the PM ruled, by the fork default, that the convention governs. Loop report items 1–4: Step 5 and criterion 5 lose "comment present"; Step 2 loses "Header (:8-14) names both fields" and states its seed as the CRC-32 of the file name with `.wav`; resumed at Step 5, Steps 1–4 standing (*Fixtures* amendment).
-- *Built as planned* (detail and re-pointing: the dated note). Steps 1–11 and every runtime claim; the A-against-A kill check passed, `Flips: 0`; Command 3's count 52/52.
+- *Built as planned* (detail and re-pointing: the dated note). Steps 1–11 and every runtime claim.
 - *Corrections in place.* The other always-current sections read true. *First-word retention and `[unk]`* (`## Risks`): added, open before Phase 4.
 
 **Phase 3 — The unit, built and measured, not wired (2026-11-06).** Plan: `plan-3.md`, unchanged; the loop report's correction governs where named.
@@ -188,7 +188,7 @@ The riskiest unknown — the AGC2 subset's NDK and MSVC builds and the arm64 gro
 
 - *Fixes* (WRAP-1, PM-2, ALT-1, XFILE-1, GAP-1, GAP-2: the dated note).
 - *Citation re-pointing.* `vosk_bridge.cpp` :278, :319, :245 now :288, :329, :246; `EditorMicBackend.cs` :372-417, :419-457, :461, :421-427, :79, :115, :429, :437 now :371-410, :412-450, :456, :414-420, :78, :114, :422, :430; `main.cpp` :377-383, :334-368 now `RunHarness` :425-500, :495-499.
-- *Corrections in place.* *Size*: 159,928 bytes, 103,176 over 56,752. *Bridge ABI → harness*: adds the replay. *Size* (2026-11-07, late review XFILE-2): said "DLL (the Phase 3 Release build) 320,512"; now "DLL (Release) 320,512", the DLL rebuilt in `ea8ed3d` at the same size.
+- *Corrections in place.* *Size*: 159,928 bytes, 103,176 over 56,752. *Bridge ABI → harness*: adds the replay. *Size* (2026-11-07, late review XFILE-2): said "DLL (the Phase 3 Release build) 320,512"; now "DLL (Release) 320,512", the DLL rebuilt at the same size.
 
 **Phase 6 — Quest 3 (2026-11-07).**
 
