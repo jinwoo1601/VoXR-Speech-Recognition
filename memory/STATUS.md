@@ -12,7 +12,7 @@ updated: 2026-11-07
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185); not started: R15+R14 AGC/filter unit, R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-agc-filter`**: feature; full; path development; stage product-docs - review done a705a1e; G2 preflight 1: items 3, 4 FAIL; next: g2-accept PRESENT (brief session-brief.md)
+- **`feat-agc-filter`**: feature; full; path development; stage product-docs - review done a705a1e; G2 preflight 1 items 3, 4 being remediated; next: preflight 2, G2 packet
 
 ## Deferred
 
@@ -38,3 +38,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **TFL-5** · OPEN · human · v2026-11-05 — snapshot ref `refs/harness/pre-upgrade/6d07a5f` (trees-fill review recompose) kept until the human drops it by `git update-ref -d`
 - **AGF-1** · OPEN · design-relock · v2026-11-05 — locked joined-rig docs cite `native-bridge.md` :61 for the AGC divergence, which it no longer states: re-point at the next unlock
 - **VCG-1** · OPEN · harness-hub · v2026-11-05 — vc-guard READ_VERBS lacks `check-attr`: a subagent's attribute read is refused (light-batch-b WND-2 debugger); add it upstream
+- **AGF-2** · OPEN · human · v2026-11-07 — agc-filter PM-2: `vosk_bridge_init`'s failure path when `FrontEnd` throws (frees model and recogniser, MODEL_LOAD_FAILED) is unrun on device and untested
