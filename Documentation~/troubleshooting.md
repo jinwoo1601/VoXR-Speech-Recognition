@@ -150,7 +150,11 @@ The utterance buffer (`bufferWindow`) is designed for this case -- it merges con
 
 ### "Native bridge library (libvosk-bridge) not found"
 
-The native libraries are Android arm64 only. In the Editor, recognition routes through `EditorMicBackend` instead (Windows only). On macOS/Linux Editor, only text injection is available.
+The native bridge is Android arm64 only. In the Editor, recognition routes through `EditorMicBackend` instead (Windows only), which loads `voxr-frontend.dll` and `libvosk.dll` rather than the bridge. On macOS/Linux Editor, only text injection is available.
+
+### "voxr-frontend.dll failed to load from Runtime/Plugins/x86_64/"
+
+Windows Editor only. The Editor's audio front end -- the 48 kHz -> 16 kHz filter and the AGC -- is native code in `Runtime/Plugins/x86_64/voxr-frontend.dll`, and the backend checks it before the model loads. If the DLL is missing, lacks an expected export, or reports another ABI version, `OnError` fires with `ModelLoadFailed`, the message's `Details:` say which, and initialisation fails; there is no managed fallback. Restore the DLL and its `.meta` from the package version you have installed. See [Native Bridge](native-bridge.md#c-abi-windows).
 
 ### False matches from noise or coughs
 

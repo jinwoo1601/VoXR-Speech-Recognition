@@ -10,7 +10,7 @@ Offline speech recognition and voice command parsing for Unity XR applications. 
 - Live microphone capture in the Unity Editor on Windows for rapid iteration
 - Event-driven API: partial results, final results, per-word confidence, and timing
 - Two-tier native lifecycle: heavy model load once, then start / stop recognition instantly
-- Adaptive automatic gain control (AGC) with soft saturation
+- One native audio front end on device and in the Windows Editor: a 48 kHz -> 16 kHz FIR decimator and WebRTC AGC2 adaptive gain with a limiter
 - Structured error codes for all failure modes
 - Built-in push-to-talk controller with runtime-switchable listening mode
 
@@ -186,7 +186,7 @@ Import samples via **Package Manager > VoXR Speech Recognition > Samples**.
 VoxrSpeechRecogniser          -- MonoBehaviour, owns the native lifecycle
   |
   |-- [Android] BridgeNative  -- P/Invoke -> C++ bridge -> JNI AudioRecord + libvosk.so
-  |-- [Editor]  EditorMicBackend -- UnityEngine.Microphone -> C# DSP -> libvosk.dll P/Invoke
+  |-- [Editor]  EditorMicBackend -- UnityEngine.Microphone -> voxr-frontend.dll + libvosk.dll P/Invoke
   |
   +-- Events: OnPartialResult, OnFinalResult, OnResult, OnError
        |
@@ -199,7 +199,7 @@ VoxrCommandRecogniser         -- MonoBehaviour, subscribes to speech events
   +-- Events: OnCommandRecognised, OnCommandsRecognised, OnUnrecognisedSpeech
 ```
 
-On Android, a C++ native bridge captures audio via Java `AudioRecord` (JNI), runs AGC and FIR downsampling (48 kHz -> 16 kHz), and feeds int16 samples to VOSK on a dedicated thread. In the Windows Editor, `EditorMicBackend` captures via `UnityEngine.Microphone`, runs equivalent C# DSP, and calls VOSK via P/Invoke on the main thread (the one-time model load is offloaded to a background `Task` to avoid a startup hitch).
+Both platforms run one native audio front end: FIR decimation (48 kHz -> 16 kHz), WebRTC AGC2 adaptive gain and limiter, and int16 conversion. On Android, a C++ native bridge captures audio via Java `AudioRecord` (JNI), runs the front end, and feeds its int16 samples to VOSK on a dedicated thread. In the Windows Editor, `EditorMicBackend` captures via `UnityEngine.Microphone`, runs the same front end from `voxr-frontend.dll`, and calls VOSK, both via P/Invoke on the main thread (the one-time model load is offloaded to a background `Task` to avoid a startup hitch).
 
 ## Platform Support
 

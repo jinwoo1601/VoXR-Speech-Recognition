@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The unfilled-required-slot walk is one allocation-free parser enumeration, shared by completeness, the pending prompt and the slot resolver; no behaviour change (#160).
 - **A required slot with a registered slot resolver no longer costs score when the speaker leaves it out, so short elided orders reach the resolver.** "launch missiles" against `launch missiles target {track}` scores `0.67` with a `track` resolver registered, `0.25` without; the slot still counts as missed for admission, the bar, the eager gate and completeness, fewer such slots wins a score tie, registering takes effect from the next utterance with no rebuild, and resolving never moves the score — superseding the #148 note above that a short pattern never reaches a resolver. `VoxrBatchTestRunner` (`registeredSlotNames`) and the Batch Test window's "Registered Slots" list take the game's registered slot names and score them as the runtime does (#161).
 - Continuous mode ends commands sooner: `VoxrSpeechRecogniser`'s Endpointer Profile (`VoxrEndpointerProfile`) defaults to `Responsive` there (rule2 0.45 s); Push-to-talk keeps the model's own.
-- The Editor and Quest share one native front end (a new 48→16 kHz filter and WebRTC AGC2): scores shift, and the Windows Editor now loads `voxr-frontend.dll`.
+- The Editor and Quest share one native front end (a new 48→16 kHz filter and WebRTC AGC2): scores shift, the learned gain survives stop/start (`ResetRecogniser()` clears it), and the Windows Editor now loads `voxr-frontend.dll`; the bridge adds `vosk_bridge_get_frontend_stats` (harness only; C# binds none).
 
 ### Fixed
 

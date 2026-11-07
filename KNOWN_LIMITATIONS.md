@@ -1324,8 +1324,9 @@ future device port.
   point (`vosk_recognizer_accept_waveform_s`) works, but the float entry
   point does not produce usable output. Not investigated upstream; likely a
   build-config issue in Alphacephei's prebuilt.
-- **Workaround**: Already applied — `vosk_bridge.cpp` converts float samples
-  to int16 before feeding VOSK. If you rebuild `libvosk.so` yourself, retest
+- **Workaround**: Already applied — the native audio front end
+  (`voxr::FrontEnd`, `NativeBridge~/src/frontend/`) converts float samples to
+  int16 before VOSK, on device and in the Windows Editor. If you rebuild `libvosk.so` yourself, retest
   the float path before switching to it — the workaround cost is one extra
   copy per buffer, which is negligible.
 
@@ -1339,10 +1340,12 @@ future device port.
   — likely intentional headroom for louder-than-expected input — but this
   leaves VOSK's acoustic frontend operating near its noise floor for quiet
   speech.
-- **Workaround**: Already applied — an AGC stage in `vosk_bridge.cpp`
-  targets a configurable dB level before converting to int16. The target is
-  exposed on `VoxrSpeechRecogniser` as the `micGainTargetDb` inspector field
-  (default `-18 dB`, calibrated for Quest 3). Tune it if you observe clipping
+- **Workaround**: Already applied — the WebRTC AGC2 stage of the native audio
+  front end (`NativeBridge~/src/frontend/`, shared by the device and the
+  Windows Editor) levels speech before the int16 conversion, taking its
+  headroom from a configurable target. The target is exposed on
+  `VoxrSpeechRecogniser` as the `micGainTargetDb` inspector field (default
+  `-18` dBFS, calibrated for Quest 3). Tune it if you observe clipping
   or under-gain on a different device.
 
 ---
