@@ -2,8 +2,8 @@
 type: requirements
 feature: agc-filter
 topic: agc-filter
-status: draft
-updated: 2026-11-06
+status: accepted
+updated: 2026-11-07
 sources:
   - Planning~/design-docs/agc-filter.md
   - Planning~/design-docs/agc-filter/decisions/adr-0001-editor-native-dsp.md
@@ -111,10 +111,12 @@ This carries the design's goal: the accuracy axis (`00-brief.md` :40), through "
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] Every Must in §5 (F1–F18) checked, with run evidence.
-- [ ] The F13 rig report, the F1 filter-response measurement and the F6 silence-then-burst evidence recorded in the architecture doc.
-- [ ] Human-only verification, on a Quest 3: F18.
-- [ ] The commands the project's `verification` binding names are green.
+- [x] Every Must in §5 (F1–F18) checked, with run evidence. (Phases 1–6 built, each through its verification gate; two review cycles, fixes at `ea8ed3d` and `a705a1e`; preflight 4 at `e569a01`)
+- [x] The F13 rig report, the F1 filter-response measurement and the F6 silence-then-burst evidence recorded in the architecture doc. (F1: the architecture doc, `## As-built deltas` Phase 3, *F1 fallback*. F13 and F6: moved verbatim by the as-built charter at G2 into the hub's `memory/2026-11-07.md`, entry "g2-accept PRESENT, as-built records moved here", ruled at RECORD "Tick it, cite locations (Recommended)")
+- [x] Human-only verification, on a Quest 3: F18. (Phase 6: "Pass on contribution"; tries "Pass as run")
+- [x] The commands the project's `verification` binding names are green. (late review CHECK: EditMode 238/238, PlayMode 792/792; Command 3 harness 52/52 over the `ea8ed3d` native change; Command 4 not triggered)
+
+**Ruled at G2 on 2026-11-07** by the maintainer, in conversation ("Accept (Recommended)"): accepted at head `e569a01`, with the fourth preflight in view. The first three preflights' as-built charter findings were remediated in `78db1d3`, `a803f18` and `e569a01`. `unity-pipeline-package` was UNVERIFIABLE, because a bare UPM package has no `Packages/manifest.json`. PM-2's failure path is deferred as AGF-2. Criterion 2's evidence location was ruled at RECORD: "Tick it, cite locations (Recommended)".
 
 ## 10. Open questions
 

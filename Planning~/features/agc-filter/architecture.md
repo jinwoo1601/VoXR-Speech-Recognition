@@ -2,7 +2,7 @@
 type: architecture
 feature: agc-filter
 topic: agc-filter
-status: draft
+status: accepted
 updated: 2026-11-07
 sources:
   - Planning~/features/agc-filter/requirements.md
