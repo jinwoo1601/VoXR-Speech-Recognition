@@ -151,6 +151,16 @@ namespace AbRig
             return result;
         }
 
+        static readonly string[] BenchVerbs = { "metrics-check", "truth-check", "run" };
+
+        internal static Func<
+            string[],
+            string,
+            VoxrSlotDefinition[],
+            VoxrCommandDefinition[],
+            int
+        > BenchHook;
+
         static int Main(string[] args)
         {
             if (Array.IndexOf(args, "--grammar") >= 0)
@@ -201,6 +211,30 @@ namespace AbRig
             if (Array.IndexOf(args, "--doccheck") >= 0)
                 return DocCheck.Run();
 
+            int benchAt = Array.IndexOf(args, "--bench");
+            if (
+                benchAt >= 0
+                && benchAt + 1 < args.Length
+                && Array.IndexOf(BenchVerbs, args[benchAt + 1]) >= 0
+            )
+            {
+                if (BenchHook == null)
+                {
+                    Console.Error.WriteLine(
+                        "bench: "
+                            + args[benchAt + 1]
+                            + " needs a recogniser stage: this stage has no Bench; stage with stage.sh <ref> <out> recogniser"
+                    );
+                    return 2;
+                }
+                return BenchHook(
+                    args,
+                    VoxrCommandParser.GenerateGrammarJson(Slots(), Commands(), FollowUpWords()),
+                    Slots(),
+                    Commands()
+                );
+            }
+
             // --bench: time and allocation per Parse over the utterances on stdin. Added for
             // issue #65 §5.2, whose requirements §5 promises the feature "reports against that
             // baseline" (~7.7 us/utterance, 344.4 bytes/utterance, measured for item 1) and
@@ -208,6 +242,9 @@ namespace AbRig
             //
             // Reports the SAME work on both sides of the A/B, so the absolute numbers matter
             // less than the delta: same grammar, same utterance list, same iteration count.
+            //
+            // Bare --bench only: a bench verb after it (BenchVerbs: metrics-check, truth-check,
+            // run) is dispatched above, to Bench's hook.
             if (Array.IndexOf(args, "--bench") >= 0)
             {
                 var benchParser = new VoxrCommandParser(Slots(), Commands(), VoxrCommandParser.DefaultCoverageWeight, FollowUpWords());
