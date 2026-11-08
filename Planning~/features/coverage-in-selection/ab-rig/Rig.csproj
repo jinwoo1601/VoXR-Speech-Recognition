@@ -18,7 +18,9 @@
            flag check             its self-test
            flag sweep             the start-index sweep behind the blocked/recovered figure
            flag doccheck          the issue #83 documentation pin
-           flag bench             time and allocation per Parse over the utterances on stdin
+           flag bench             time and allocation per Parse over the utterances on stdin,
+                                  or metrics-check, truth-check or run (bench-fast-replay;
+                                  a recogniser stage)
            flag prefix-verdicts   the eager verdict over every growing prefix of each utterance
            flag verdicts          the eager verdict beside what the flush would fire
          (each flag is written with two leading dashes on the command line, which an
@@ -27,7 +29,8 @@
          flags (JoinedReport.Run through Joined); grammar, bench, prefix-verdicts and
          verdicts run inside Program.Main itself. JoinedRecogniser, staged only by
          stage.sh's recogniser argument, registers drive-check with Joined from a module
-         initializer. -->
+         initializer; Bench, staged likewise, registers the bench verbs with Program from
+         its own module initializer. -->
     <StartupObject Condition="'$(StartupObject)' == ''">AbRig.Program</StartupObject>
     <!-- The staged parser sources are shipped code; their warnings are not this rig's
          business and must not fail the build. -->
