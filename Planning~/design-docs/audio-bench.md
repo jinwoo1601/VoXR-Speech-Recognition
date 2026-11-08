@@ -180,8 +180,8 @@ It can stop a bad change early. Gains and decoder rankings wait for R5 human aud
   - the 20 ms chunk (it matches Quest capture, 960 frames at 48 kHz, `I3-latency-ux-redesign.md` :23);
   - speed steps {0.9, 1.0, 1.1}; RT60 0.2–0.5 s; SNR steps {20, 15, 10, 5} dB; level range [0.04, 0.4]; game-audio SIR steps (`I1-recognition-core-redesign.md` :264);
   - the voice count (~12 per R6);
-  - the repeat count per A/B; the percentiles p50/p90/p99; the ECE bin count (10 per R6); McNemar's minimum discordant pairs (6 per `R6-evaluation-methodology.md` :369);
-  - not provisional, settled 2026-11-08: the paced-vs-fast self-check's tolerance is one decoder read (4096 samples, `NativeBridge~/src/vosk_bridge.cpp:62`), the self-check running at fast mode's 16384-sample chunking.
+  - the repeat count per A/B; the percentiles p50/p90/p99; the ECE bin count (10 per R6); McNemar's minimum discordant pairs (6 per `R6-evaluation-methodology.md` :369).
+- **Settled, not provisional (2026-11-08):** the paced-vs-fast self-check's tolerance is one decoder read (4096 samples, `NativeBridge~/src/vosk_bridge.cpp:62`), the self-check running at fast mode's 16384-sample chunking.
 - **Hard dependencies / open:**
   - RESOLVED — the clock: both clocks, with the split (adr-0001).
   - RESOLVED — the code path: the native bridge + the joined rig (adr-0002).
@@ -191,12 +191,20 @@ It can stop a bad change early. Gains and decoder rankings wait for R5 human aud
   - RESOLVED — end of speech: the generator's truth (adr-0006).
   - RESOLVED — negatives before R4: a stand-in set (adr-0007).
   - RESOLVED — the numbers' role: report + stop only (adr-0008).
-  - How to mark speech end on R5 human recordings.
-  - Whether the stand-in negative set needs game audio, for which the maintainer's title audio is a human-supplied input.
+  - How to mark speech end on R5 human recordings — owner: the R5 corpus work (human recording).
+  - Whether the stand-in negative set needs game audio, for which the maintainer's title audio is a human-supplied input — owner: `bench-conditions`, which builds the negative set; the maintainer supplies the title audio.
   - Where the bench's code lives — the joined rig sits under `Planning~/features/coverage-in-selection/ab-rig/`, outside the layout's Source and Tests slots — owner: the architecture.
-  - The lab branch's Phase B "TTS NCE/ECE dry run" probe overlaps the calibration metric: if it runs first, its findings feed this metric's definition.
-  - How the driver chooses the A/B pair beyond the Phase D item's own design, and how the repeat count is chosen: the record is thin on both (§2).
-  - Human steps: the MUSAN and SLR28 download (adr-0004) and the Kokoro model download (adr-0005).
+  - How the stamps are taken and recorded (adr-0001) — owner: the architecture.
+  - How the paced push reaches the bridge, and how the run's timeline is fed to the recogniser layer (adr-0002) — owner: the architecture.
+  - The lab branch's Phase B "TTS NCE/ECE dry run" probe overlaps the calibration metric: if it runs first, its findings feed this metric's definition — owner: `bench-fast-replay`, which builds the calibration metric and reads the lab's findings if they exist by then.
+  - How the driver chooses the A/B pair beyond the Phase D item's own design, and how the repeat count is chosen: the record is thin on both (§2) — owner: for the A/B pair, each Phase D item's own design, as the bench already hands off kill thresholds; for the repeat count, the tuning pass.
+  - Human steps: the MUSAN and SLR28 download (adr-0004) and the Kokoro model download (adr-0005) — owner: the maintainer.
+- **Feature candidates (→ the backlog at G1):** five, in dependency order, each on the `development` path and each **Full**: the design leaves code location, stamp recording and the timeline feed to the architecture, so each build writes its own requirements and architecture docs.
+  - `bench-fast-replay`: fast mode through the native bridge in 16384-sample pushes (adr-0002, adr-0003); audio-time stamps (adr-0001); the generator's speech-boundary truth in `generate.py` (adr-0006); the command stage through the joined rig (adr-0002); accuracy scoring: command classes, WER, ECE/NCE; reports naming their full config; the pinned-transcript self-check (adr-0003). Depends on: none.
+  - `bench-conditions`: the seeded on-the-fly condition pipeline (adr-0004); the stand-in negative set (adr-0007); per-condition curves. Depends on: `bench-fast-replay`.
+  - `bench-voices`: Kokoro-82M voices beside the baseline Piper voice (adr-0005). Depends on: `bench-fast-replay`.
+  - `bench-paced-mode`: paced 20 ms replay with wall stamps and the real-time factor (adr-0001, adr-0003); the matched-chunk split self-check; the command event's paced-arrival wall stamp (adr-0002). Depends on: `bench-fast-replay`.
+  - `bench-ab-report`: paired A/B runs, interleaved and repeated; p50/p90/p99 per stage; McNemar flips; report and stop (adr-0008). Depends on: `bench-paced-mode`, `bench-conditions`.
 
 ## Related
 
