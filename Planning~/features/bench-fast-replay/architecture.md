@@ -108,6 +108,7 @@ Lowest risk first: pure functions, then the one tracked-data change, then the in
 | 4 — named decoder configuration and the closing gate | `bench.sh` `--profile`, `--mode`, `--gain`; the `.scratch/` pin copy; header naming them; every §9 criterion re-made. | §4.2; F10 (non-default values); F13 | None of Commands 1–4 by code; Command 3 green 52/52 (G2); `git diff main` empty for the WAVs, `expectations.json` and `NativeBridge~/src/vosk_bridge.h`; one non-pinned run, numbers or a named refusal |
 
 - **Assets code cannot author:** none new. Needed as provisioned: `NativeBridge~/vendor/` per `NativeBridge~/harness/README.md` *Provisioning a branch tree* (a copy from the hub; a download only if the hub lacks it, the human's), Command 3's toolchain, the .NET SDK 10, `py`. No Piper venv: truth mode needs none and nothing is regenerated. **Human step:** the maintainer's inspection of three clips' waveforms against their recorded speech end (§9), possible from Phase 2's end.
+- Phase 1 — persisted plan (2026-11-08): [plan-1.md](plan-1.md)
 
 ## Risks, tradeoffs & open questions
 
