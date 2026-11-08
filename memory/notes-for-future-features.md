@@ -18,3 +18,12 @@ Process and methodology lessons routed out of architecture docs' `## As-built de
 
 - 2026-11-06 (agc-filter) — A plan states a count the tree can give (exports, fixtures) only as read from a named command; "the committed 15" was a recalled figure and was 17.
 - 2026-11-06 (agc-filter) — A plan's claim that a CMake setting reaches a dependency is checked against that dependency's own CMakeLists: abseil overrides `CMAKE_MSVC_RUNTIME_LIBRARY` unless `ABSL_MSVC_STATIC_RUNTIME` is on.
+
+
+## 2026-11-09 — bench-fast-replay (routed by its as-built reconcile)
+
+- Gate briefs: grep plan-fixed text whitespace-insensitively (the formatter wraps lines); diff "unedited" files against `HEAD`, not `main`, once earlier phases are committed; a `\*` comment pattern must not match `case` arms.
+- Plans: a trade-off row rejecting reuse "for fewer edits" in a file the phase already edits was reversed at review (plan-3 :39, plan-2 :35): reuse the helper, or say why not.
+- Plans: where a plan dictates a copy, the architecture says "modelled on", not "reused".
+- Plans: a latency-axis feature needs a known-value toy for its stamp arithmetic in the plan's own checks (GAP-1).
+- Plans: a plan naming comment edits should say it overrides rule 1 at those sites, avoiding a BLOCKED round trip.
