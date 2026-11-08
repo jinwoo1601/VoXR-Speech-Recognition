@@ -16,7 +16,7 @@ switching. Demonstrates the `VoxrCommandRecogniser` pipeline on top of
 
 4. **Run:**
    - **Windows Editor:** press Play. Speak commands into your PC mic and watch the cubes flash, the mode chip change, and the command log update.
-   - **Quest:** switch platform to Android (arm64), enable `RECORD_AUDIO` in Player Settings, build, deploy. The UI panels are a World Space canvas parented to Main Camera, 1 m ahead (scale 0.001), so they show head-locked in the headset and inset in the Editor's Game view.
+   - **Quest:** switch platform to Android (arm64), enable `RECORD_AUDIO` in Player Settings, build, deploy. The UI panels are a World Space canvas parented to Main Camera, 1 m ahead (scale 0.001), so they stay fixed in front of that camera: inset in the Editor's Game view, and in the headset they follow your head only if your project's XR setup drives Main Camera from the HMD (the scene has no TrackedPoseDriver or XR Origin).
 
 ## What's in the scene
 
