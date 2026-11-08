@@ -4,7 +4,7 @@ updated: 2026-11-09
 
 ## Current
 
-- **`main` at PR #197 `92600e1` (audio-bench G1); `v2.0.0`; running: `feat-bench-fast-replay`; RSE-2 held.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E.
+- **`main` at PR #198 `63434cb`; `v2.0.0`; next: g0-open an audio-bench row; RSE-2 held.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,7 +12,6 @@ updated: 2026-11-09
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-bench-fast-replay`**: feature; full; path development; stage product-docs - audio-bench row 1; 7f10edc; next: RECORD, docs, PR · ruling G2 · 2026-11-09 · the human · "Accepted. Looks ok."
 
 ## Deferred
 
@@ -36,3 +35,6 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **AGF-2** · OPEN · human · v2026-11-07 — agc-filter PM-2: `vosk_bridge_init`'s failure path when `FrontEnd` throws (frees model and recogniser, MODEL_LOAD_FAILED) is unrun on device and untested
 - **LBC-2** · OPEN · human · v2026-11-07 — EPR-3 (#194) Editor scene-open + Play (line breaks, five panels) and Quest check (both eyes, legible at 1 m, head-follow) not stated at G2
 - **LBD-1** · OPEN · human · v2026-11-07 — HRP-1 (#195): a real hung Unity on the host, and whether `taskkill /T` reaches every Unity child (AssetImportWorker), never run
+- **BFR-1** · OPEN · light-lane · v2026-11-09 — bench-fast-replay: `generate.py` regeneration runs `write_truth` after the WAV loop (:264), unverified: nothing was regenerated
+- **BFR-2** · OPEN · light-lane · v2026-11-09 — bench-fast-replay: four `bench.sh` stops unexercised (build failed, applied-grammar guard, staged error log, command pending at the horizon)
+- **BFR-3** · OPEN · light-lane · v2026-11-09 — `verification` binding Command 3 expects `37/37`, stale: `NativeBridge~/harness/expectations.json` holds 52 cases; fix the binding
