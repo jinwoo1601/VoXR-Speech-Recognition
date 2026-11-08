@@ -4,7 +4,7 @@ updated: 2026-11-08
 
 ## Current
 
-- **`main` at PR #195 `3590827` (light-batch-d G2); `v2.0.0`; running: `light-batch-e`; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193, batch C, batch D.
+- **`main` at PR #196 `f983925` (light-batch-e G2); `v2.0.0`; running: none; RSE-2 held.** `[Unreleased]`: #143–#154, #146–#148, #160, #161, #178, #185, batch B, EPR-11, #193, batch C, batch D, batch E.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,7 +12,6 @@ updated: 2026-11-08
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`light-batch-e`**: light, class slim, batch LBC-1; PR #196 at 94d84a1; next: g2-lite CHANGELOG · ruling G2 · 2026-11-08 · the human · "Accept (Recommended)"
 
 ## Deferred
 
@@ -34,6 +33,5 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **AGF-1** · OPEN · design-relock · v2026-11-05 — locked joined-rig docs cite `native-bridge.md` :61 for the AGC divergence, which it no longer states: re-point at the next unlock
 - **VCG-1** · OPEN · harness-hub · v2026-11-05 — vc-guard READ_VERBS lacks `check-attr`: a subagent's attribute read is refused (light-batch-b WND-2 debugger); add it upstream
 - **AGF-2** · OPEN · human · v2026-11-07 — agc-filter PM-2: `vosk_bridge_init`'s failure path when `FrontEnd` throws (frees model and recogniser, MODEL_LOAD_FAILED) is unrun on device and untested
-- **LBC-1** · OPEN · light-lane · v2026-11-07 — Tactical README :19 says panels show "head-locked"; the scene has no TrackedPoseDriver/XR Origin: say only what the scene guarantees
 - **LBC-2** · OPEN · human · v2026-11-07 — EPR-3 (#194) Editor scene-open + Play (line breaks, five panels) and Quest check (both eyes, legible at 1 m, head-follow) not stated at G2
 - **LBD-1** · OPEN · human · v2026-11-07 — HRP-1 (#195): a real hung Unity on the host, and whether `taskkill /T` reaches every Unity child (AssetImportWorker), never run
