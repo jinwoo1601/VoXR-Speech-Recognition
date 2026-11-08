@@ -106,6 +106,9 @@ namespace AbRig
             internal string FirstWord;
             internal string ExpectedIntent;
             internal KeyValuePair<string, string>[] ExpectedSlots;
+            internal string Phrase;
+            internal string[] Segments;
+            internal (long Start, long End)[] Speech;
         }
 
         internal sealed class Manifest
@@ -513,6 +516,50 @@ namespace AbRig
                 string named = path + ": case \"" + mc.File + "\"";
                 foreach (JsonProperty p in c.EnumerateObject())
                 {
+                    if (p.Name == "speech")
+                    {
+                        string bad =
+                            named
+                            + ": key `speech` is not an array of ascending {start, end} integer pairs";
+                        if (p.Value.ValueKind != JsonValueKind.Array)
+                            throw new Stop(2, bad);
+                        var speech = new (long Start, long End)[p.Value.GetArrayLength()];
+                        int i = 0;
+                        long previous = 0;
+                        foreach (JsonElement e in p.Value.EnumerateArray())
+                        {
+                            int keys = 0;
+                            long? start = null,
+                                end = null;
+                            if (e.ValueKind == JsonValueKind.Object)
+                                foreach (JsonProperty q in e.EnumerateObject())
+                                {
+                                    keys++;
+                                    if (
+                                        q.Value.ValueKind != JsonValueKind.Number
+                                        || !q.Value.TryGetInt64(out long v)
+                                    )
+                                        continue;
+                                    if (q.Name == "start")
+                                        start = v;
+                                    else if (q.Name == "end")
+                                        end = v;
+                                }
+                            if (
+                                keys != 2
+                                || start == null
+                                || end == null
+                                || start.Value < 0
+                                || start.Value >= end.Value
+                                || start.Value < previous
+                            )
+                                throw new Stop(2, bad + " (entry " + i + ")");
+                            speech[i++] = (start.Value, end.Value);
+                            previous = end.Value;
+                        }
+                        mc.Speech = speech;
+                        continue;
+                    }
                     if (!ManifestCaseKeys.Contains(p.Name))
                         throw new Stop(2, named + ": unknown key \"" + p.Name + "\"");
                     if (p.Name == "sealed")
@@ -543,6 +590,27 @@ namespace AbRig
                         if (p.Value.ValueKind != JsonValueKind.String)
                             throw new Stop(2, named + ": key `category` is not a string");
                         mc.Category = p.Value.GetString();
+                    }
+                    else if (p.Name == "phrase")
+                    {
+                        if (p.Value.ValueKind != JsonValueKind.String)
+                            throw new Stop(2, named + ": key `phrase` is not a string");
+                        mc.Phrase = p.Value.GetString();
+                    }
+                    else if (p.Name == "segments")
+                    {
+                        string bad = named + ": key `segments` is not an array of strings";
+                        if (p.Value.ValueKind != JsonValueKind.Array)
+                            throw new Stop(2, bad);
+                        var segments = new string[p.Value.GetArrayLength()];
+                        int i = 0;
+                        foreach (JsonElement e in p.Value.EnumerateArray())
+                        {
+                            if (e.ValueKind != JsonValueKind.String)
+                                throw new Stop(2, bad);
+                            segments[i++] = e.GetString();
+                        }
+                        mc.Segments = segments;
                     }
                     else if (p.Name == "leadSilenceSeconds" || p.Name == "noiseFloorDbfs")
                     {

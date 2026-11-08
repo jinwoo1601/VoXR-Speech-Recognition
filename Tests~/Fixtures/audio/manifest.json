@@ -4,6 +4,7 @@
     "cases": [
         {
             "file": "audio/tts/launch_one_missiles_target_hotel_one.wav",
+            "speech": [{ "start": 18375, "end": 114849 }],
             "category": "clean",
             "phrase": "launch one missiles target hotel one",
             "peak": 0.2,
@@ -18,6 +19,7 @@
         },
         {
             "file": "audio/tts/cease_fire.wav",
+            "speech": [{ "start": 15222, "end": 38480 }],
             "category": "clean",
             "phrase": "cease fire",
             "peak": 0.05,
@@ -28,6 +30,7 @@
         },
         {
             "file": "audio/tts/resume_fire.wav",
+            "speech": [{ "start": 24720, "end": 65495 }],
             "category": "clean",
             "phrase": "resume fire",
             "peak": 0.2,
@@ -38,6 +41,7 @@
         },
         {
             "file": "audio/tts/approach_target_alpha_one.wav",
+            "speech": [{ "start": 17611, "end": 83058 }],
             "category": "clean",
             "phrase": "approach target alpha one",
             "peak": 0.2,
@@ -50,6 +54,7 @@
         },
         {
             "file": "audio/tts/fall_back_from_target_bravo_two.wav",
+            "speech": [{ "start": 15936, "end": 100305 }],
             "category": "clean",
             "phrase": "fall back from target bravo two",
             "peak": 0.2,
@@ -62,6 +67,7 @@
         },
         {
             "file": "audio/tts/switch_to_navigation.wav",
+            "speech": [{ "start": 15389, "end": 65936 }],
             "category": "homophone",
             "phrase": "switch to navigation",
             "peak": 0.2,
@@ -72,6 +78,7 @@
         },
         {
             "file": "audio/tts/navigation_mode.wav",
+            "speech": [{ "start": 17434, "end": 67985 }],
             "category": "clean",
             "phrase": "navigation mode",
             "peak": 0.2,
@@ -82,6 +89,7 @@
         },
         {
             "file": "audio/tts/enable_all.wav",
+            "speech": [{ "start": 17638, "end": 53135 }],
             "category": "clean",
             "phrase": "enable all",
             "peak": 0.2,
@@ -92,6 +100,7 @@
         },
         {
             "file": "audio/tts/disable_all.wav",
+            "speech": [{ "start": 18223, "end": 54211 }],
             "category": "clean",
             "phrase": "disable all",
             "peak": 0.2,
@@ -102,6 +111,7 @@
         },
         {
             "file": "audio/tts/fire_two_torpedoes_at_bravo_two.wav",
+            "speech": [{ "start": 15734, "end": 110847 }],
             "category": "slot-variant",
             "phrase": "fire two torpedoes at bravo two",
             "peak": 0.35,
@@ -116,6 +126,7 @@
         },
         {
             "file": "audio/tts/launch_jackals_target_hotel_two.wav",
+            "speech": [{ "start": 17478, "end": 119487 }],
             "category": "slot-variant",
             "phrase": "launch jackals target hotel two",
             "peak": 0.2,
@@ -129,6 +140,7 @@
         },
         {
             "file": "audio/tts/set_heading_two_seven_zero.wav",
+            "speech": [{ "start": 14577, "end": 85680 }],
             "category": "slot-variant",
             "phrase": "set heading two seven zero",
             "peak": 0.2,
@@ -141,6 +153,7 @@
         },
         {
             "file": "audio/tts/switch_to_weapons.wav",
+            "speech": [{ "start": 14882, "end": 56059 }],
             "category": "homophone",
             "phrase": "switch to weapons",
             "peak": 0.2,
@@ -151,6 +164,7 @@
         },
         {
             "file": "audio/tts/filler_launch_three_torpedoes_target_alpha_three.wav",
+            "speech": [{ "start": 18329, "end": 157527 }],
             "category": "filler",
             "phrase": "okay so launch three torpedoes target alpha three",
             "peak": 0.2,
@@ -165,6 +179,7 @@
         },
         {
             "file": "audio/tts/split_close_distance_safe_range_target_hotel_one.wav",
+            "speech": [{ "start": 14879, "end": 80486 }, { "start": 120375, "end": 168696 }],
             "category": "split",
             "layer": "recogniser",
             "segments": [
@@ -183,6 +198,7 @@
         },
         {
             "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap200ms.wav",
+            "speech": [{ "start": 14402, "end": 53751 }, { "start": 63365, "end": 96949 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -200,6 +216,7 @@
         },
         {
             "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap300ms.wav",
+            "speech": [{ "start": 14427, "end": 55119 }, { "start": 69629, "end": 103200 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -217,6 +234,7 @@
         },
         {
             "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap400ms.wav",
+            "speech": [{ "start": 14402, "end": 52758 }, { "start": 72002, "end": 107520 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -234,6 +252,7 @@
         },
         {
             "file": "audio/tts/ladder_p_set_heading_two_seven_zero_gap600ms.wav",
+            "speech": [{ "start": 14400, "end": 51777 }, { "start": 80642, "end": 112780 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -251,6 +270,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap200ms.wav",
+            "speech": [{ "start": 14414, "end": 94032 }, { "start": 103875, "end": 145920 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -269,6 +289,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap300ms.wav",
+            "speech": [{ "start": 14412, "end": 89725 }, { "start": 104160, "end": 146880 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -287,6 +308,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap400ms.wav",
+            "speech": [{ "start": 14538, "end": 94446 }, { "start": 113890, "end": 154964 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -305,6 +327,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_two_seven_zero_mark_one_five_gap600ms.wav",
+            "speech": [{ "start": 14411, "end": 92563 }, { "start": 121770, "end": 160800 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -323,6 +346,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap200ms.wav",
+            "speech": [{ "start": 14409, "end": 60356 }, { "start": 70080, "end": 100320 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -340,6 +364,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap300ms.wav",
+            "speech": [{ "start": 14617, "end": 60480 }, { "start": 75052, "end": 107450 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -357,6 +382,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap400ms.wav",
+            "speech": [{ "start": 14432, "end": 55180 }, { "start": 74703, "end": 108000 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -374,6 +400,7 @@
         },
         {
             "file": "audio/tts/ladder_p_orient_heading_one_eight_zero_gap600ms.wav",
+            "speech": [{ "start": 14406, "end": 61440 }, { "start": 90652, "end": 124316 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -391,6 +418,7 @@
         },
         {
             "file": "audio/tts/ladder_m_launch_missiles_target_hotel_one_gap300ms.wav",
+            "speech": [{ "start": 14598, "end": 67680 }, { "start": 82133, "end": 112689 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -409,6 +437,7 @@
         },
         {
             "file": "audio/tts/ladder_m_launch_missiles_target_hotel_one_gap600ms.wav",
+            "speech": [{ "start": 14536, "end": 65014 }, { "start": 94080, "end": 122880 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -427,6 +456,7 @@
         },
         {
             "file": "audio/tts/ladder_m_launch_missiles_target_hotel_one_gap900ms.wav",
+            "speech": [{ "start": 14614, "end": 66228 }, { "start": 109664, "end": 140140 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -445,6 +475,7 @@
         },
         {
             "file": "audio/tts/ladder_m_fall_back_from_target_bravo_two_gap300ms.wav",
+            "speech": [{ "start": 14599, "end": 49920 }, { "start": 64371, "end": 111360 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -462,6 +493,7 @@
         },
         {
             "file": "audio/tts/ladder_m_fall_back_from_target_bravo_two_gap600ms.wav",
+            "speech": [{ "start": 14415, "end": 49413 }, { "start": 78240, "end": 127667 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -479,6 +511,7 @@
         },
         {
             "file": "audio/tts/ladder_m_fall_back_from_target_bravo_two_gap900ms.wav",
+            "speech": [{ "start": 14430, "end": 51324 }, { "start": 94562, "end": 145428 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -496,6 +529,7 @@
         },
         {
             "file": "audio/tts/ladder_m_approach_target_alpha_one_gap300ms.wav",
+            "speech": [{ "start": 14417, "end": 35520 }, { "start": 49974, "end": 86386 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -513,6 +547,7 @@
         },
         {
             "file": "audio/tts/ladder_m_approach_target_alpha_one_gap600ms.wav",
+            "speech": [{ "start": 14690, "end": 37920 }, { "start": 66753, "end": 107975 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -530,6 +565,7 @@
         },
         {
             "file": "audio/tts/ladder_m_approach_target_alpha_one_gap900ms.wav",
+            "speech": [{ "start": 14679, "end": 36947 }, { "start": 80172, "end": 119520 }],
             "category": "ladder",
             "layer": "recogniser",
             "segments": [
@@ -547,6 +583,7 @@
         },
         {
             "file": "audio/tts/silence_negative.wav",
+            "speech": [],
             "category": "silence",
             "silenceSeconds": 3.0,
             "expectedIntent": "",
@@ -556,6 +593,7 @@
         },
         {
             "file": "audio/tts/pause_lead_launch_one_missiles_target_hotel_one.wav",
+            "speech": [{ "start": 99502, "end": 193763 }],
             "category": "pause-lead",
             "phrase": "launch one missiles target hotel one",
             "peak": 0.2,
@@ -573,6 +611,7 @@
         },
         {
             "file": "audio/tts/pause_lead_cease_fire.wav",
+            "speech": [{ "start": 97424, "end": 123436 }],
             "category": "pause-lead",
             "phrase": "cease fire",
             "peak": 0.05,
@@ -586,6 +625,7 @@
         },
         {
             "file": "audio/tts/pause_lead_resume_fire.wav",
+            "speech": [{ "start": 99133, "end": 134104 }],
             "category": "pause-lead",
             "phrase": "resume fire",
             "peak": 0.2,
@@ -599,6 +639,7 @@
         },
         {
             "file": "audio/tts/pause_lead_approach_target_alpha_one.wav",
+            "speech": [{ "start": 99204, "end": 166954 }],
             "category": "pause-lead",
             "phrase": "approach target alpha one",
             "peak": 0.2,
@@ -614,6 +655,7 @@
         },
         {
             "file": "audio/tts/pause_lead_fall_back_from_target_bravo_two.wav",
+            "speech": [{ "start": 99913, "end": 183894 }],
             "category": "pause-lead",
             "phrase": "fall back from target bravo two",
             "peak": 0.2,
@@ -629,6 +671,7 @@
         },
         {
             "file": "audio/tts/pause_lead_switch_to_navigation.wav",
+            "speech": [{ "start": 97057, "end": 146558 }],
             "category": "pause-lead",
             "phrase": "switch to navigation",
             "peak": 0.2,
@@ -642,6 +685,7 @@
         },
         {
             "file": "audio/tts/pause_lead_navigation_mode.wav",
+            "speech": [{ "start": 99167, "end": 146964 }],
             "category": "pause-lead",
             "phrase": "navigation mode",
             "peak": 0.2,
@@ -655,6 +699,7 @@
         },
         {
             "file": "audio/tts/pause_lead_enable_all.wav",
+            "speech": [{ "start": 99320, "end": 133512 }],
             "category": "pause-lead",
             "phrase": "enable all",
             "peak": 0.2,
@@ -668,6 +713,7 @@
         },
         {
             "file": "audio/tts/pause_lead_disable_all.wav",
+            "speech": [{ "start": 99020, "end": 131708 }],
             "category": "pause-lead",
             "phrase": "disable all",
             "peak": 0.2,
@@ -681,6 +727,7 @@
         },
         {
             "file": "audio/tts/pause_lead_fire_two_torpedoes_at_bravo_two.wav",
+            "speech": [{ "start": 98822, "end": 193221 }],
             "category": "pause-lead",
             "phrase": "fire two torpedoes at bravo two",
             "peak": 0.35,
@@ -698,6 +745,7 @@
         },
         {
             "file": "audio/tts/pause_lead_launch_jackals_target_hotel_two.wav",
+            "speech": [{ "start": 99119, "end": 194565 }],
             "category": "pause-lead",
             "phrase": "launch jackals target hotel two",
             "peak": 0.2,
@@ -714,6 +762,7 @@
         },
         {
             "file": "audio/tts/pause_lead_set_heading_two_seven_zero.wav",
+            "speech": [{ "start": 96263, "end": 170442 }],
             "category": "pause-lead",
             "phrase": "set heading two seven zero",
             "peak": 0.2,
@@ -729,6 +778,7 @@
         },
         {
             "file": "audio/tts/pause_lead_switch_to_weapons.wav",
+            "speech": [{ "start": 96508, "end": 137543 }],
             "category": "pause-lead",
             "phrase": "switch to weapons",
             "peak": 0.2,
@@ -742,6 +792,7 @@
         },
         {
             "file": "audio/tts/pause_lead_filler_launch_three_torpedoes_target_alpha_three.wav",
+            "speech": [{ "start": 99232, "end": 240278 }],
             "category": "pause-lead",
             "phrase": "okay so launch three torpedoes target alpha three",
             "peak": 0.2,
@@ -759,6 +810,7 @@
         },
         {
             "file": "audio/tts/pause_lead_split_close_distance_safe_range_target_hotel_one.wav",
+            "speech": [{ "start": 96472, "end": 164535 }, { "start": 207930, "end": 258798 }],
             "category": "pause-lead",
             "layer": "recogniser",
             "segments": [

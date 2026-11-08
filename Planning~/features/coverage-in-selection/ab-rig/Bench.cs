@@ -1,13 +1,16 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class)
 // Depends:  Program, BenchMetrics, JoinedInput, VoxrSlotDefinition, VoxrCommandDefinition
 // ============================================================================
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using VoXR.Commands;
 
 namespace AbRig
@@ -16,6 +19,10 @@ namespace AbRig
     {
         static int failures;
         static int checks;
+
+        const int TruthFloor = 328;
+        const int FrameTolerance = 960;
+        const int TailSamples = 48000;
 
 #pragma warning disable CA2255
         [ModuleInitializer]
@@ -41,12 +48,22 @@ namespace AbRig
                         throw new JoinedInput.Stop(2, "usage: --bench metrics-check");
                     return MetricsCheck();
                 }
+                if (verb == "truth-check")
+                {
+                    if (
+                        args.Length != 6
+                        || args[2] != "--manifest"
+                        || args[4] != "--fixtures-root"
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench truth-check --manifest <manifest.json> --fixtures-root <dir>"
+                        );
+                    return TruthCheck(args[3], args[5]);
+                }
                 throw new JoinedInput.Stop(
                     2,
-                    verb
-                        + " is not built yet (bench-fast-replay Phase "
-                        + (verb == "truth-check" ? "2" : "3")
-                        + ")"
+                    verb + " is not built yet (bench-fast-replay Phase 3)"
                 );
             }
             catch (JoinedInput.Stop stop)
@@ -188,6 +205,131 @@ namespace AbRig
                 $"{checks - failures}/{checks} metric checks verified against hand-computed toy cases."
             );
             return failures == 0 ? 0 : 1;
+        }
+
+        static int TruthCheck(string manifestPath, string root)
+        {
+            JoinedInput.Manifest manifest = JoinedInput.ReadManifest(manifestPath);
+            var missing = new List<string>();
+            foreach (JoinedInput.ManifestCase c in manifest.Cases)
+                if (c.Speech == null)
+                    missing.Add(manifest.Path + ": case \"" + c.File + "\": no key `speech`");
+            if (missing.Count > 0)
+                throw new JoinedInput.Stop(2, missing.ToArray());
+
+            string Shown(long? v) =>
+                v.HasValue ? v.Value.ToString(CultureInfo.InvariantCulture) : "none";
+
+            var failed = new List<string>();
+            foreach (JoinedInput.ManifestCase c in manifest.Cases)
+            {
+                short[] pcm = ReadPcm(Path.Combine(root, c.File));
+                int n =
+                    c.Segments != null && c.Segments.Length > 0 ? c.Segments.Length
+                    : !string.IsNullOrEmpty(c.Phrase) ? 1
+                    : 0;
+                int k = c.Speech.Length;
+                bool ok;
+                string detail;
+                if (n > 0)
+                {
+                    long? last = null;
+                    for (long i = (long)pcm.Length - TailSamples - 1; i >= 0; i--)
+                        if (Math.Abs((int)pcm[i]) >= TruthFloor)
+                        {
+                            last = i + 1;
+                            break;
+                        }
+                    long? end = k > 0 ? c.Speech[k - 1].End : null;
+                    long? diff = end.HasValue && last.HasValue ? end - last : null;
+                    bool inClip = true;
+                    foreach (var span in c.Speech)
+                        if (span.End > pcm.Length)
+                            inClip = false;
+                    ok =
+                        k == n
+                        && inClip
+                        && last.HasValue
+                        && diff.HasValue
+                        && Math.Abs(diff.Value) <= FrameTolerance;
+                    detail =
+                        $"segments={k}/{n} end={Shown(end)} last={Shown(last)} diff={Shown(diff)}";
+                }
+                else
+                {
+                    long floorSamples = 0;
+                    foreach (short s in pcm)
+                        if (Math.Abs((int)s) >= TruthFloor)
+                            floorSamples++;
+                    ok = k == 0 && floorSamples == 0;
+                    detail = $"segments={k}/0 floor-samples={Shown(floorSamples)}";
+                }
+                if (!ok)
+                    failed.Add(c.Name);
+                Console.WriteLine($"{(ok ? "ok  " : "FAIL")}  {c.Name, -68} {detail}");
+            }
+
+            int total = manifest.Cases.Count;
+            if (failed.Count > 0)
+                throw new JoinedInput.Stop(
+                    2,
+                    "truth check failed on "
+                        + failed.Count
+                        + "/"
+                        + total
+                        + " clips: "
+                        + string.Join(", ", failed)
+                );
+            Console.WriteLine();
+            Console.WriteLine(
+                $"{total}/{total} clips' speech truth verified against the committed WAVs."
+            );
+            return 0;
+        }
+
+        static short[] ReadPcm(string path)
+        {
+            byte[] b = File.ReadAllBytes(path);
+            var bad = new JoinedInput.Stop(2, path + ": not a 16-bit mono 48000 Hz PCM WAV");
+            if (
+                b.Length < 12
+                || Encoding.ASCII.GetString(b, 0, 4) != "RIFF"
+                || Encoding.ASCII.GetString(b, 8, 4) != "WAVE"
+            )
+                throw bad;
+            bool format = false;
+            long at = 12;
+            while (at + 8 <= b.Length)
+            {
+                string id = Encoding.ASCII.GetString(b, (int)at, 4);
+                long size = BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan((int)at + 4));
+                int body = (int)at + 8;
+                if (body + size > b.Length)
+                    throw bad;
+                if (id == "fmt ")
+                {
+                    if (
+                        size < 16
+                        || BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(body)) != 1
+                        || BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(body + 2)) != 1
+                        || BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan(body + 4)) != 48000
+                        || BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(body + 14)) != 16
+                    )
+                        throw bad;
+                    format = true;
+                }
+                else if (id == "data")
+                {
+                    if (!format)
+                        throw bad;
+                    var pcm = new short[size / 2];
+                    for (int i = 0; i < pcm.Length; i++)
+                        pcm[i] = BinaryPrimitives.ReadInt16LittleEndian(b.AsSpan(body + 2 * i));
+                    return pcm;
+                }
+                at = body + size + (size & 1);
+            }
+            throw bad;
         }
     }
 }
