@@ -47,46 +47,69 @@ Backlog row (`audio-bench.md` §6):
 
 ## 3. Why — the value it delivers
 
-<!-- The goal of the locked design this feature carries, and what its users get that they did not have before. This is the "why" behind every requirement below — the thing you protect when a tradeoff forces a cut. -->
+Fast mode (`bench-fast-replay`) gives the audio-time half of each stage's latency, the deterministic part that transfers to Quest unchanged, and the accuracy axis; it is blind to the compute half (adr-0001, adr-0003). This feature adds that half: decode and queue lag on wall time, and the decoder's real-time factor — what Quest's largest unmeasured budget row needs, the decoder catch-up that "adds ~0.5–1.0 s" (`I3-latency-ux-redesign.md`, budget row 7; design §0 In 1) — and it shows whether device-like 20 ms chunking moves vosk's endpoints against the harness's large fast pushes (adr-0003). The thing protected when a tradeoff forces a cut: the split into audio-time and compute parts is trustworthy, guarded by the matched-chunk self-check, or the bench gives no numbers (adr-0001).
 
 ## 4. Observable behaviour
 
-<!-- The experiential spec: what someone using this feature does, sees and gets back, step by step. Written before the table below, because every row in it is a slice of this. -->
+1. The maintainer runs paced mode naming a configuration, as fast mode takes it: model, recogniser settings, endpointer profile, gain.
+2. The bench runs fast mode first, in the same run, with its checks unchanged — the truth check and the pinned-transcript self-check; a failure there stops the run as fast mode does.
+3. The matched-chunk pass: all 52 cases pushed into the real native bridge at real speed in fast mode's 16384-sample pushes. Each case's finals text must equal fast mode's, and its first-partial and each final's audio-time stamp must lie within one decoder read (4096 samples) of fast mode's; a missing or extra final fails. On any failure the bench names the differing cases, gives no numbers, and exits non-zero.
+4. The 20 ms pass: all 52 cases pushed into the real native bridge at real speed in 20 ms chunks (960 samples at the fixtures' 48 kHz). Each result is stamped on audio time and wall time, and the pass's timeline is fed to the real C# recogniser through the joined rig at each result's paced wall-arrival time, so the command event is stamped on both clocks.
+5. The report: fast mode's report, unchanged, plus a paced section. Per case and per stage — first partial, each final, command event — the audio-time offset from end of speech, the wall-time offset, and the compute part (wall − audio); the command stage's compute part, its paced time − its fast time; the real-time factor per case and over the corpus; the 20 ms finding — the cases whose finals differ from fast mode's, both shown, and the cases whose command class differs from fast mode's, both shown, or `none`; and per case the largest push lateness behind the real-time schedule. The paced section is labelled desktop-only, a single run with its run-to-run spread not measured, and never comparable across machines.
+6. A paced run takes about twice the corpus's audio in real time beyond fast mode — 193 s of audio over 52 clips, so about 6.5 minutes.
 
 ## 5. Functional requirements
 
-<!-- Numbered, testable, prioritized. Each row: the requirement (what and why, not how), its priority, how it is verified, and its parent in locked design; each row names the story it serves. -->
+**Ruled on 2026-11-09** by the maintainer, in session, at SETTLE: S1 confirmed as G0 recorded it; R1, a single paced run, the compute part labelled "single run, spread not measured", repeats and run-to-run spread left to `bench-ab-report` (F8); R2, the matched-chunk self-check compares finals text and the first-partial and each final's audio-time stamp, a missing or extra final failing (F6); R3, the 20 ms pass scores the command class only, shown beside fast mode's and flagged where it differs, WER and ECE/NCE staying fast mode's (F7); each took the recommended option; the rest settled as drafted.
 
 | #  | Requirement | Story | Priority | Acceptance check | Source |
 |----|-------------|-------|----------|------------------|--------|
-| F1 | <observable behaviour> | S1 | Must / Should / Could | <how it is verified> | <design doc / decision record> |
-| F2 |             |       |          |                  |        |
+| F1 | Paced replay of all 52 cases into the real native bridge at real speed in 20 ms chunks (960 samples at 48 kHz), the chunk size provisional → the tuning pass. | S1 | Must | A green paced run over all 52 cases. | adr-0002; adr-0003; design Status |
+| F2 | Wall stamps on a monotonic clock read at the bench's push and at its pop of each result; each stage's wall time given as a signed offset from end of speech. | S1 | Must | A known-value toy of the stamp arithmetic in the plan's own checks gives its stated offsets; the green run's report gives each case's wall offsets. | adr-0001; design §2 |
+| F3 | Per case and per stage — first partial, each final, command event — the latency split into an audio-time part and a compute part (wall − audio), the compute part labelled desktop-only. | S1 | Must | The F2 toy gives its stated parts; the green run's report gives both parts per case and stage, with the label. | adr-0001 |
+| F4 | The real-time factor, decode time ÷ audio duration, per case and over the corpus, for paced runs only. | S1 | Must | A known-value toy gives its stated factor; the green run's report gives the factor per case and over the corpus. | adr-0001; adr-0003; design §2 |
+| F5 | The command event's paced wall stamp: the joined rig delivers each result at its recorded paced wall-arrival time on its frame clock; the command stage's compute part is its paced time − its fast time. | S1 | Must | The green run's report gives each case's command event on both clocks and its command-stage compute part, or `none` where no command fires. | adr-0002 |
+| F6 | The matched-chunk split self-check: at real speed in 16384-sample pushes, each case's finals text equals fast mode's and its first-partial and each final's audio-time stamp lies within one decoder read (4096 samples) of fast mode's; a missing or extra final fails; on any failure no number is given, the differing cases are named and the run exits non-zero. | S1 | Must | The green run's self-check passes; a mutation shifting one case's stamp by more than 4096 samples makes the bench refuse numbers and name the case. | adr-0001; adr-0003; design §3; R2 |
+| F7 | The 20 ms finding: the cases whose finals differ from fast mode's, and the cases whose command class differs from fast mode's, listed with both sides, reported as a finding and never a self-check failure. | S1 | Must | The green run's report lists the differing cases with both sides, or says `none`. | adr-0003; R3 |
+| F8 | The report extends fast mode's: it names the mode, keeps fast mode's sections, adds the paced section, and labels the paced numbers desktop-only, single run with spread not measured, and never comparable across machines. | S1 | Must | The green run's report has fast mode's sections, the paced section and every label. | adr-0001; adr-0008; R1 |
+| F9 | Per case, the largest lateness of a push behind its real-time schedule. | S1 | Should | The green run's report gives each case's largest push lateness. | design §3 (machine noise) |
+| F10 | Untouched: Command 3 and its pins, the committed WAVs, the bridge interface and `Runtime/`; a bridge interface change found needed is a scope stop; a fast-only run's report is unchanged. | S1 | Must | Command 3 green; `git diff main` empty for the committed WAVs, `expectations.json`, the bridge's public interface and `Runtime/`; a fast-only run's report is byte-identical to `main`'s on the same inputs. | design §4; adr-0001; adr-0002; adr-0008 |
 
 ## 6. Non-functional requirements
 
-<!-- First-class: on some platforms these are the feature-killers. Keep the rows that apply, add the ones this project's platform makes load-bearing, and cut the rest rather than leaving them blank. -->
-
-- **Performance:** <the budget this feature must hold, and any per-operation ceiling if it is on a hot path>
-- **Robustness at the input boundary:** <what the feature does with malformed, ambiguous or low-confidence input — the response it gives, never silence>
-- **Degraded dependencies:** <what it does when something it depends on is slow, unavailable or partially wrong>
-- **Accessibility:** <if applicable>
+- **Performance:** a paced run takes about twice the corpus's audio in real time beyond fast mode (193 s of audio, about 6.5 minutes); the design rules no other budget.
+- **Robustness at the input boundary:** fast mode's named stops hold; a push the bridge refuses stops the run naming the case; an undefined value prints `undefined` with the reason, never a made-up number.
+- **Degraded dependencies:** a loaded machine shows as push lateness (F9) and in the compute part, never as a stop; wall numbers are never compared across machines.
 
 ## 7. Non-goals / deferred
 
-<!-- As sharp as the goals. What this feature does NOT do; what is explicitly deferred to a later feature; which adjacent systems it touches but does not own. This is the scope fence — the thing that stops a two-week feature becoming two months. -->
+- The G0 Out list (§2).
+- Repeated runs, run-to-run spread, and percentiles across runs or cases — `bench-ab-report` (R1).
+- WER and confidence calibration for the 20 ms pass; they stay fast mode's (R3).
+- Being a verification gate: the bench never is one (adr-0008).
+- A latency target: none is set (design Status).
 
 ## 8. Dependencies & assumptions
 
-<!-- What must already exist or be merged first (features are dependency-ordered — declare the order). What is assumed about the people using this and about the rest of the system. Unstated assumptions are where requirements rot. -->
+- Depends on `bench-fast-replay`, merged as PR #198 (`63434cb`); uses the merged joined rig and scorer (PRs #177, #178) and the Windows native harness build (`verification` Command 3).
+- Assumed: the maintainer runs it on the Windows desktop, on one machine per comparison.
+- Assumed: the desktop gives a monotonic clock fine enough to resolve a 20 ms push schedule.
 
 ## 9. Acceptance criteria (G2)
 
-<!-- The consolidated "done" checklist the human walks at G2. Pull the Must-priority checks from §5, then add the verification only a human can do and the commands the project's verification binding names. If every §5 row already carries its check, this can just collect the Musts plus those two. -->
-
-- [ ] <criterion — from the §5 Musts>
-- [ ] Human-only verification: <what the human must exercise by hand to accept this>
-- [ ] The commands the project's `verification` binding names are green
+- [ ] A green paced run over all 52 cases, with the matched-chunk self-check passing.
+- [ ] Mutation: one case's stamp shifted by more than 4096 samples makes the bench refuse numbers and name the case.
+- [ ] Known-value toys for the stamp arithmetic, the split and the real-time factor give their stated values.
+- [ ] The green run's report has fast mode's sections, the paced section with every F3, F4, F5, F7 and F9 field, and every F8 label.
+- [ ] A fast-only run's report is byte-identical to `main`'s on the same inputs.
+- [ ] Command 3 is green.
+- [ ] `git diff main` is empty for the committed WAVs, `expectations.json`, the bridge's public interface and `Runtime/`.
+- [ ] Human-only verification: the maintainer reads one case's paced numbers in the green run's report and judges them plausible.
 
 ## 10. Open questions
 
-<!-- The unknowns you did NOT resolve — handed forward to the architecture doc. Honest beats complete; the architecture doc would rather inherit a known unknown than hit it mid-build. -->
+1. How the paced push reaches the bridge — a new program linking it, or a mode of the harness — with Command 3's pinned run unchanged either way — the architecture (adr-0002).
+2. How decode time is measured for the real-time factor without a bridge interface change; if it cannot be, a scope stop — the architecture (adr-0001).
+3. How the per-case flush padding is pushed in the paced passes — the architecture.
+4. The wall-time reference for end of speech, from which wall offsets count — the architecture (adr-0001).
+5. How the stamps are taken and recorded — the architecture (adr-0001).
