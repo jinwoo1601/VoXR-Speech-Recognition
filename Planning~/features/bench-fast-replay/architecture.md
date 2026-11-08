@@ -110,6 +110,7 @@ Lowest risk first: pure functions, then the one tracked-data change, then the in
 - **Assets code cannot author:** none new. Needed as provisioned: `NativeBridge~/vendor/` per `NativeBridge~/harness/README.md` *Provisioning a branch tree* (a copy from the hub; a download only if the hub lacks it, the human's), Command 3's toolchain, the .NET SDK 10, `py`. No Piper venv: truth mode needs none and nothing is regenerated. **Human step:** the maintainer's inspection of three clips' waveforms against their recorded speech end (§9), possible from Phase 2's end.
 - Phase 1 — persisted plan (2026-11-08): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-11-08): [plan-2.md](plan-2.md)
+- Phase 3 — persisted plan (2026-11-08): [plan-3.md](plan-3.md)
 
 ## Risks, tradeoffs & open questions
 
