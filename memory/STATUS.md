@@ -12,7 +12,7 @@ updated: 2026-11-08
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`design-audio-bench`**: G1 locked; LOCK, backlog, PR next; tree `D:\Workspace\VoXR-Speech-Recognition.trees\design-audio-bench` · ruling G1 · 2026-11-08 · the human · "Lock it"
+- **`design-audio-bench`**: G1 locked f395fd9; next: g1-lock SHOW, PR, close; tree `D:\Workspace\VoXR-Speech-Recognition.trees\design-audio-bench` · ruling G1 · 2026-11-08 · the human · "Lock it"
 
 ## Deferred
 
