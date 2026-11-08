@@ -1,6 +1,6 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-11-08
+updated: 2026-11-09
 
 ## Current
 
@@ -12,7 +12,7 @@ updated: 2026-11-08
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-bench-fast-replay`**: feature; full; path development; stage implement - audio-bench row 1; phase 3 built b5ed9e7; next: phase-pickup phase 4
+- **`feat-bench-fast-replay`**: feature; full; path development; stage implement - audio-bench row 1; phase 4 planned 663514d; next: implement phase 4 from DISPATCH
 
 ## Deferred
 
