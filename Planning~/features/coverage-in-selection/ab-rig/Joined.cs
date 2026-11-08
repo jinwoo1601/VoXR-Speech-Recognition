@@ -163,8 +163,6 @@ namespace AbRig
                 ? Path.Combine(Path.GetDirectoryName(outPath), "trace-" + o["--side"] + ".jsonl")
                 : null;
 
-            // 1. No stale scored file (nor, at the recogniser layer, trace) survives a stop after
-            // the options parse; then every reader finishes first.
             reading = outPath;
             if (File.Exists(outPath))
                 File.Delete(outPath);
@@ -193,25 +191,8 @@ namespace AbRig
             reading = null;
             JoinedInput.Join(dump, manifest, pin, pinned);
 
-            // 2. Grammar-pin guard (F11): the staged ref's grammar is the pin's, ordinal.
-            string[] rigGrammar = ParseGrammar(grammarJson, "grammar guard: the rig's grammar");
-            int diff = FirstDifference(rigGrammar, pin.Grammar);
-            if (diff >= 0)
-                throw new JoinedInput.Stop(
-                    2,
-                    "grammar guard: "
-                        + (stagedFrom.Length > 0 ? stagedFrom[0] : "(empty STAGED_FROM)")
-                        + ": the rig's grammar differs from the pin's ("
-                        + pin.Path
-                        + ") at index "
-                        + diff
-                        + ": rig "
-                        + Entry(rigGrammar, diff)
-                        + ", pin "
-                        + Entry(pin.Grammar, diff)
-                );
+            GrammarPinGuard(grammarJson, pin, stagedFrom);
 
-            // 3. Kill check (F2): the pinned dump reproduces the pin, configuration and finals.
             if (pinned)
             {
                 var failing = new List<string>();
@@ -275,7 +256,6 @@ namespace AbRig
                 if (failing.Count > 0)
                     throw new JoinedInput.Stop(3, failing.ToArray());
             }
-            // 4. Unpinned side: a failed decode is listed, never scored.
             else
             {
                 var failed = new List<string>();
@@ -292,7 +272,6 @@ namespace AbRig
                     throw new JoinedInput.Stop(2, failed.ToArray());
             }
 
-            // 5. The scored record: a header, then one line per manifest case.
             var dumpByCase = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
             foreach (JoinedInput.DumpCase c in dump.Cases)
                 dumpByCase.Add(c.Name, c);
@@ -325,8 +304,6 @@ namespace AbRig
                 w.WriteBoolean("pinned", pinned);
                 if (recogniser)
                 {
-                    // No rig gate at this layer: the staged recogniser's configuration and the
-                    // tick rate, read before any world (*Configuration*).
                     (float tickRate, KeyValuePair<string, string>[] config) = RecogniserConfig();
                     w.WriteString("layer", "recogniser");
                     w.WriteStartObject("config");
@@ -350,8 +327,6 @@ namespace AbRig
             var trace = new StringBuilder();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
             {
-                // Under --evaluate a sealed case goes as unsealed (F7); at the recogniser layer
-                // every other case is scored (F5).
                 string disposition;
                 if (c.Sealed && !evaluate)
                 {
@@ -377,28 +352,9 @@ namespace AbRig
                 if (s != null)
                     classCounts[s.Class]++;
 
-                // *Guards at this layer*: the grammar the staged recogniser applied is the pin's.
                 if (s != null && recogniser)
                 {
-                    string label = "applied-grammar guard: case \"" + c.Name + "\"";
-                    string[] applied = ParseGrammar(
-                        s.AppliedGrammar,
-                        label + ": the applied grammar"
-                    );
-                    int at = FirstDifference(applied, pin.Grammar);
-                    if (at >= 0)
-                        throw new JoinedInput.Stop(
-                            2,
-                            label
-                                + ": the applied grammar differs from the pin's ("
-                                + pin.Path
-                                + ") at index "
-                                + at
-                                + ": applied "
-                                + Entry(applied, at)
-                                + ", pin "
-                                + Entry(pin.Grammar, at)
-                        );
+                    AppliedGrammarGuard(c.Name, s.AppliedGrammar, pin);
                     trace.Append(s.Trace);
                 }
 
@@ -415,7 +371,6 @@ namespace AbRig
                             w.WriteStringValue(f);
                         w.WriteEndArray();
                     }
-                    // *Scored record*: the primary fire's intent, slots and score, or null / [].
                     if (s != null)
                     {
                         w.WriteString("class", s.Class);
@@ -443,7 +398,6 @@ namespace AbRig
                             w.WriteString("slotCredit", "n/a");
                         w.WriteNumber("extraFires", s.ExtraFires);
                         w.WriteNumber("finalCount", s.FinalCount);
-                        // *Timing measures*, beside the class, never a flip.
                         if (recogniser)
                         {
                             w.WriteStartArray("fireTimes");
@@ -466,7 +420,6 @@ namespace AbRig
             File.WriteAllBytes(outPath, buffer.ToArray());
             reading = null;
 
-            // The trace, after the scored file, so a stop leaves neither (*Trace*).
             if (recogniser)
             {
                 reading = tracePath;
@@ -474,7 +427,6 @@ namespace AbRig
                 reading = null;
             }
 
-            // 6. The counts: dispositions, then the report's classes (correct = both correct-*).
             Console.Out.WriteLine("scored " + scored);
             Console.Out.WriteLine("recogniser-layer " + recogniserLayer);
             Console.Out.WriteLine("sealed " + sealedCount);
@@ -486,6 +438,54 @@ namespace AbRig
             Console.Out.WriteLine("missed " + classCounts["missed"]);
             Console.Out.WriteLine("false-fire " + classCounts["false-fire"]);
             return 0;
+        }
+
+        internal static void GrammarPinGuard(
+            string grammarJson,
+            JoinedInput.Pin pin,
+            string[] stagedFrom
+        )
+        {
+            string[] rigGrammar = ParseGrammar(grammarJson, "grammar guard: the rig's grammar");
+            int diff = FirstDifference(rigGrammar, pin.Grammar);
+            if (diff >= 0)
+                throw new JoinedInput.Stop(
+                    2,
+                    "grammar guard: "
+                        + (stagedFrom.Length > 0 ? stagedFrom[0] : "(empty STAGED_FROM)")
+                        + ": the rig's grammar differs from the pin's ("
+                        + pin.Path
+                        + ") at index "
+                        + diff
+                        + ": rig "
+                        + Entry(rigGrammar, diff)
+                        + ", pin "
+                        + Entry(pin.Grammar, diff)
+                );
+        }
+
+        internal static void AppliedGrammarGuard(
+            string caseName,
+            string appliedGrammar,
+            JoinedInput.Pin pin
+        )
+        {
+            string label = "applied-grammar guard: case \"" + caseName + "\"";
+            string[] applied = ParseGrammar(appliedGrammar, label + ": the applied grammar");
+            int at = FirstDifference(applied, pin.Grammar);
+            if (at >= 0)
+                throw new JoinedInput.Stop(
+                    2,
+                    label
+                        + ": the applied grammar differs from the pin's ("
+                        + pin.Path
+                        + ") at index "
+                        + at
+                        + ": applied "
+                        + Entry(applied, at)
+                        + ", pin "
+                        + Entry(pin.Grammar, at)
+                );
         }
 
         // `timing` (*Checks as commands*), on schema-2 dumps only; the reader has already held

@@ -1,8 +1,8 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast run
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class)
-// Depends:  Program, BenchMetrics, JoinedInput, VoxrSlotDefinition, VoxrCommandDefinition
+// Depends:  Program, BenchMetrics, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition
 // ============================================================================
 using System;
 using System.Buffers.Binary;
@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using VoXR.Commands;
 
 namespace AbRig
@@ -19,6 +20,7 @@ namespace AbRig
     {
         static int failures;
         static int checks;
+        static string reading;
 
         const int TruthFloor = 328;
         const int FrameTolerance = 960;
@@ -61,9 +63,30 @@ namespace AbRig
                         );
                     return TruthCheck(args[3], args[5]);
                 }
-                throw new JoinedInput.Stop(
-                    2,
-                    verb + " is not built yet (bench-fast-replay Phase 3)"
+                if (
+                    args.Length != 14
+                    || args[2] != "--dump"
+                    || args[4] != "--manifest"
+                    || args[6] != "--pin"
+                    || args[8] != "--fixtures-root"
+                    || args[10] != "--harness-exit"
+                    || args[12] != "--report"
+                    || (args[11] != "0" && args[11] != "1")
+                )
+                    throw new JoinedInput.Stop(
+                        2,
+                        "usage: --bench run --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-exit 0|1 --report <report.md>"
+                    );
+                return FastRun(
+                    args[3],
+                    args[5],
+                    args[7],
+                    args[9],
+                    int.Parse(args[11]),
+                    args[13],
+                    grammarJson,
+                    slots,
+                    commands
                 );
             }
             catch (JoinedInput.Stop stop)
@@ -74,9 +97,249 @@ namespace AbRig
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine("bench: " + e.GetType().Name + ": " + e.Message);
+                if (reading == null)
+                {
+                    Console.Error.WriteLine("bench: " + e.GetType().Name + ": " + e.Message);
+                    return 2;
+                }
+                string at =
+                    e is JsonException je && je.LineNumber.HasValue
+                        ? ":" + (je.LineNumber.Value + 1)
+                        : "";
+                Console.Error.WriteLine(
+                    "bench: " + reading + at + ": " + e.GetType().Name + ": " + e.Message
+                );
                 return 2;
             }
+        }
+
+        static int FastRun(
+            string dumpPath,
+            string manifestPath,
+            string pinPath,
+            string root,
+            int harnessExit,
+            string reportPath,
+            string grammarJson,
+            VoxrSlotDefinition[] slots,
+            VoxrCommandDefinition[] commands
+        )
+        {
+            reading = reportPath;
+            if (File.Exists(reportPath))
+                File.Delete(reportPath);
+            reading = "./STAGED_FROM";
+            string[] stagedFrom = JoinedInput.SplitLines(File.ReadAllText("STAGED_FROM"));
+            reading = dumpPath;
+            JoinedInput.Dump dump = JoinedInput.ReadDump(dumpPath);
+            if (dump.Schema != 2)
+                throw new JoinedInput.Stop(2, dumpPath + ": schema 1, no positions");
+            reading = manifestPath;
+            JoinedInput.Manifest manifest = JoinedInput.ReadManifest(manifestPath);
+            reading = pinPath;
+            JoinedInput.Pin pin = JoinedInput.ReadPin(pinPath);
+            reading = manifestPath;
+            JsonElement manifestRoot = JoinedInput.ParseObject(
+                File.ReadAllText(manifestPath, JoinedInput.StrictUtf8),
+                manifestPath
+            );
+            if (
+                !manifestRoot.TryGetProperty("voice", out JsonElement voice)
+                || voice.ValueKind != JsonValueKind.String
+            )
+                throw new JoinedInput.Stop(2, manifestPath + ": no string `voice`");
+            reading = dumpPath;
+            string[] dumpLines = JoinedInput.SplitLines(
+                File.ReadAllText(dumpPath, JoinedInput.StrictUtf8)
+            );
+            JsonElement end = JoinedInput.ParseObject(
+                dumpLines[dumpLines.Length - 1],
+                dumpPath + ":" + dumpLines.Length
+            );
+            long endCases = end.GetProperty("cases").GetInt64();
+            long endPassed = end.GetProperty("passed").GetInt64();
+            reading = root;
+            TruthCheck(manifestPath, root);
+            reading = null;
+            JoinedInput.Join(dump, manifest, pin, pinned: true);
+
+            var failing = new List<string>();
+            int failedCases = 0;
+            foreach (JoinedInput.DumpCase c in dump.Cases)
+            {
+                bool failed = false;
+                if (c.Failures.Count > 0)
+                {
+                    failing.Add(
+                        "self-check: case \""
+                            + c.Name
+                            + "\": failed decode: "
+                            + string.Join("; ", c.Failures)
+                    );
+                    failed = true;
+                }
+                string[] expected = pin.Cases[c.Name];
+                string[] actual = c.Finals.ToArray();
+                bool same = expected.Length == actual.Length;
+                for (int i = 0; same && i < expected.Length; i++)
+                    same = string.Equals(expected[i], actual[i], StringComparison.Ordinal);
+                if (!same)
+                {
+                    failing.Add(
+                        "self-check: case \""
+                            + c.Name
+                            + "\": finals expected "
+                            + BenchReport.JsonArray(expected)
+                            + ", actual "
+                            + BenchReport.JsonArray(actual)
+                    );
+                    failed = true;
+                }
+                if (failed)
+                    failedCases++;
+            }
+            if (failedCases > 0)
+            {
+                failing.Add(
+                    "self-check failed on "
+                        + failedCases
+                        + "/"
+                        + dump.Cases.Count
+                        + " cases against the pin "
+                        + pin.Path
+                        + ": no numbers, no report"
+                );
+                throw new JoinedInput.Stop(3, failing.ToArray());
+            }
+            Console.Out.WriteLine(
+                "self-check: "
+                    + dump.Cases.Count
+                    + "/"
+                    + dump.Cases.Count
+                    + " cases' finals equal the pin."
+            );
+
+            Joined.GrammarPinGuard(grammarJson, pin, stagedFrom);
+            (float tickRate, KeyValuePair<string, string>[] config) = Joined.RecogniserConfig();
+
+            var dumpByCase = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
+            foreach (JoinedInput.DumpCase c in dump.Cases)
+                dumpByCase.Add(c.Name, c);
+            var outcomes = new List<JoinedScorer.Outcome>();
+            foreach (JoinedInput.ManifestCase c in manifest.Cases)
+            {
+                JoinedScorer.Outcome s = Joined.ScoreRecogniser(
+                    c,
+                    dumpByCase[c.Name],
+                    slots,
+                    commands
+                );
+                Joined.AppliedGrammarGuard(c.Name, s.AppliedGrammar, pin);
+                outcomes.Add(s);
+            }
+
+            long t = (long)JoinedRecogniser.TickRate;
+            var rows = new List<BenchReport.Case>();
+            var words = new List<(string[] Ref, JoinedInput.Word[] Hyp)>();
+            var classes = new List<(string Class, int ExtraFires)>();
+            for (int i = 0; i < manifest.Cases.Count; i++)
+            {
+                JoinedInput.ManifestCase c = manifest.Cases[i];
+                JoinedInput.DumpCase d = dumpByCase[c.Name];
+                JoinedScorer.Outcome s = outcomes[i];
+                BenchReport.Case row = Stamps(c, d, s, t);
+                string[] reference = BenchMetrics.Reference(c.Phrase, c.Segments);
+                JoinedInput.Word[] hypothesis = BenchMetrics.Hypothesis(d.Words);
+                row.Wer =
+                    reference.Length == 0
+                        ? "excluded (silence)"
+                        : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
+                row.Pending =
+                    s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
+                    : s.Pending ? "pending"
+                    : "-";
+                rows.Add(row);
+                words.Add((reference, hypothesis));
+                classes.Add((s.Class, s.ExtraFires));
+            }
+            BenchMetrics.Scored scored = BenchMetrics.Score(words);
+            BenchMetrics.CommandScore command = BenchMetrics.Command(classes);
+
+            var header = new BenchReport.Header
+            {
+                Gain = dump.Gain,
+                Libvosk = dump.Libvosk,
+                ModelConf = dump.ModelConf,
+                Grammar = dump.Grammar,
+                StagedFrom = stagedFrom,
+                TickRate = tickRate,
+                Config = config,
+                Voice = voice.GetString(),
+                Provenance = manifest.Provenance,
+                HarnessExit = harnessExit,
+                EndCases = endCases,
+                EndPassed = endPassed,
+                Cases = dump.Cases.Count,
+            };
+            string text = BenchReport.Build(header, rows, command, scored);
+            reading = reportPath;
+            BenchReport.Write(reportPath, text);
+            return 0;
+        }
+
+        static BenchReport.Case Stamps(
+            JoinedInput.ManifestCase c,
+            JoinedInput.DumpCase d,
+            JoinedScorer.Outcome s,
+            long t
+        )
+        {
+            var row = new BenchReport.Case
+            {
+                Name = c.Name,
+                Category = c.Category,
+                Class = s.Class,
+                FinalCount = s.FinalCount,
+                ExtraFires = s.ExtraFires,
+            };
+            if (c.Speech.Length == 0)
+            {
+                row.FirstPartial = "n/a";
+                row.Finals = "n/a";
+                row.CommandEvent = "n/a";
+                return row;
+            }
+            long e = c.Speech[^1].End;
+            long r = d.SampleRate;
+            string firstPartial = null;
+            var finals = new List<string>();
+            foreach (JoinedInput.DumpResult x in d.Results)
+            {
+                using (JsonDocument doc = JsonDocument.Parse(x.Payload))
+                {
+                    JsonElement p = doc.RootElement;
+                    if (!x.Final)
+                    {
+                        if (
+                            firstPartial == null
+                            && p.GetProperty("partial").GetString().Length > 0
+                        )
+                            firstPartial = BenchReport.Offset(x.Consumed.Value - e, r);
+                    }
+                    else if (p.GetProperty("text").GetString().Length > 0)
+                        finals.Add(BenchReport.Offset(x.Consumed.Value - e, r));
+                }
+            }
+            row.FirstPartial = firstPartial ?? "none";
+            row.Finals = finals.Count > 0 ? string.Join(", ", finals) : "none";
+            if (s.FireTimes.Length > 0)
+            {
+                long k = (long)Math.Round(s.FireTimes[0] * t);
+                row.CommandEvent = BenchReport.Offset(k * r - t * e, t * r);
+            }
+            else
+                row.CommandEvent = "none";
+            return row;
         }
 
         static void Expect(string where, string what, string actual, string expected)

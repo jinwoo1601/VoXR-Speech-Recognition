@@ -6,7 +6,7 @@
 # WORKTREE copies the checked-out files, so the "after" build is literally what ships.
 # A git ref uses `git show`, so the "before" build is literally what is on main.
 # `recogniser` (feat-joined-rig-recogniser) adds the command and speech recognisers' sources and
-# the recogniser-only rig files, Bench.cs and BenchMetrics.cs among them (bench-fast-replay);
+# the recogniser-only rig files, Bench.cs, BenchMetrics.cs and BenchReport.cs among them (bench-fast-replay);
 # without it the stage is the parser's alone.
 set -euo pipefail
 
@@ -111,7 +111,7 @@ cp "$HERE/UnityStub.cs" "$HERE/Program.cs" "$HERE/Check.cs" "$HERE/DocCheck.cs" 
    "$OUT/"
 if [ "$LAYER" = "recogniser" ]; then
   cp "$HERE/JoinedRecogniser.cs" "$HERE/BridgeNative.cs" "$HERE/ModelExtractor.cs" \
-     "$HERE/Bench.cs" "$HERE/BenchMetrics.cs" "$OUT/"
+     "$HERE/Bench.cs" "$HERE/BenchMetrics.cs" "$HERE/BenchReport.cs" "$OUT/"
 fi
 
 if [ -n "$BUFFER" ]; then
