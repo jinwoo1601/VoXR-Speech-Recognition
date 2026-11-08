@@ -193,7 +193,7 @@ namespace AbRig
             var confSum = new double[EceBins];
             foreach (var (conf, correct) in words)
             {
-                int bin = Math.Min((int)Math.Floor(conf * EceBins), EceBins - 1);
+                int bin = Math.Min((int)Math.Floor(Math.Round(conf * EceBins, 6)), EceBins - 1);
                 count[bin]++;
                 if (correct)
                     right[bin]++;

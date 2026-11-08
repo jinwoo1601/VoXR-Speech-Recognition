@@ -2,25 +2,18 @@
 // Purpose:  The bench's fast-run report: the header and per-case rows built into one deterministic markdown text, written and printed
 // Layer:    Planning.AbRig
 // Owns:     BenchReport (internal static class), BenchReport.Header (internal sealed class), BenchReport.Case (internal sealed class)
-// Depends:  BenchMetrics, JoinedReport, JoinedScorer
+// Depends:  BenchMetrics, Joined, JoinedReport, JoinedScorer
 // ============================================================================
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 
 namespace AbRig
 {
     static class BenchReport
     {
-        static readonly JsonWriterOptions WriterOptions = new JsonWriterOptions
-        {
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        };
-
         internal sealed class Header
         {
             internal string Profile;
@@ -98,7 +91,7 @@ namespace AbRig
                 Line(
                     "- Harness pin: a copy of the committed pin, gain and modelConf replaced by this run's"
                 );
-            Line("- Grammar: `" + JsonArray(h.Grammar) + "`");
+            Line("- Grammar: `" + Joined.JsonArray(h.Grammar) + "`");
             var staged = new List<string>();
             foreach (string line in h.StagedFrom)
                 staged.Add("`" + line + "`");
@@ -197,19 +190,6 @@ namespace AbRig
         {
             File.WriteAllText(path, text, new UTF8Encoding(false));
             Console.Out.Write(text);
-        }
-
-        internal static string JsonArray(string[] values)
-        {
-            var buffer = new MemoryStream();
-            using (var w = new Utf8JsonWriter(buffer, WriterOptions))
-            {
-                w.WriteStartArray();
-                foreach (string v in values)
-                    w.WriteStringValue(v);
-                w.WriteEndArray();
-            }
-            return Encoding.UTF8.GetString(buffer.ToArray());
         }
     }
 }

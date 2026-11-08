@@ -2,15 +2,13 @@
 // Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast run
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class)
-// Depends:  Program, BenchMetrics, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition
+// Depends:  Program, BenchMetrics, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
 // ============================================================================
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
 using VoXR.Commands;
 
@@ -61,7 +59,7 @@ namespace AbRig
                             2,
                             "usage: --bench truth-check --manifest <manifest.json> --fixtures-root <dir>"
                         );
-                    return TruthCheck(args[3], args[5]);
+                    return TruthCheck(JoinedInput.ReadManifest(args[3]), args[5]);
                 }
                 bool named = args.Length == 18 && args[14] == "--profile" && args[16] == "--mode";
                 if (
@@ -164,7 +162,7 @@ namespace AbRig
             long endCases = end.GetProperty("cases").GetInt64();
             long endPassed = end.GetProperty("passed").GetInt64();
             reading = root;
-            TruthCheck(manifestPath, root);
+            TruthCheck(manifest, root);
             reading = null;
             JoinedInput.Join(dump, manifest, pin, pinned: true);
 
@@ -185,18 +183,15 @@ namespace AbRig
                 }
                 string[] expected = pin.Cases[c.Name];
                 string[] actual = c.Finals.ToArray();
-                bool same = expected.Length == actual.Length;
-                for (int i = 0; same && i < expected.Length; i++)
-                    same = string.Equals(expected[i], actual[i], StringComparison.Ordinal);
-                if (!same)
+                if (Joined.FirstDifference(actual, expected) >= 0)
                 {
                     failing.Add(
                         "self-check: case \""
                             + c.Name
                             + "\": finals expected "
-                            + BenchReport.JsonArray(expected)
+                            + Joined.JsonArray(expected)
                             + ", actual "
-                            + BenchReport.JsonArray(actual)
+                            + Joined.JsonArray(actual)
                     );
                     failed = true;
                 }
@@ -470,6 +465,48 @@ namespace AbRig
             var silent = BenchMetrics.Score(new[] { (Array.Empty<string>(), Hyp("fire@0.5")) });
             Expect("23", "F7 score: silence only", Totals(silent), "S=0 D=0 I=0 N=0 stray=1 wer=undefined (no reference words)");
 
+            long t = (long)JoinedRecogniser.TickRate;
+            var toy = new JoinedInput.ManifestCase
+            {
+                Name = "toy",
+                Category = "toy",
+                Speech = new[] { (0L, 48000L) },
+            };
+            var toyDump = new JoinedInput.DumpCase
+            {
+                SampleRate = 48000,
+                Results =
+                {
+                    new JoinedInput.DumpResult { Final = false, Consumed = 24000, Payload = "{\"partial\":\"fire\"}" },
+                    new JoinedInput.DumpResult { Final = true, Consumed = 48000, Payload = "{\"text\":\"fire\"}" },
+                    new JoinedInput.DumpResult { Final = true, Consumed = 52800, Payload = "{\"text\":\"missiles\"}" },
+                },
+            };
+            var toyOutcome = new JoinedScorer.Outcome { Class = "correct-fire", FireTimes = new[] { 1.5 } };
+            BenchReport.Case stamped = Stamps(toy, toyDump, toyOutcome, t);
+            Expect(
+                "24",
+                "F4 stamps: partial, finals, command event",
+                stamped.FirstPartial + " | " + stamped.Finals + " | " + stamped.CommandEvent,
+                "-0.500 | 0.000, +0.100 | +0.500"
+            );
+
+            var quiet = new JoinedInput.ManifestCase
+            {
+                Name = "toy-silence",
+                Category = "toy",
+                Speech = Array.Empty<(long Start, long End)>(),
+            };
+            BenchReport.Case unstamped = Stamps(quiet, toyDump, toyOutcome, t);
+            Expect(
+                "25",
+                "F4 stamps: a silence case",
+                unstamped.FirstPartial + " | " + unstamped.Finals + " | " + unstamped.CommandEvent,
+                "n/a | n/a | n/a"
+            );
+
+            Expect("26", "F8 ECE: a float confidence on a decile edge", BenchMetrics.Ece(new[] { ((double)0.7f, true), (0.75, false) }).ToString(), "0.2250");
+
             Console.WriteLine();
             Console.WriteLine(
                 $"{checks - failures}/{checks} metric checks verified against hand-computed toy cases."
@@ -477,9 +514,8 @@ namespace AbRig
             return failures == 0 ? 0 : 1;
         }
 
-        static int TruthCheck(string manifestPath, string root)
+        static int TruthCheck(JoinedInput.Manifest manifest, string root)
         {
-            JoinedInput.Manifest manifest = JoinedInput.ReadManifest(manifestPath);
             var missing = new List<string>();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
                 if (c.Speech == null)
@@ -519,7 +555,6 @@ namespace AbRig
                     ok =
                         k == n
                         && inClip
-                        && last.HasValue
                         && diff.HasValue
                         && Math.Abs(diff.Value) <= FrameTolerance;
                     detail =
@@ -559,47 +594,19 @@ namespace AbRig
 
         static short[] ReadPcm(string path)
         {
-            byte[] b = File.ReadAllBytes(path);
-            var bad = new JoinedInput.Stop(2, path + ": not a 16-bit mono 48000 Hz PCM WAV");
-            if (
-                b.Length < 12
-                || Encoding.ASCII.GetString(b, 0, 4) != "RIFF"
-                || Encoding.ASCII.GetString(b, 8, 4) != "WAVE"
-            )
-                throw bad;
-            bool format = false;
-            long at = 12;
-            while (at + 8 <= b.Length)
+            float[] f;
+            try
             {
-                string id = Encoding.ASCII.GetString(b, (int)at, 4);
-                long size = BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan((int)at + 4));
-                int body = (int)at + 8;
-                if (body + size > b.Length)
-                    throw bad;
-                if (id == "fmt ")
-                {
-                    if (
-                        size < 16
-                        || BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(body)) != 1
-                        || BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(body + 2)) != 1
-                        || BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan(body + 4)) != 48000
-                        || BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(body + 14)) != 16
-                    )
-                        throw bad;
-                    format = true;
-                }
-                else if (id == "data")
-                {
-                    if (!format)
-                        throw bad;
-                    var pcm = new short[size / 2];
-                    for (int i = 0; i < pcm.Length; i++)
-                        pcm[i] = BinaryPrimitives.ReadInt16LittleEndian(b.AsSpan(body + 2 * i));
-                    return pcm;
-                }
-                at = body + size + (size & 1);
+                f = VoXR.Testing.VoxrWavReader.Read(File.ReadAllBytes(path), path);
             }
-            throw bad;
+            catch (InvalidDataException x)
+            {
+                throw new JoinedInput.Stop(2, x.Message);
+            }
+            var pcm = new short[f.Length];
+            for (int i = 0; i < pcm.Length; i++)
+                pcm[i] = (short)(f[i] * 32768f);
+            return pcm;
         }
     }
 }

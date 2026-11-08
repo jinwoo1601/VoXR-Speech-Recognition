@@ -820,7 +820,7 @@ namespace AbRig
 
         // The first index where the two differ ordinally (a length difference counts at the
         // shorter's end); -1 when equal.
-        static int FirstDifference(string[] a, string[] b)
+        internal static int FirstDifference(string[] a, string[] b)
         {
             int n = Math.Min(a.Length, b.Length);
             for (int i = 0; i < n; i++)
@@ -834,7 +834,7 @@ namespace AbRig
 
         static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
-        static string JsonArray(string[] values)
+        internal static string JsonArray(string[] values)
         {
             var buffer = new MemoryStream();
             using (var w = new Utf8JsonWriter(buffer, WriterOptions))

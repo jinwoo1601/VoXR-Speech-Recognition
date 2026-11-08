@@ -73,6 +73,7 @@ if [ "$LAYER" = "recogniser" ]; then
     Runtime/VoxrBridgeErrorCode.cs
     Runtime/VoxrJsonParser.cs
     Runtime/VoxrGrammarValidator.cs
+    Runtime/Testing/VoxrWavReader.cs
   )
   OPTIONAL=(
     Runtime/EndpointerOverlay.cs
