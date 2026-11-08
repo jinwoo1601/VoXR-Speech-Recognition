@@ -2,8 +2,8 @@
 type: requirements
 feature: bench-fast-replay
 topic: audio-bench
-status: draft
-updated: 2026-11-08
+status: accepted
+updated: 2026-11-09
 sources:
   - Planning~/design-docs/audio-bench.md
   - Planning~/design-docs/audio-bench/decisions/adr-0001-two-clocks-split.md
@@ -102,15 +102,17 @@ Every Phase D change (R17, R12, R22, R41, R30) can have its end-of-speech → co
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] A green fast run over all 52 cases, with the self-check passing.
-- [ ] Mutation: one pin altered in a scratch copy makes the bench refuse numbers and name the case.
-- [ ] Two runs give identical reports.
-- [ ] Command 3 is green.
-- [ ] `git diff main` is empty for the committed WAVs, `expectations.json` and the bridge's public interface.
-- [ ] WER, ECE and NCE match hand-computed toy cases.
-- [ ] The F1 check passes on every clip.
-- [ ] Human-only verification: the maintainer inspects three clips' waveforms against their recorded speech end.
-- [ ] The report header names every F10 field.
+- [x] A green fast run over all 52 cases, with the self-check passing. (phase 3 gate V6; the review-fix CHECK R4 `52/52`, exit 0; record `memory/2026-11-09.md`, "review-cycle VERIFY to COMMIT")
+- [x] Mutation: one pin altered in a scratch copy makes the bench refuse numbers and name the case. (phase 3 gate V10 and the review-fix CHECK R7: exit 3, the case named, no report)
+- [x] Two runs give identical reports. (phase 3 gate V7 and the review-fix CHECK R5: `cmp=0`)
+- [x] Command 3 is green. (phase 4 gate V13: exit 0, 52/52; the binding's `37/37` is stale, `expectations.json` holding 52 cases)
+- [x] `git diff main` is empty for the committed WAVs, `expectations.json` and the bridge's public interface. (phase 4 gate V14; the review-fix CHECK R10; the G2 preflight at `7f10edc`, item 2)
+- [x] WER, ECE and NCE match hand-computed toy cases. (the review-fix CHECK R6: `metrics-check` 26/26)
+- [x] The F1 check passes on every clip. (phase 2 gate: `--bench truth-check` 52/52 against the committed WAVs)
+- [x] Human-only verification: the maintainer inspects three clips' waveforms against their recorded speech end. (the maintainer at G2 on 2026-11-09, shown plots of `launch_one_missiles_target_hotel_one.wav`, `ladder_p_set_heading_two_seven_zero_gap200ms.wav` and `pause_lead_cease_fire.wav` with each `speech` start and end marked: "Looks ok.")
+- [x] The report header names every F10 field. (phase 3 and phase 4 gates; the G2 preflight at `7f10edc`, item 2)
+
+**Ruled at G2 on 2026-11-09** by the maintainer, in conversation (AskUserQuestion, "Accepted. Looks ok."): accepted at head `7f10edc`, with the third preflight in view — the first preflight's two gate-evidence bullets in the architecture doc's as-built deltas routed out in `7f10edc`, and the STATUS line brought current. The run from Phase 2 to the G2 packet went unattended under the maintainer's 2026-11-08 word; its fork-default takes were listed at G2.
 
 ## 10. Open questions
 

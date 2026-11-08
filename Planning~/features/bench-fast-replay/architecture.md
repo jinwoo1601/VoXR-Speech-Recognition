@@ -2,7 +2,7 @@
 type: architecture
 feature: bench-fast-replay
 topic: audio-bench
-status: draft
+status: accepted
 updated: 2026-11-09
 sources:
   - Planning~/features/bench-fast-replay/requirements.md
