@@ -23,6 +23,8 @@ namespace AbRig
 
         internal sealed class Header
         {
+            internal string Profile;
+            internal string Mode;
             internal double Gain;
             internal string Libvosk;
             internal string ModelConf;
@@ -76,7 +78,15 @@ namespace AbRig
             Line("## Configuration");
             Line("");
             Line("- Mode: fast — the harness's --dump run, 16384-sample pushes");
-            Line("- Endpointer profile: Automatic, mode Continuous (confgen, as Command 3)");
+            Line(
+                h.Profile == null
+                    ? "- Endpointer profile: Automatic, mode Continuous (confgen, as Command 3)"
+                    : "- Endpointer profile: "
+                        + h.Profile
+                        + ", mode "
+                        + h.Mode
+                        + " (confgen, named configuration)"
+            );
             Line("- Gain: " + h.Gain.ToString("R", CultureInfo.InvariantCulture));
             Line("- libvosk: " + h.Libvosk);
             Line(
@@ -84,6 +94,10 @@ namespace AbRig
                     ? "- modelConf: not recorded"
                     : "- modelConf: sha256 " + JoinedReport.ConfSha12(h.ModelConf)
             );
+            if (h.Profile != null)
+                Line(
+                    "- Harness pin: a copy of the committed pin, gain and modelConf replaced by this run's"
+                );
             Line("- Grammar: `" + JsonArray(h.Grammar) + "`");
             var staged = new List<string>();
             foreach (string line in h.StagedFrom)

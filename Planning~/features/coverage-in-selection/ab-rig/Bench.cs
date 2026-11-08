@@ -63,8 +63,9 @@ namespace AbRig
                         );
                     return TruthCheck(args[3], args[5]);
                 }
+                bool named = args.Length == 18 && args[14] == "--profile" && args[16] == "--mode";
                 if (
-                    args.Length != 14
+                    (args.Length != 14 && !named)
                     || args[2] != "--dump"
                     || args[4] != "--manifest"
                     || args[6] != "--pin"
@@ -75,7 +76,7 @@ namespace AbRig
                 )
                     throw new JoinedInput.Stop(
                         2,
-                        "usage: --bench run --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-exit 0|1 --report <report.md>"
+                        "usage: --bench run --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-exit 0|1 --report <report.md> [--profile <name> --mode <name>]"
                     );
                 return FastRun(
                     args[3],
@@ -84,6 +85,8 @@ namespace AbRig
                     args[9],
                     int.Parse(args[11]),
                     args[13],
+                    named ? args[15] : null,
+                    named ? args[17] : null,
                     grammarJson,
                     slots,
                     commands
@@ -120,6 +123,8 @@ namespace AbRig
             string root,
             int harnessExit,
             string reportPath,
+            string profile,
+            string mode,
             string grammarJson,
             VoxrSlotDefinition[] slots,
             VoxrCommandDefinition[] commands
@@ -267,6 +272,8 @@ namespace AbRig
 
             var header = new BenchReport.Header
             {
+                Profile = profile,
+                Mode = mode,
                 Gain = dump.Gain,
                 Libvosk = dump.Libvosk,
                 ModelConf = dump.ModelConf,
