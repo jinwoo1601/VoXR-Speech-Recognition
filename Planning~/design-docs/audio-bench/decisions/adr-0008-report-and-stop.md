@@ -35,4 +35,4 @@ The bench's numbers come from TTS audio on a desktop. C12 holds that the synthet
 
 ## Status
 
-Accepted on 2026-11-08 by the human's (the maintainer's) ruling in session; the ruling took the recommended option. The design doc is `Planning~/design-docs/audio-bench.md`; it is not yet locked at G1. Amended on 2026-11-08 with the maintainer's BAR gap rulings; still not locked.
+Accepted on 2026-11-08 by the human's (the maintainer's) ruling in session; the ruling took the recommended option. The design doc is `Planning~/design-docs/audio-bench.md`; it was locked at G1 on 2026-11-08. Amended on 2026-11-08 with the maintainer's BAR gap rulings.

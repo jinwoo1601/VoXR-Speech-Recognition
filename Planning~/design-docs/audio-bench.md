@@ -24,13 +24,14 @@ sources:
   - "Session direction 2026-11-08 (G0)"
   - "Session direction 2026-11-08 (settle)"
   - "Session direction 2026-11-08 (BAR gap rulings)"
+  - "Session direction 2026-11-08 (G1 lock)"
 ---
 
 # Design: The Desktop Audio Bench
 
 **Branch:** `design-audio-bench`
 **Origin:** the maintainer's direction of 2026-11-08: measure speech-recognition response time and accuracy without a Quest, so every Phase D change can be measured on the desktop.
-**Status:** draft. G0 agreed 2026-11-08; model settled 2026-11-08 (adr-0001 through adr-0008); not locked.
+**Status:** **G1 LOCKED 2026-11-08.** Rulings in adr-0001 through adr-0008. This document is immutable from here; a contradiction found during implementation reopens it on a new design branch and re-locks.
 
 **Scope, agreed at G0 (2026-11-08):** a response-time harness that replays audio at real speed in 20 ms chunks, as a mic would deliver it, and timestamps each stage — end of speech → endpoint → final result → command event — plus time to first partial and the decoder's speed against real time (real-time factor); desktop numbers that compare settings fairly rather than give Quest's absolute timing, the human-only on-device latency stamp being the calibration (`05-rulings.md` :134); accuracy measured as command accuracy, false triggers on non-command audio, word error rate, and how well confidence scores match real accuracy (calibration); harder test audio, the TTS fixtures with noise, room echo and mic-like filtering added, plus several voices and levels; and accuracy numbers that stay provisional until the R5 human recordings exist.
 
@@ -172,9 +173,21 @@ What the bench gives a Phase D change (design intent, not yet built). Every Phas
 
 It can stop a bad change early. Gains and decoder rankings wait for R5 human audio. This is the instrument that `R6-evaluation-methodology.md` :300 found missing and that `I3-latency-ux-redesign.md` :13 asks for ahead of the changes, carrying both of the maintainer's axes (`00-brief.md` :40-41).
 
+## 6. Feature backlog — locked at G1 (2026-11-08)
+
+Five features, in dependency order. Each is **Full**: the design leaves code location, stamp recording and the timeline feed to the architecture, so each build writes its own requirements and architecture docs.
+
+| Feature | Scope | Depends on |
+|---|---|---|
+| `bench-fast-replay` | Fast mode through the native bridge in 16384-sample pushes (adr-0002, adr-0003); audio-time stamps (adr-0001); the generator's speech-boundary truth in `generate.py` (adr-0006); the command stage through the joined rig (adr-0002); accuracy scoring: command classes, WER, ECE/NCE; reports naming their full config; the pinned-transcript self-check (adr-0003). Path: `development`. **Full.** | None. |
+| `bench-conditions` | The seeded on-the-fly condition pipeline (adr-0004); the stand-in negative set (adr-0007); per-condition curves. Path: `development`. **Full.** | `bench-fast-replay` |
+| `bench-voices` | Kokoro-82M voices beside the baseline Piper voice (adr-0005). Path: `development`. **Full.** | `bench-fast-replay` |
+| `bench-paced-mode` | Paced 20 ms replay with wall stamps and the real-time factor (adr-0001, adr-0003); the matched-chunk split self-check; the command event's paced-arrival wall stamp (adr-0002). Path: `development`. **Full.** | `bench-fast-replay` |
+| `bench-ab-report` | Paired A/B runs, interleaved and repeated; p50/p90/p99 per stage; McNemar flips; report and stop (adr-0008). Path: `development`. **Full.** | `bench-paced-mode`, `bench-conditions` |
+
 ## Status / openness
 
-- **Status: draft.** G0 agreed 2026-11-08. The model was settled with the human (the maintainer) on 2026-11-08, every fork taking the recommended option, and its forks are recorded as eight ADRs, adr-0001 through adr-0008; the safeguards and self-checks of §3 were agreed as drafted. Not locked; G1 locks it.
+- **Status: locked at G1 2026-11-08.** G0 agreed 2026-11-08. The model was settled with the human (the maintainer) on 2026-11-08, every fork taking the recommended option, and its forks are recorded as eight ADRs, adr-0001 through adr-0008; the safeguards and self-checks of §3 were agreed as drafted.
 - **The goal:** the maintainer's two axes (`00-brief.md` :40-41) and the G0 scope (§0). No locked latency target exists (`Planning~/design-docs/endpointer-profile.md` :65); the bench sets none.
 - **All numbers provisional → the tuning pass:**
   - the 20 ms chunk (it matches Quest capture, 960 frames at 48 kHz, `I3-latency-ux-redesign.md` :23);
@@ -199,12 +212,7 @@ It can stop a bad change early. Gains and decoder rankings wait for R5 human aud
   - The lab branch's Phase B "TTS NCE/ECE dry run" probe overlaps the calibration metric: if it runs first, its findings feed this metric's definition — owner: `bench-fast-replay`, which builds the calibration metric and reads the lab's findings if they exist by then.
   - How the driver chooses the A/B pair beyond the Phase D item's own design, and how the repeat count is chosen: the record is thin on both (§2) — owner: for the A/B pair, each Phase D item's own design, as the bench already hands off kill thresholds; for the repeat count, the tuning pass.
   - Human steps: the MUSAN and SLR28 download (adr-0004) and the Kokoro model download (adr-0005) — owner: the maintainer.
-- **Feature candidates (→ the backlog at G1):** five, in dependency order, each on the `development` path and each **Full**: the design leaves code location, stamp recording and the timeline feed to the architecture, so each build writes its own requirements and architecture docs.
-  - `bench-fast-replay`: fast mode through the native bridge in 16384-sample pushes (adr-0002, adr-0003); audio-time stamps (adr-0001); the generator's speech-boundary truth in `generate.py` (adr-0006); the command stage through the joined rig (adr-0002); accuracy scoring: command classes, WER, ECE/NCE; reports naming their full config; the pinned-transcript self-check (adr-0003). Depends on: none.
-  - `bench-conditions`: the seeded on-the-fly condition pipeline (adr-0004); the stand-in negative set (adr-0007); per-condition curves. Depends on: `bench-fast-replay`.
-  - `bench-voices`: Kokoro-82M voices beside the baseline Piper voice (adr-0005). Depends on: `bench-fast-replay`.
-  - `bench-paced-mode`: paced 20 ms replay with wall stamps and the real-time factor (adr-0001, adr-0003); the matched-chunk split self-check; the command event's paced-arrival wall stamp (adr-0002). Depends on: `bench-fast-replay`.
-  - `bench-ab-report`: paired A/B runs, interleaved and repeated; p50/p90/p99 per stage; McNemar flips; report and stop (adr-0008). Depends on: `bench-paced-mode`, `bench-conditions`.
+- **Feature backlog:** §6, written at G1 on 2026-11-08.
 
 ## Related
 
