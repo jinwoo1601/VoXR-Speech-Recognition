@@ -56,7 +56,7 @@ Fast mode (`bench-fast-replay`) gives the audio-time half of each stage's latenc
 3. The matched-chunk pass: all 52 cases pushed into the real native bridge at real speed in fast mode's 16384-sample pushes. Each case's finals text must equal fast mode's, and its first-partial and each final's audio-time stamp must lie within one decoder read (4096 samples) of fast mode's; a missing or extra final fails. On any failure the bench names the differing cases, gives no numbers, and exits non-zero.
 4. The 20 ms pass: all 52 cases pushed into the real native bridge at real speed in 20 ms chunks (960 samples at the fixtures' 48 kHz). Each result is stamped on audio time and wall time, and the pass's timeline is fed to the real C# recogniser through the joined rig at each result's paced wall-arrival time, so the command event is stamped on both clocks.
 5. The report: fast mode's report, unchanged, plus a paced section. Per case and per stage — first partial, each final, command event — the audio-time offset from end of speech, the wall-time offset, and the compute part (wall − audio); the command stage's compute part, its paced time − its fast time; the real-time factor per case and over the corpus; the 20 ms finding — the cases whose finals differ from fast mode's, both shown, and the cases whose command class differs from fast mode's, both shown, or `none`; and per case the largest push lateness behind the real-time schedule. The paced section is labelled desktop-only, a single run with its run-to-run spread not measured, and never comparable across machines.
-6. A paced run takes about twice the corpus's audio in real time beyond fast mode — 193 s of audio over 52 clips, so about 6.5 minutes.
+6. A paced run takes two real-speed passes beyond fast mode, each the corpus's audio plus one paced second of flush padding per case — 2 × (193 s + 52 × 1 s) = 490 s, about 8.2 minutes (corrected at PLAN 2026-11-09 from "about 6.5 minutes", which left out the padding).
 
 ## 5. Functional requirements
 
@@ -77,7 +77,7 @@ Fast mode (`bench-fast-replay`) gives the audio-time half of each stage's latenc
 
 ## 6. Non-functional requirements
 
-- **Performance:** a paced run takes about twice the corpus's audio in real time beyond fast mode (193 s of audio, about 6.5 minutes); the design rules no other budget.
+- **Performance:** a paced run takes two real-speed passes beyond fast mode, about 8.2 minutes (§4.6; corrected at PLAN 2026-11-09); the design rules no other budget.
 - **Robustness at the input boundary:** fast mode's named stops hold; a push the bridge refuses stops the run naming the case; an undefined value prints `undefined` with the reason, never a made-up number.
 - **Degraded dependencies:** a loaded machine shows as push lateness (F9) and in the compute part, never as a stop; wall numbers are never compared across machines.
 
