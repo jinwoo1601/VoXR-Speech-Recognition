@@ -116,6 +116,7 @@ Lowest risk first, with the riskiest assumption probed in the first phase: the p
 - Phase 1 — persisted plan (2026-11-09): [plan-1.md](plan-1.md)
 - Phase 2 — persisted plan (2026-11-09): [plan-2.md](plan-2.md)
 - Phase 3 — persisted plan (2026-11-09): [plan-3.md](plan-3.md)
+- Phase 4 — persisted plan (2026-11-10): [plan-4.md](plan-4.md)
 
 ## Risks, tradeoffs & open questions
 
