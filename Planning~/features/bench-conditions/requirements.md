@@ -46,46 +46,77 @@ Backlog row (`audio-bench.md` §6):
 
 ## 3. Why — the value it delivers
 
-<!-- The goal of the locked design this feature carries, and what its users get that they did not have before. This is the "why" behind every requirement below — the thing you protect when a tradeoff forces a cut. -->
+The Phase D numbers today come from clean single-voice TTS only, and the phantom-command axis has no rate — the only negative audio is 3 s of digital silence (`03-critique-and-ranking.md` :244; design §0 Prerequisites). This feature shows where a change breaks as noise, echo, speed and level worsen, as curves per condition, and gives a first, stand-in false-fire rate (adr-0004, adr-0007), serving the maintainer's accuracy axis: "real out-of-grammar/noise rejection … robustness to the Quest mic, exertion, and game audio; fewer phantom or wrong commands" (`00-brief.md` :40-41). The thing protected when a tradeoff forces a cut: the clean reference still ties exactly to the pins, and conditioned numbers are never pooled into one pass rate (`R6-evaluation-methodology.md` :198, :336).
 
 ## 4. Observable behaviour
 
-<!-- The experiential spec: what someone using this feature does, sees and gets back, step by step. Written before the table below, because every row in it is a slice of this. -->
+1. The maintainer runs fast mode naming a configuration (as `bench-fast-replay` takes it) and a seed; with no condition named the bench behaves exactly as `bench-fast-replay` does.
+2. Naming the condition grid, the bench first runs the clean reference over all 52 cases and checks it against the pins; on any mismatch it names the differing cases, gives no numbers and exits non-zero.
+3. It then replays each of the 16 non-pause cases and each negative-set clip under each of the grid's 12 conditions, generated on the fly from the seed; the 36 pause cases run in the clean reference only.
+4. The report: a header naming the full config, the grid, the seed, the noise and room-response source, the mic filter, the level and the game-audio status; per case and condition its command class, WER and signed audio-time latency offsets, with no aggregate; per condition step the curves; the negative set's false fires per condition step, apart from the positive set. It is labelled TTS-only and provisional, and its augmented numbers rank conditions, not field rates.
+5. A second run with the same seed gives an identical report; a different seed gives different conditioned audio.
+6. Where the maintainer has placed title audio in the stated folder, the report adds the game-audio negatives and the game-audio condition; otherwise it says "game audio: not supplied".
 
 ## 5. Functional requirements
 
-<!-- Numbered, testable, prioritized. Each row: the requirement (what and why, not how), its priority, how it is verified, and its parent in locked design; each row names the story it serves. -->
+**Ruled on 2026-11-09** by the maintainer, in session, at SETTLE: S1 confirmed as G0 recorded it; R1, the condition grid is R6's — speed {0.9, 1.0, 1.1} × SNR {20, 15, 10, 5} dB, 12 conditions, every conditioned case also carrying synthetic room echo (RT60 drawn from the seed in 0.2–0.5 s), the mic-like filter and a level drawn from the seed in [0.04, 0.4], curves as metric against SNR, one per speed (`R6-evaluation-methodology.md` :188-196) (F1, F8); R2, the 16 non-pause cases and the negative set are conditioned, the 36 pause-lead and ladder cases run in the clean reference only (F5); R3, the design's open item (:208) — game audio is an optional input the maintainer supplies, Should (F11); R4, the rest as drafted; each took the recommended option.
 
 | #  | Requirement | Story | Priority | Acceptance check | Source |
 |----|-------------|-------|----------|------------------|--------|
-| F1 | <observable behaviour> | S1 | Must / Should / Could | <how it is verified> | <design doc / decision record> |
-| F2 |             |       |          |                  |        |
+| F1 | The seeded on-the-fly condition pipeline: per case, from the run's seed, a speed change, synthetic room echo, generated noise at the case's SNR step, mic-like filtering and a level in the Quest mic range, applied before replay in fast mode; only clean renders committed. | S1 | Must | Two runs with one seed give identical reports; a run with another seed gives different conditioned audio. | adr-0004; R1 |
+| F2 | Each condition is what it names: mixed SNR within ±0.5 dB of the step over the speech region; duration scaled by the speed factor; the synthetic room response's RT60 within 0.2–0.5 s; peak within [0.04, 0.4]. | S1 | Must | Known-value toy checks for each of the four. | adr-0004; `R6-evaluation-methodology.md` :188-196 |
+| F3 | Speech boundaries kept: each conditioned case's speech start and end are the clean truth scaled by the speed factor, within one 20 ms frame; echo, noise, filter and level do not move them. | S1 | Must | A known-value toy check at each speed; the truth check passes on conditioned clips. | adr-0004; adr-0006 |
+| F4 | The clean reference: every conditioned run first runs all 52 cases clean, and it must pass the pinned-transcript self-check, or no number is given, the differing cases are named and the run exits non-zero; with no condition named, the report is byte-identical to `bench-fast-replay`'s. | S1 | Must | A report from a run naming no condition is byte-identical (`cmp`) to the report `main` gives on the same inputs; with one pin altered in a scratch copy, a conditioned run refuses numbers and names the case. | adr-0003; design §3 |
+| F5 | The conditioned set: the 16 non-pause cases (clean, slot-variant, homophone, filler, split, silence) and the negative set, each under each of the 12 conditions; the 36 pause cases in the clean reference only. | S1 | Must | The green conditioned run's report lists 12 conditions for each of those cases and none for the pause cases. | R2; design §2 item 3 |
+| F6 | The stand-in negative set: generated noise-only clips at each condition, silence, and 16 non-command phrases — 8 out-of-set, 8 near-miss (sharing words with a command but not one) — as new clean renders in the baseline Piper voice, run clean and under each condition; the committed fixture WAVs and `expectations.json` unchanged. | S1 | Must | The set is present in the green run; `git diff main` is empty for the committed WAVs and `expectations.json`; the maintainer approves the phrase list (human-only). | adr-0007 |
+| F7 | False fires on the negative set per condition step, as a count per negative case and per hour of negative audio, reported apart from the positive set's classes and never netted; labelled provisional and stand-in; zero labelled "set too easy", not "zero". | S1 | Must | The green run's report gives both rates per step with both labels; a toy run with zero false fires shows the "set too easy" label. | adr-0007; design §3 |
+| F8 | Curves per condition: intent accuracy, semantic accuracy, phantom rate, WER, ECE, NCE and the false-fire rate per SNR step, one curve per speed, each point stating its n in phrases and cases; no total pooled across conditions. | S1 | Must | The green run's report gives each curve with its n per point and no pooled figure. | adr-0004; `R6-evaluation-methodology.md` :198, :336 |
+| F9 | Latency under conditions: each case's signed audio-time offsets from end of speech (first partial, each final, the command event) per condition, with no aggregate. | S1 | Must | The green run's report gives each conditioned case's offsets and no aggregate. | adr-0001; `bench-fast-replay` F4 |
+| F10 | Every report names its full config, adding the grid, the seed, the noise and room-response source (generated and synthetic, or MUSAN and SLR28), the mic filter, the level and the game-audio status; labelled TTS-only and provisional, ranking conditions, not field rates. | S1 | Must | The report header names every F10 field and carries the labels. | design §3; adr-0008; `R6-evaluation-methodology.md` :451 |
+| F11 | Game audio, an optional input: where the maintainer places title audio in a stated folder, game-audio-only clips join the negative set and a game-audio condition mixes it under the conditioned cases at SIR {+20, +10, +5, 0} dB (provisional → the tuning pass); absent, the report says "game audio: not supplied". | S1 | Should | A run without the folder says "not supplied"; with any audio file placed there, the report gives the game-audio negatives' false fires and the SIR curve. | R3; design :208; `I1-recognition-core-redesign.md` :264 |
+| F12 | MUSAN noise and SLR28 room responses used where the maintainer has placed them at a stated location; otherwise the generated and synthetic kinds, named as such. | S1 | Could | A run without them names the generated and synthetic kinds; with them present (a human download), the header names MUSAN and SLR28. | adr-0004 |
+| F13 | Paced mode accepts one named condition. | S1 | Could | One paced run under one condition gives a report naming it. | adr-0003 |
+| F14 | Untouched: Command 3, its pins, the committed fixture WAVs, `expectations.json` and the bridge interface; a bridge interface change found needed is a scope stop. | S1 | Must | Command 3 green; `git diff main` empty for the committed WAVs, `expectations.json` and the bridge's public interface. | design §4; adr-0008 |
 
 ## 6. Non-functional requirements
 
-<!-- First-class: on some platforms these are the feature-killers. Keep the rows that apply, add the ones this project's platform makes load-bearing, and cut the rest rather than leaving them blank. -->
-
-- **Performance:** <the budget this feature must hold, and any per-operation ceiling if it is on a hot path>
-- **Robustness at the input boundary:** <what the feature does with malformed, ambiguous or low-confidence input — the response it gives, never silence>
-- **Degraded dependencies:** <what it does when something it depends on is slow, unavailable or partially wrong>
-- **Accessibility:** <if applicable>
+- **Performance:** the design rules no budget; none is set.
+- **Robustness at the input boundary:** an unknown condition name is refused with the valid list; an add-on or game-audio path that exists but cannot be read, a clip without truth, or a metric undefined at a curve point (e.g. NCE where every word is correct) each give an explicit message naming it, never a silent or made-up number.
+- **Degraded dependencies:** MUSAN, SLR28 or title audio absent is not an error — the run uses the generated kinds and the report says so; the clean reference failing its self-check stops the run with no numbers.
 
 ## 7. Non-goals / deferred
 
-<!-- As sharp as the goals. What this feature does NOT do; what is explicitly deferred to a later feature; which adjacent systems it touches but does not own. This is the scope fence — the thing that stops a two-week feature becoming two months. -->
+- The G0 Out list (§2).
+- Significance tests, McNemar, percentiles and summaries across runs — `bench-ab-report`.
+- Tuning the condition steps, the SIR steps or the phrase count — the tuning pass.
+- Conditioning the 36 pause cases (R2).
+- Being a verification gate: the bench never is one (adr-0008).
 
 ## 8. Dependencies & assumptions
 
-<!-- What must already exist or be merged first (features are dependency-ordered — declare the order). What is assumed about the people using this and about the rest of the system. Unstated assumptions are where requirements rot. -->
+- Depends on `bench-fast-replay` (merged as PR #198, `63434cb`); F13 on `bench-paced-mode` (merged as PR #199, `8de2f69`).
+- The Piper venv and the baseline voice `en_US-lessac-medium` are in the user cache (`~/.cache/voxr-fixture-gen/`, read 2026-11-09), so the new renders need no download.
+- Human-supplied, optional: the MUSAN and SLR28 download (adr-0004) and the title audio (R3).
+- Assumed: the maintainer runs it on the Windows desktop.
 
 ## 9. Acceptance criteria (G2)
 
-<!-- The consolidated "done" checklist the human walks at G2. Pull the Must-priority checks from §5, then add the verification only a human can do and the commands the project's verification binding names. If every §5 row already carries its check, this can just collect the Musts plus those two. -->
-
-- [ ] <criterion — from the §5 Musts>
-- [ ] Human-only verification: <what the human must exercise by hand to accept this>
-- [ ] The commands the project's `verification` binding names are green
+- [ ] A green conditioned fast run over the grid, the clean reference's self-check passing.
+- [ ] A run naming no condition gives a report byte-identical to `main`'s on the same inputs.
+- [ ] Mutation: one pin altered in a scratch copy makes a conditioned run refuse numbers and name the case.
+- [ ] Two runs with one seed give identical reports; another seed gives different conditioned audio.
+- [ ] The F2 and F3 toy checks pass.
+- [ ] The report gives the curves with n per point (F8), the negative set's false fires with both labels (F7), and every F10 header field.
+- [ ] A run without title audio says "game audio: not supplied" (F11).
+- [ ] Command 3 is green; `git diff main` is empty for the committed WAVs, `expectations.json` and the bridge's public interface.
+- [ ] Human-only verification: the maintainer listens to one conditioned case per SNR step and approves the negative phrase list.
+- [ ] The commands the project's `verification` binding names are green.
 
 ## 10. Open questions
 
-<!-- The unknowns you did NOT resolve — handed forward to the architecture doc. Honest beats complete; the architecture doc would rather inherit a known unknown than hit it mid-build. -->
+1. Where the negative clips, their truth and their manifest live, apart from `expectations.json` — the architecture.
+2. The level of a noise-only clip at each SNR step, having no speech to reference — the architecture.
+3. The mic-like filter's shape — the architecture; its values → the tuning pass.
+4. The stated folders for the title audio and for MUSAN and SLR28, and the formats they accept — the architecture.
+5. Where the condition pipeline code lives (the rig sits under `Planning~/features/coverage-in-selection/ab-rig/`) — the architecture.
+6. All step values are provisional → the tuning pass (design Status).
