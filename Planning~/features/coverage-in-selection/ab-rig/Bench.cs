@@ -1,7 +1,7 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast run
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast run, the matched-chunk check
 // Layer:    Planning.AbRig
-// Owns:     Bench (internal static class)
+// Owns:     Bench (internal static class), Bench.Prelude (sealed class)
 // Depends:  Program, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
 // ============================================================================
 using System;
@@ -23,6 +23,17 @@ namespace AbRig
         const int TruthFloor = 328;
         const int FrameTolerance = 960;
         const int TailSamples = 48000;
+
+        sealed class Prelude
+        {
+            internal string[] StagedFrom;
+            internal JoinedInput.Dump Dump;
+            internal JoinedInput.Manifest Manifest;
+            internal JoinedInput.Pin Pin;
+            internal JsonElement Voice;
+            internal long EndCases;
+            internal long EndPassed;
+        }
 
 #pragma warning disable CA2255
         [ModuleInitializer]
@@ -60,6 +71,31 @@ namespace AbRig
                             "usage: --bench truth-check --manifest <manifest.json> --fixtures-root <dir>"
                         );
                     return TruthCheck(JoinedInput.ReadManifest(args[3]), args[5]);
+                }
+                if (verb == "matched-check")
+                {
+                    if (
+                        args.Length != 14
+                        || args[2] != "--dump"
+                        || args[4] != "--manifest"
+                        || args[6] != "--pin"
+                        || args[8] != "--fixtures-root"
+                        || args[10] != "--matched"
+                        || args[12] != "--pace"
+                        || !long.TryParse(
+                            args[13],
+                            NumberStyles.None,
+                            CultureInfo.InvariantCulture,
+                            out long p
+                        )
+                        || p < 1
+                        || p > 16384
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench matched-check --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --matched <matched.jsonl> --pace <samples>"
+                        );
+                    return MatchedCheck(args[3], args[5], args[7], args[9], args[11], p);
                 }
                 bool named = args.Length == 18 && args[14] == "--profile" && args[16] == "--mode";
                 if (
@@ -131,10 +167,97 @@ namespace AbRig
             reading = reportPath;
             if (File.Exists(reportPath))
                 File.Delete(reportPath);
+            Prelude prelude = FastPrelude(dumpPath, null, manifestPath, pinPath, root);
+            string[] stagedFrom = prelude.StagedFrom;
+            JoinedInput.Dump dump = prelude.Dump;
+            JoinedInput.Manifest manifest = prelude.Manifest;
+            JoinedInput.Pin pin = prelude.Pin;
+            JsonElement voice = prelude.Voice;
+            long endCases = prelude.EndCases;
+            long endPassed = prelude.EndPassed;
+
+            Joined.GrammarPinGuard(grammarJson, pin, stagedFrom);
+            (float tickRate, KeyValuePair<string, string>[] config) = Joined.RecogniserConfig();
+
+            var dumpByCase = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
+            foreach (JoinedInput.DumpCase c in dump.Cases)
+                dumpByCase.Add(c.Name, c);
+            var outcomes = new List<JoinedScorer.Outcome>();
+            foreach (JoinedInput.ManifestCase c in manifest.Cases)
+            {
+                JoinedScorer.Outcome s = Joined.ScoreRecogniser(
+                    c,
+                    dumpByCase[c.Name],
+                    slots,
+                    commands
+                );
+                Joined.AppliedGrammarGuard(c.Name, s.AppliedGrammar, pin);
+                outcomes.Add(s);
+            }
+
+            long t = (long)JoinedRecogniser.TickRate;
+            var rows = new List<BenchReport.Case>();
+            var words = new List<(string[] Ref, JoinedInput.Word[] Hyp)>();
+            var classes = new List<(string Class, int ExtraFires)>();
+            for (int i = 0; i < manifest.Cases.Count; i++)
+            {
+                JoinedInput.ManifestCase c = manifest.Cases[i];
+                JoinedInput.DumpCase d = dumpByCase[c.Name];
+                JoinedScorer.Outcome s = outcomes[i];
+                BenchReport.Case row = Stamps(c, d, s, t);
+                string[] reference = BenchMetrics.Reference(c.Phrase, c.Segments);
+                JoinedInput.Word[] hypothesis = BenchMetrics.Hypothesis(d.Words);
+                row.Wer =
+                    reference.Length == 0
+                        ? "excluded (silence)"
+                        : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
+                row.Pending =
+                    s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
+                    : s.Pending ? "pending"
+                    : "-";
+                rows.Add(row);
+                words.Add((reference, hypothesis));
+                classes.Add((s.Class, s.ExtraFires));
+            }
+            BenchMetrics.Scored scored = BenchMetrics.Score(words);
+            BenchMetrics.CommandScore command = BenchMetrics.Command(classes);
+
+            var header = new BenchReport.Header
+            {
+                Profile = profile,
+                Mode = mode,
+                Gain = dump.Gain,
+                Libvosk = dump.Libvosk,
+                ModelConf = dump.ModelConf,
+                Grammar = dump.Grammar,
+                StagedFrom = stagedFrom,
+                TickRate = tickRate,
+                Config = config,
+                Voice = voice.GetString(),
+                Provenance = manifest.Provenance,
+                HarnessExit = harnessExit,
+                EndCases = endCases,
+                EndPassed = endPassed,
+                Cases = dump.Cases.Count,
+            };
+            string text = BenchReport.Build(header, rows, command, scored);
+            reading = reportPath;
+            BenchReport.Write(reportPath, text);
+            return 0;
+        }
+
+        static Prelude FastPrelude(
+            string dumpPath,
+            long? pace,
+            string manifestPath,
+            string pinPath,
+            string root
+        )
+        {
             reading = "./STAGED_FROM";
             string[] stagedFrom = JoinedInput.SplitLines(File.ReadAllText("STAGED_FROM"));
             reading = dumpPath;
-            JoinedInput.Dump dump = JoinedInput.ReadDump(dumpPath);
+            JoinedInput.Dump dump = JoinedInput.ReadDump(dumpPath, pace);
             if (dump.Schema != 2)
                 throw new JoinedInput.Stop(2, dumpPath + ": schema 1, no positions");
             reading = manifestPath;
@@ -218,74 +341,66 @@ namespace AbRig
                     + dump.Cases.Count
                     + " cases' finals equal the pin."
             );
-
-            Joined.GrammarPinGuard(grammarJson, pin, stagedFrom);
-            (float tickRate, KeyValuePair<string, string>[] config) = Joined.RecogniserConfig();
-
-            var dumpByCase = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
-            foreach (JoinedInput.DumpCase c in dump.Cases)
-                dumpByCase.Add(c.Name, c);
-            var outcomes = new List<JoinedScorer.Outcome>();
-            foreach (JoinedInput.ManifestCase c in manifest.Cases)
+            return new Prelude
             {
-                JoinedScorer.Outcome s = Joined.ScoreRecogniser(
-                    c,
-                    dumpByCase[c.Name],
-                    slots,
-                    commands
-                );
-                Joined.AppliedGrammarGuard(c.Name, s.AppliedGrammar, pin);
-                outcomes.Add(s);
-            }
-
-            long t = (long)JoinedRecogniser.TickRate;
-            var rows = new List<BenchReport.Case>();
-            var words = new List<(string[] Ref, JoinedInput.Word[] Hyp)>();
-            var classes = new List<(string Class, int ExtraFires)>();
-            for (int i = 0; i < manifest.Cases.Count; i++)
-            {
-                JoinedInput.ManifestCase c = manifest.Cases[i];
-                JoinedInput.DumpCase d = dumpByCase[c.Name];
-                JoinedScorer.Outcome s = outcomes[i];
-                BenchReport.Case row = Stamps(c, d, s, t);
-                string[] reference = BenchMetrics.Reference(c.Phrase, c.Segments);
-                JoinedInput.Word[] hypothesis = BenchMetrics.Hypothesis(d.Words);
-                row.Wer =
-                    reference.Length == 0
-                        ? "excluded (silence)"
-                        : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
-                row.Pending =
-                    s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
-                    : s.Pending ? "pending"
-                    : "-";
-                rows.Add(row);
-                words.Add((reference, hypothesis));
-                classes.Add((s.Class, s.ExtraFires));
-            }
-            BenchMetrics.Scored scored = BenchMetrics.Score(words);
-            BenchMetrics.CommandScore command = BenchMetrics.Command(classes);
-
-            var header = new BenchReport.Header
-            {
-                Profile = profile,
-                Mode = mode,
-                Gain = dump.Gain,
-                Libvosk = dump.Libvosk,
-                ModelConf = dump.ModelConf,
-                Grammar = dump.Grammar,
                 StagedFrom = stagedFrom,
-                TickRate = tickRate,
-                Config = config,
-                Voice = voice.GetString(),
-                Provenance = manifest.Provenance,
-                HarnessExit = harnessExit,
+                Dump = dump,
+                Manifest = manifest,
+                Pin = pin,
+                Voice = voice,
                 EndCases = endCases,
                 EndPassed = endPassed,
-                Cases = dump.Cases.Count,
             };
-            string text = BenchReport.Build(header, rows, command, scored);
-            reading = reportPath;
-            BenchReport.Write(reportPath, text);
+        }
+
+        static int MatchedCheck(
+            string dumpPath,
+            string manifestPath,
+            string pinPath,
+            string root,
+            string matchedPath,
+            long pace
+        )
+        {
+            Prelude prelude = FastPrelude(dumpPath, 0, manifestPath, pinPath, root);
+            reading = matchedPath;
+            JoinedInput.Dump matched = JoinedInput.ReadDump(matchedPath, pace);
+            if (matched.Schema != 2)
+                throw new JoinedInput.Stop(2, matchedPath + ": schema 1, no positions");
+            reading = null;
+            BenchPaced.CheckMatched(prelude.Dump, matched);
+            int cases = prelude.Dump.Cases.Count;
+            Console.Out.WriteLine(
+                "matched-check: "
+                    + cases
+                    + "/"
+                    + cases
+                    + " cases' finals and first partials within 4096 samples of the fast dump's at pace "
+                    + pace
+                    + "."
+            );
+            int measured = 0;
+            int merged = 0;
+            int mergedCases = 0;
+            foreach (JoinedInput.DumpCase c in matched.Cases)
+            {
+                BenchPaced.Factor f = BenchPaced.Reads(c.Reads, c.Samples);
+                measured += f.Measured;
+                merged += f.Merged;
+                if (f.Merged > 0)
+                    mergedCases++;
+            }
+            Console.Out.WriteLine(
+                "matched-check: read trace: "
+                    + measured
+                    + " measured reads, "
+                    + merged
+                    + " merged changes in "
+                    + mergedCases
+                    + "/"
+                    + cases
+                    + " cases."
+            );
             return 0;
         }
 

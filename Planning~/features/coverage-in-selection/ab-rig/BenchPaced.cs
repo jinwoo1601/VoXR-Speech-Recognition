@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The bench's paced arithmetic: stamps on both clocks and their split, the command stage's split, the real-time factor from the read trace, push lateness, the matched-chunk compare
+// Purpose:  The bench's paced arithmetic: stamps on both clocks and their split, the command stage's split, the real-time factor from the read trace, push lateness, the matched-chunk compare and its check over two dumps
 // Layer:    Planning.AbRig
 // Owns:     BenchPaced (internal static class), BenchPaced.Factor (internal sealed class)
 // Depends:  Bench, BenchMetrics, BenchReport, Joined, JoinedInput
@@ -154,6 +154,64 @@ namespace AbRig
                     + Shown(pb)
                     + ": more than 4096 apart";
             return null;
+        }
+
+        internal static void CheckMatched(JoinedInput.Dump fast, JoinedInput.Dump matched)
+        {
+            var byName = new Dictionary<string, JoinedInput.DumpCase>(StringComparer.Ordinal);
+            foreach (JoinedInput.DumpCase c in matched.Cases)
+                if (!byName.TryAdd(c.Name, c))
+                    throw new JoinedInput.Stop(2, matched.Path + ": case \"" + c.Name + "\" twice");
+            var inFast = new HashSet<string>(StringComparer.Ordinal);
+            var onlyFast = new List<string>();
+            foreach (JoinedInput.DumpCase c in fast.Cases)
+            {
+                inFast.Add(c.Name);
+                if (!byName.ContainsKey(c.Name))
+                    onlyFast.Add(c.Name);
+            }
+            var onlyMatched = new List<string>();
+            foreach (JoinedInput.DumpCase c in matched.Cases)
+                if (!inFast.Contains(c.Name))
+                    onlyMatched.Add(c.Name);
+            if (onlyFast.Count > 0 || onlyMatched.Count > 0)
+                throw new JoinedInput.Stop(
+                    2,
+                    matched.Path
+                        + ": cases differ from the fast dump's: only in fast "
+                        + Joined.JsonArray(onlyFast.ToArray())
+                        + ", only in matched "
+                        + Joined.JsonArray(onlyMatched.ToArray())
+                );
+
+            var failing = new List<string>();
+            foreach (JoinedInput.DumpCase f in fast.Cases)
+            {
+                JoinedInput.DumpCase m = byName[f.Name];
+                string line =
+                    m.Failures.Count > 0
+                        ? "matched-check: case \""
+                            + f.Name
+                            + "\": failed decode in the matched dump: "
+                            + string.Join("; ", m.Failures)
+                        : Matched(f, m);
+                if (line != null)
+                    failing.Add(line);
+            }
+            if (failing.Count > 0)
+            {
+                int failed = failing.Count;
+                failing.Add(
+                    "matched-check failed on "
+                        + failed
+                        + "/"
+                        + fast.Cases.Count
+                        + " cases against the fast dump "
+                        + fast.Path
+                        + ": no numbers, no report"
+                );
+                throw new JoinedInput.Stop(3, failing.ToArray());
+            }
         }
     }
 }
