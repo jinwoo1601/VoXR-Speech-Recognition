@@ -114,6 +114,7 @@ Lowest risk first, with the riskiest assumption probed in the first phase: the p
 
 - **Assets code cannot author:** the maintainer's approval of the 16-phrase list (F6, human-only; drafted in Phase 2's plan, approvable from its gate, a re-render if refused); optional, human downloads: MUSAN (CC BY 4.0) and SLR28 (Apache-2.0) into the add-on root, and the maintainer's title audio into `game-audio/`, none needed for a green build. Needed as provisioned: the Piper venv and `en_US-lessac-medium` in `~/.cache/voxr-fixture-gen/` (cached, no download), `NativeBridge~/vendor/` per `NativeBridge~/harness/README.md` *Provisioning a branch tree*, Command 3's toolchain, the .NET SDK 10, `py`. **Human step:** listening to one conditioned case per SNR step (§9), possible from Phase 1's gate.
 - Phase 1 — persisted plan (2026-11-09): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-11-09): [plan-2.md](plan-2.md)
 
 ## Risks, tradeoffs & open questions
 
