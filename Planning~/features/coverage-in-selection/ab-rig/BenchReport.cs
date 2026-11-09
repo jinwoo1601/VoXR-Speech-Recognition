@@ -1,7 +1,7 @@
 // ============================================================================
-// Purpose:  The bench's fast-run report: the header and per-case rows built into one deterministic markdown text, written and printed
+// Purpose:  The bench's report: fast mode's header and per-case rows, and a paced run's section, built into one deterministic markdown text, written and printed
 // Layer:    Planning.AbRig
-// Owns:     BenchReport (internal static class), BenchReport.Header (internal sealed class), BenchReport.Case (internal sealed class)
+// Owns:     BenchReport (internal static class), BenchReport.Header (internal sealed class), BenchReport.Case (internal sealed class), BenchReport.Paced (internal sealed class)
 // Depends:  BenchMetrics, Joined, JoinedReport, JoinedScorer
 // ============================================================================
 using System;
@@ -47,6 +47,26 @@ namespace AbRig
             internal string Wer;
         }
 
+        internal sealed class Paced
+        {
+            internal long Pace;
+            internal int MatchedExit;
+            internal int PacedExit;
+            internal List<(string Case, string Stage, string Audio, string Wall, string Compute)> Split =
+                new List<(string Case, string Stage, string Audio, string Wall, string Compute)>();
+            internal List<(
+                string Case,
+                string Factor,
+                int Measured,
+                int Merged,
+                string LateMatched,
+                string LatePaced
+            )> Factors =
+                new List<(string Case, string Factor, int Measured, int Merged, string LateMatched, string LatePaced)>();
+            internal string Corpus;
+            internal List<string> Finding = new List<string>();
+        }
+
         internal static string Offset(long n, long d) =>
             ((double)n / d).ToString("+0.000;-0.000;0.000", CultureInfo.InvariantCulture);
 
@@ -56,13 +76,14 @@ namespace AbRig
             Header h,
             List<Case> cases,
             BenchMetrics.CommandScore command,
-            BenchMetrics.Scored scored
+            BenchMetrics.Scored scored,
+            Paced paced = null
         )
         {
             var sb = new StringBuilder();
             void Line(string text) => sb.Append(text).Append('\n');
 
-            Line("# Bench report — fast replay");
+            Line(paced == null ? "# Bench report — fast replay" : "# Bench report — paced replay");
             Line("");
             Line(
                 "**TTS-only, provisional:** it can stop a change, never ranks decoders, and proves no gain before R5; latency and accuracy stand side by side, never one score."
@@ -70,7 +91,13 @@ namespace AbRig
             Line("");
             Line("## Configuration");
             Line("");
-            Line("- Mode: fast — the harness's --dump run, 16384-sample pushes");
+            Line(
+                paced == null
+                    ? "- Mode: fast — the harness's --dump run, 16384-sample pushes"
+                    : "- Mode: paced — the harness's --dump run, 16384-sample pushes, then its --paced 16384 and --paced "
+                        + Int(paced.Pace)
+                        + " passes at real speed"
+            );
             Line(
                 h.Profile == null
                     ? "- Endpointer profile: Automatic, mode Continuous (confgen, as Command 3)"
@@ -113,6 +140,24 @@ namespace AbRig
             Line(
                 "- Self-check: " + Int(h.Cases) + "/" + Int(h.Cases) + " cases' finals equal the pin"
             );
+            if (paced != null)
+            {
+                Line(
+                    "- Paced harness exits: matched (pace 16384) "
+                        + Int(paced.MatchedExit)
+                        + ", 20 ms (pace "
+                        + Int(paced.Pace)
+                        + ") "
+                        + Int(paced.PacedExit)
+                );
+                Line(
+                    "- Matched-chunk check: "
+                        + Int(paced.Factors.Count)
+                        + "/"
+                        + Int(paced.Factors.Count)
+                        + " cases' finals and first partials within 4096 samples of the fast dump's at pace 16384"
+                );
+            }
             Line("");
             Line("## Latency");
             Line("");
@@ -183,6 +228,103 @@ namespace AbRig
             Line("| Stray words (silence case) | " + Int(scored.Stray) + " |");
             Line("| ECE (" + Int(BenchMetrics.EceBins) + " bins) | " + scored.Ece + " |");
             Line("| NCE | " + scored.Nce + " |");
+            if (paced == null)
+                return sb.ToString();
+            Line("");
+            Line("## Paced");
+            Line("");
+            Line(
+                "**Desktop-only, single run:** wall times, compute parts, the real-time factor and push lateness measure this machine in one run; their run-to-run spread is not measured, and they are never compared across machines."
+            );
+            Line("");
+            Line("### Latency split");
+            Line("");
+            Line(
+                "Offsets in s from the end of the case's last speech segment, signed: audio from the 20 ms pass's consumed samples, wall from its pops on the real-time schedule, compute = wall − audio; the command event's audio is fast mode's and its wall the wall view's 90 Hz frame, compute = paced − fast; none: no such stamp; n/a: no speech; unpaced: a flush result's wall."
+            );
+            Line("");
+            Line("| Case | Stage | Audio | Wall | Compute |");
+            Line("|---|---|---|---|---|");
+            foreach (
+                (string Case, string Stage, string Audio, string Wall, string Compute) s in paced.Split
+            )
+                Line(
+                    "| "
+                        + s.Case
+                        + " | "
+                        + s.Stage
+                        + " | "
+                        + s.Audio
+                        + " | "
+                        + s.Wall
+                        + " | "
+                        + s.Compute
+                        + " |"
+                );
+            Line("");
+            Line("### Real-time factor");
+            Line("");
+            Line(
+                "Decode time ÷ audio duration: the recognition thread's per-read work, front end included, over the matched pass's measured reads on fast mode's read grid, desktop-only; the corpus factor is summed decode ÷ summed audio; lateness is a pass's largest push behind its real-time schedule."
+            );
+            Line("");
+            Line(
+                "| Case | Factor | Measured reads | Merged changes | Lateness, pace 16384 | Lateness, pace "
+                    + Int(paced.Pace)
+                    + " |"
+            );
+            Line("|---|---|---|---|---|---|");
+            int measured = 0;
+            int merged = 0;
+            foreach (
+                (
+                    string Case,
+                    string Factor,
+                    int Measured,
+                    int Merged,
+                    string LateMatched,
+                    string LatePaced
+                ) f in paced.Factors
+            )
+            {
+                measured += f.Measured;
+                merged += f.Merged;
+                Line(
+                    "| "
+                        + f.Case
+                        + " | "
+                        + f.Factor
+                        + " | "
+                        + Int(f.Measured)
+                        + " | "
+                        + Int(f.Merged)
+                        + " | "
+                        + f.LateMatched
+                        + " | "
+                        + f.LatePaced
+                        + " |"
+                );
+            }
+            Line(
+                "| Corpus | "
+                    + paced.Corpus
+                    + " | "
+                    + Int(measured)
+                    + " | "
+                    + Int(merged)
+                    + " | - | - |"
+            );
+            Line("");
+            Line("### 20 ms finding");
+            Line("");
+            Line(
+                "Fast mode's non-empty finals and command class against the 20 ms pass's, its class from the wall view; a finding, never a check."
+            );
+            Line("");
+            if (paced.Finding.Count == 0)
+                Line("- none");
+            foreach (string line in paced.Finding)
+                Line("- " + line);
             return sb.ToString();
         }
 

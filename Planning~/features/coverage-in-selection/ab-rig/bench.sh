@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Purpose:  Run script for the bench's fast run: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run
+# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run
 # Layer:    Planning.AbRig
 # Owns:     (script, no public types)
 # Depends:  stage.sh, Bench, vosk-bridge-harness, confgen, py
@@ -14,7 +14,7 @@ die() {
   exit 2
 }
 
-REF="" BUFFER="" WINDOW="" PIN="" OUT="" PROFILE="" MODE="" GAIN=""
+REF="" BUFFER="" WINDOW="" PIN="" OUT="" PROFILE="" MODE="" GAIN="" PACED=""
 
 take() {
   [ -z "${!1}" ] || die "$2 given twice"
@@ -25,6 +25,8 @@ take() {
 while [ $# -gt 0 ]; do
   opt="$1"
   case "$opt" in
+    --paced)
+      [ -z "$PACED" ] || die "--paced given twice"; PACED=1; shift; continue ;;
     --ref | --buffer | --window | --pin | --out | --profile | --mode | --gain)
       [ $# -ge 2 ] || die "$opt needs a value" ;;
     *) die "unknown argument: $opt" ;;
@@ -70,6 +72,7 @@ CONFGEN="NativeBridge~/build-confgen/bin/confgen/debug/confgen.dll"
 MODEL="NativeBridge~/vendor/vosk-model-small-en-us-0.15"
 MANIFEST="Tests~/Fixtures/audio/manifest.json"
 FIXTURES="Tests~/Fixtures/audio/tts"
+PACE=960
 
 [ -f "$HARNESS" ] || die "no harness build at $HARNESS: build it with Command 3 (.claude/bindings/unity.md)"
 [ -f "$CONFGEN" ] || die "no confgen build at $CONFGEN: build it with Command 3 (.claude/bindings/unity.md)"
@@ -80,12 +83,15 @@ done
 [ -d "$FIXTURES" ] || die "not a directory: $FIXTURES"
 [ -z "$NAMED" ] || command -v py >/dev/null 2>&1 ||
   die "no py on PATH: a named configuration writes the harness's pin copy with py"
+[ -z "$PACED" ] || command -v py >/dev/null 2>&1 ||
+  die "no py on PATH: --paced names a failing case with py"
 
 mkdir -p "$OUT"
 for d in "$OUT/model" "$OUT/stage"; do
   if [ -e "$d" ]; then find "$d" -delete; fi
 done
-find "$OUT" -maxdepth 1 \( -name dump.jsonl -o -name harness.json -o -name harness.err -o -name report.md -o -name harness-pin.json \) -delete
+find "$OUT" -maxdepth 1 \( -name dump.jsonl -o -name harness.json -o -name harness.err -o -name report.md -o -name harness-pin.json \
+  -o -name matched.jsonl -o -name matched.json -o -name matched.err -o -name paced.jsonl -o -name paced.json -o -name paced.err \) -delete
 
 abspath() {
   if command -v cygpath >/dev/null 2>&1; then
@@ -129,14 +135,37 @@ if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
 fi
 HARNESS_EXIT="$rc"
 
+pass() {
+  rc=0
+  (cd "NativeBridge~" && ./build-windows/bin/vosk-bridge-harness.exe --model "$OUT_W/model" \
+    --fixtures "../Tests~/Fixtures/audio/tts" --manifest "$HPIN" \
+    --paced "$1" --dump "$OUT_W/$2.jsonl") >"$OUT/$2.json" 2>"$OUT/$2.err" || rc=$?
+  if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
+    cat "$OUT/$2.err" >&2
+    py -I -B -c "import json,sys;[print('bench.sh: case \"%s\": %s'%(c['file'],'; '.join(c['errors']))) for c in json.load(open(sys.argv[1],encoding='utf-8'))['cases'] if c['errors']]" "$OUT/$2.json" >&2 || true
+    die "harness --paced $1 exit $rc: no report"
+  fi
+}
+
 env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$REF" "$OUT/stage" recogniser \
   ${BUFFER:+--buffer "$BUFFER" --window "$WINDOW"} || die "$REF: stage failed"
 (cd "$OUT/stage" && dotnet build -v q --nologo) || die "$REF: build failed"
 
+if [ -n "$PACED" ]; then
+  pass 16384 matched
+  MATCHED_EXIT="$rc"
+  (cd "$OUT/stage" && dotnet run --no-build -- --bench matched-check --dump "$OUT_W/dump.jsonl" \
+    --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" \
+    --matched "$OUT_W/matched.jsonl" --pace 16384) || exit $?
+  pass "$PACE" paced
+  PACED_EXIT="$rc"
+fi
+
 (cd "$OUT/stage" && dotnet run --no-build -- --bench run --dump "$OUT_W/dump.jsonl" \
   --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" \
   --harness-exit "$HARNESS_EXIT" --report "$OUT_W/report.md" \
-  ${NAMED:+--profile "$PROFILE" --mode "$MODE"}) || exit $?
+  ${NAMED:+--profile "$PROFILE" --mode "$MODE"} \
+  ${PACED:+--matched "$OUT_W/matched.jsonl" --matched-exit "$MATCHED_EXIT" --paced "$OUT_W/paced.jsonl" --paced-exit "$PACED_EXIT" --pace "$PACE"}) || exit $?
 
 echo "$OUT_W/report.md"
 exit 0
