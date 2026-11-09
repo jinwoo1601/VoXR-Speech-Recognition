@@ -2,7 +2,7 @@
 type: requirements
 feature: bench-paced-mode
 topic: audio-bench
-status: draft
+status: accepted
 updated: 2026-11-09
 sources:
   - Planning~/design-docs/audio-bench.md
@@ -97,14 +97,16 @@ Fast mode (`bench-fast-replay`) gives the audio-time half of each stage's latenc
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] A green paced run over all 52 cases, with the matched-chunk self-check passing.
-- [ ] Mutation: one case's stamp shifted by more than 4096 samples makes the bench refuse numbers and name the case.
-- [ ] Known-value toys for the stamp arithmetic, the split and the real-time factor give their stated values.
-- [ ] The green run's report has fast mode's sections, the paced section with every F3, F4, F5, F7 and F9 field, and every F8 label.
-- [ ] A fast-only run's report is byte-identical to `main`'s on the same inputs.
-- [ ] Command 3 is green.
-- [ ] `git diff main` is empty for the committed WAVs, `expectations.json`, the bridge's public interface and `Runtime/`.
-- [ ] Human-only verification: the maintainer reads one case's paced numbers in the green run's report and judges them plausible.
+- [x] A green paced run over all 52 cases, with the matched-chunk self-check passing. (phase 3 gate V9; the re-run at head `f66b597`: `bench.sh --paced` exit 0, 526 s, `matched-check: 52/52`; record `memory/2026-11-09.md`, "g2-accept")
+- [x] Mutation: one case's stamp shifted by more than 4096 samples makes the bench refuse numbers and name the case. (phase 2 and phase 3 gates V11: exit 3, `launch_one_missiles_target_hotel_one.wav` named, no report)
+- [x] Known-value toys for the stamp arithmetic, the split and the real-time factor give their stated values. (the review-fix CHECK: `metrics-check` 54/54)
+- [x] The green run's report has fast mode's sections, the paced section with every F3, F4, F5, F7 and F9 field, and every F8 label. (phase 3 gate V10, and V10's checks on the head's re-run report: the three header lines, fast sections `diff=0`, no `unpaced` row)
+- [x] A fast-only run's report is byte-identical to `main`'s on the same inputs. (phase 3 gate V8, and V8 at head `f66b597`: `cmp=0` against the F10 baseline)
+- [x] Command 3 is green. (the review-fix CHECK: 52/52; the binding's `37/37` is stale, `expectations.json` holding 52 cases)
+- [x] `git diff main` is empty for the committed WAVs, `expectations.json`, the bridge's public interface and `Runtime/`. (phase 3 gate; the G2 preflight at `f66b597`, item 2)
+- [x] Human-only verification: the maintainer reads one case's paced numbers in the green run's report and judges them plausible. (the maintainer at G2 on 2026-11-09, shown `cease_fire.wav`'s paced rows and its real-time factor from the head's re-run report: "Accept; numbers plausible (Recommended)")
+
+**Ruled at G2 on 2026-11-09** by the maintainer, in conversation (AskUserQuestion, "Accept; numbers plausible (Recommended)"): accepted at head `f66b597`, with the second preflight in view — the first preflight's test counts and gate-run mention in the architecture doc's as-built deltas routed out in `f66b597`, and the STATUS line brought current — and the paced and fast-only runs repeated at the head after the review fix. The classifications were ruled "Both stand (Recommended)": the `unity-pipeline-package` check is not applicable, and no on-device check is owed. The run from PLAN to the G2 packet went unattended; its fork-default takes were listed at G2.
 
 ## 10. Open questions
 

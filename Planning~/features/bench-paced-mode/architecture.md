@@ -2,7 +2,7 @@
 type: architecture
 feature: bench-paced-mode
 topic: audio-bench
-status: draft
+status: accepted
 updated: 2026-11-09
 sources:
   - Planning~/features/bench-paced-mode/requirements.md
