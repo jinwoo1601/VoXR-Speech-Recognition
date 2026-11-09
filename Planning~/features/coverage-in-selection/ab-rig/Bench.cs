@@ -859,6 +859,10 @@ namespace AbRig
             Expect("51", "F7 finding: an extra 20 ms final", Found(BenchPaced.Finding("toy", Timeline(null, ("fire", 48000)), Timeline(null, ("fire", 48000), ("missiles", 52800)), "correct-fire", "correct-fire")), "case \"toy\": finals fast [\"fire\"], 20 ms [\"fire\",\"missiles\"]");
             Expect("52", "F7 finding: the classes differ", Found(BenchPaced.Finding("toy", Timeline(null, ("fire", 48000)), Timeline(null, ("fire", 48000)), "correct-fire", "missed")), "case \"toy\": class fast correct-fire, 20 ms missed");
             Expect("53", "F7 finding: finals and classes equal", Found(BenchPaced.Finding("toy", Timeline(null, ("fire", 48000)), Timeline(null, ("fire", 48000)), "correct-fire", "correct-fire")), "none");
+            JoinedInput.DumpCase twenty54 = Timeline(null, ("fire", 48000));
+            twenty54.Failures.Add("unparseable result (`raw`) at seq 1");
+            twenty54.Failures.Add("`errors` [\"boom\"]");
+            Expect("54", "F7 finding: a failed decode in the 20 ms dump", Found(BenchPaced.Finding("toy", Timeline(null, ("fire", 48000)), twenty54, "correct-fire", "correct-fire")), "case \"toy\": failed decode in the 20 ms dump: unparseable result (`raw`) at seq 1; `errors` [\"boom\"]");
 
             Console.WriteLine();
             Console.WriteLine(

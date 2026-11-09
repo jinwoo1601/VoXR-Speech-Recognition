@@ -212,8 +212,8 @@ bool PushPaced(const float* data, size_t count, FixtureOutcome& r) {
         const size_t stop = offset + std::min<size_t>(paced.chunk, count - offset);
         const int64_t end = static_cast<int64_t>(r.pushed + (stop - offset));
         const int64_t due = (end * 1000000 + 47999) / 48000;
-        int64_t since = due;
         int64_t at = Poll(r);
+        int64_t since = std::max(due, at);
         while (true) {
             if (at >= due) {
                 int written = vosk_bridge_push_audio(data + offset, static_cast<uint32_t>(stop - offset));
