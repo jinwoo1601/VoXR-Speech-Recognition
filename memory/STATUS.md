@@ -4,7 +4,7 @@ updated: 2026-11-10
 
 ## Current
 
-- **`main` at PR #199 `8de2f69`; `v2.0.0`; running: `feat-bench-conditions`, `light-bcn-1-paced-padding`; RSE-2 held.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198, #199.
+- **`main` at PR #200 `767748e`; `v2.0.0`; running: `feat-bench-conditions`; RSE-2 held.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198, #199, #200.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -13,7 +13,6 @@ updated: 2026-11-10
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
 - **`feat-bench-conditions`**: feature; full; development; implement - row 2; P5 plan `05b108a`, build uncommitted; BLOCKED on BCN-1; next: merge main after it, re-run V15, V9, gate
-- **`light-bcn-1-paced-padding`**: light; class slim; batch BCN-1; PR #200 `ac42345`, review minor fixed; next: CHANGELOG, merge · ruling G2 · 2026-11-10 · the human · "Accept"
 
 ## Deferred
 
@@ -43,4 +42,3 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **BPM-1** · OPEN · light-lane · v2026-11-09 — bench-paced-mode GAP-1 residue: no durable toy for `CheckMatched` aggregation, the `Paired` stop or `Assemble`/`Build(Paced)`; gate steps V11-V13 only
 - **BPM-2** · OPEN · light-lane · v2026-11-09 — bench-paced-mode CONV-1 residue: `ab-rig/Bench.cs` :4 Owns lists `Bench.Prelude (sealed class)` with no visibility
 - **BPM-3** · OPEN · light-lane · v2026-11-09 — `host_run.py`'s 180 s `UNITY_TIMEOUT` leaves little margin: PlayMode took 131-160 s in bench-paced-mode's CHECK runs
-- **BCN-1** · OPEN · light-lane · v2026-11-10 — harness `--paced` paces 48000 padding (main.cpp:574), not 4096-aligned: paced read grid off fast's; pace 49152; blocks bench-conditions P5 V9
