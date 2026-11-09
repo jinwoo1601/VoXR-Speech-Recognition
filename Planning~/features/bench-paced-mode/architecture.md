@@ -102,6 +102,7 @@ Lowest risk first: rig-only arithmetic and readers with no native edit, then the
 | 3 — the paced run, its report and the closing gate | `bench.sh --paced`; `--bench run` paced arguments; the wall views and their worlds; stamps, split, factor, lateness and finding assembled; `BenchReport` paced section and labels. Every §9 criterion re-made. | F1, F3–F5, F7–F9 (green run); F6 (in `run`); F10; §6; §9 | None of Commands 1–4 by code; Command 3 green 52/52 (G2); DocCheck; joined 0 flips; a green paced run over 52 cases; the F6 mutation through `run` (no report); a fast-only run byte-equal to the baseline; each §6 stop made; `git diff main` empty for `NativeBridge~/src/`, `vosk_bridge.h`, `expectations.json`, the WAVs, `Runtime/` |
 
 - **Assets code cannot author:** none new. Needed as provisioned: `NativeBridge~/vendor/` per `NativeBridge~/harness/README.md` *Provisioning a branch tree* (a copy from the hub; a download only if the hub lacks it, the human's), Command 3's toolchain (Android NDK and SDK `cmake.exe`/`ninja.exe`, Visual Studio 2022), the .NET SDK 10, `py` for a named configuration. **Human step:** the maintainer reads one case's paced numbers in the green run's report and judges them plausible (§9), possible from Phase 3's green run.
+- Phase 1 — persisted plan (2026-11-09): [plan-1.md](plan-1.md)
 
 ## Risks, tradeoffs & open questions
 
