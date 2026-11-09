@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The bench's conditioned scoring: the cond/ inputs read and checked, per-condition curves and the negative set's false fires, assembled into a report section
+// Purpose:  The bench's conditioned scoring: the cond/ inputs read and checked, per-condition curves and the negative set's false fires, assembled into a report section, the SIR tables
 // Layer:    Planning.AbRig
 // Owns:     BenchCurves (internal static class), BenchCurves.Inputs (internal sealed class), BenchCurves.Set (internal sealed class), BenchCurves.Entry (internal sealed class)
 // Depends:  BenchConditions, BenchMetrics, BenchReport, JoinedInput, JoinedScorer
@@ -60,6 +60,14 @@ namespace AbRig
             "silence",
         };
 
+        static readonly string[] GameGroups =
+        {
+            "negative-out-of-set",
+            "negative-near-miss",
+            "game-audio-only",
+            "silence",
+        };
+
         static readonly string[] Metrics =
         {
             "Intent accuracy",
@@ -80,6 +88,10 @@ namespace AbRig
             JsonElement sidecar = JoinedInput.ParseObject(
                 File.ReadAllText(x.ConditionsPath, JoinedInput.StrictUtf8),
                 x.ConditionsPath
+            );
+            x.Steps = BenchConditions.Steps(
+                x.Condition,
+                sidecar.GetProperty("gameAudio").GetString() != BenchConditions.NotSupplied
             );
             var grid = new List<string>();
             foreach (JsonElement id in sidecar.GetProperty("grid").EnumerateArray())
@@ -244,6 +256,7 @@ namespace AbRig
                     e.C.Category != "negative-out-of-set"
                     && e.C.Category != "negative-near-miss"
                     && e.C.Category != "noise-only"
+                    && e.C.Category != "game-audio-only"
                 )
                     basis.Add(e);
             return basis;
@@ -341,7 +354,10 @@ namespace AbRig
                 Seed = Text("seed"),
                 Conditions = x.Condition + " — " + string.Join(", ", grid),
                 Noise = Text("noise"),
-                Room = Text("room") + ", DRR " + Number("drrDb") + " dB",
+                Room =
+                    Text("room")
+                    + (p.TryGetProperty("drrDb", out _) ? ", DRR " + Number("drrDb") + " dB" : ""),
+                GameAudio = Text("gameAudio"),
                 Filter =
                     "high-pass "
                     + Number("highPassHz")
@@ -387,7 +403,11 @@ namespace AbRig
             var speeds = new List<List<BenchConditions.Step>>();
             foreach (BenchConditions.Step step in x.Steps)
             {
-                if (speeds.Count == 0 || speeds[^1][0].Speed != step.Speed)
+                if (
+                    speeds.Count == 0
+                    || speeds[^1][0].Speed != step.Speed
+                    || speeds[^1][0].Game != step.Game
+                )
                     speeds.Add(new List<BenchConditions.Step>());
                 speeds[^1].Add(step);
             }
@@ -395,7 +415,11 @@ namespace AbRig
             foreach (List<BenchConditions.Step> steps in speeds)
             {
                 int speed = steps[0].Speed;
-                string title = "Speed " + Int(speed / 10) + "." + Int(speed % 10);
+                bool game = steps[0].Game;
+                string[] groups = game ? GameGroups : Groups;
+                string title = game ? "SIR" : "Speed " + Int(speed / 10) + "." + Int(speed % 10);
+                if (game)
+                    section.Sir = true;
                 var curveHeader = new List<string> { "Metric", "clean" };
                 var negativeHeader = new List<string> { "Group", "Rate", "clean" };
                 foreach (BenchConditions.Step step in steps)
@@ -408,14 +432,14 @@ namespace AbRig
                 foreach (Entry e in Basis(sets[steps[0].Id]))
                     cleanBasis.Add(fastByName[e.Source]);
                 var cleanNegatives = new List<Entry>();
-                foreach (string group in Groups)
+                foreach (string group in groups)
                     cleanNegatives.AddRange(group == "silence" ? fastSilence : Group(clean, group));
                 var columns = new List<string[]> { Column(cleanBasis, cleanNegatives) };
                 foreach (BenchConditions.Step step in steps)
                 {
                     Set at = sets[step.Id];
                     var negatives = new List<Entry>();
-                    foreach (string group in Groups)
+                    foreach (string group in groups)
                         negatives.AddRange(Group(at, group));
                     columns.Add(Column(Basis(at), negatives));
                 }
@@ -431,11 +455,11 @@ namespace AbRig
                 section.Curves.Add((title, curveHeader.ToArray(), curveRows));
 
                 var negativeRows = new List<string[]>();
-                foreach (string group in Groups)
+                foreach (string group in groups)
                 {
                     var perCase = new List<string> { group, "per case" };
                     var perHour = new List<string> { group, "per hour" };
-                    if (group == "noise-only")
+                    if (group == "noise-only" || group == "game-audio-only")
                     {
                         perCase.Add(NoCleanForm);
                         perHour.Add(NoCleanForm);

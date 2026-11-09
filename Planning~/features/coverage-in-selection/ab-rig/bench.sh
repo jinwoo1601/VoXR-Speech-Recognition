@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, the harness on <out>/cond, then --bench run with the conditioned block
+# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, the harness on <out>/cond, then --bench run with the conditioned block; --audio-root names the add-on root --bench condition reads
 # Layer:    Planning.AbRig
 # Owns:     (script, no public types)
 # Depends:  stage.sh, Bench, BenchConditions, vosk-bridge-harness, confgen, py
@@ -14,7 +14,7 @@ die() {
   exit 2
 }
 
-REF="" BUFFER="" WINDOW="" PIN="" OUT="" PROFILE="" MODE="" GAIN="" PACED="" CONDITION="" SEED=""
+REF="" BUFFER="" WINDOW="" PIN="" OUT="" PROFILE="" MODE="" GAIN="" PACED="" CONDITION="" SEED="" AUDIO_ROOT=""
 
 take() {
   [ -z "${!1}" ] || die "$2 given twice"
@@ -27,7 +27,7 @@ while [ $# -gt 0 ]; do
   case "$opt" in
     --paced)
       [ -z "$PACED" ] || die "--paced given twice"; PACED=1; shift; continue ;;
-    --ref | --buffer | --window | --pin | --out | --profile | --mode | --gain | --condition | --seed)
+    --ref | --buffer | --window | --pin | --out | --profile | --mode | --gain | --condition | --seed | --audio-root)
       [ $# -ge 2 ] || die "$opt needs a value" ;;
     *) die "unknown argument: $opt" ;;
   esac
@@ -42,6 +42,7 @@ while [ $# -gt 0 ]; do
     --gain) take GAIN "$opt" "$2" ;;
     --condition) take CONDITION "$opt" "$2" ;;
     --seed) take SEED "$opt" "$2" ;;
+    --audio-root) take AUDIO_ROOT "$opt" "$2" ;;
   esac
   shift 2
 done
@@ -63,6 +64,7 @@ GAIN_RE='^(0|-[0-9]*[1-9][0-9]*(\.[0-9]+)?|-[0-9]+\.[0-9]*[1-9][0-9]*)$'
   die "--gain must be 0 or a negative decimal in dBFS, as -18 or -12.5: $GAIN"
 [ -z "$SEED" ] || [ -n "$CONDITION" ] || die "--seed needs --condition"
 [ -z "$CONDITION" ] || [ -n "$SEED" ] || die "--condition needs --seed"
+[ -z "$AUDIO_ROOT" ] || [ -n "$CONDITION" ] || die "--audio-root needs --condition"
 [ -z "$CONDITION" ] || [ -z "$PACED" ] ||
   die "--condition with --paced is not built yet (bench-conditions Phase 5)"
 
@@ -71,6 +73,7 @@ PIN="${PIN:-NativeBridge~/harness/expectations.json}"
 OUT="${OUT:-.scratch/bench}"
 PROFILE="${PROFILE:-Automatic}"
 MODE="${MODE:-Continuous}"
+AUDIO_ROOT="${AUDIO_ROOT:-${XDG_CACHE_HOME:-$HOME/.cache}/voxr-bench}"
 [ -z "$NAMED" ] || { [[ $OUT == .scratch/?* ]] && [[ $OUT != *..* ]]; } ||
   die "--out must lie under .scratch/ for a named configuration (the harness's pin copy is written there): $OUT"
 [ -z "$CONDITION" ] || { [[ $OUT == .scratch/?* ]] && [[ $OUT != *..* ]]; } ||
@@ -122,6 +125,7 @@ MANIFEST_W="$(abspath "$MANIFEST")"
 PIN_W="$(abspath "$PIN")"
 ROOT_W="$(abspath "Tests~/Fixtures")"
 NEGATIVES_W="$(abspath "$NEGATIVES")"
+AUDIO_W="$(abspath "$AUDIO_ROOT")"
 
 rc=0
 dotnet "$CONFGEN_W" --model "$MODEL_W" --out "$OUT_W/model" --profile "$PROFILE" --mode "$MODE" || rc=$?
@@ -167,7 +171,7 @@ env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$REF" "$OUT/stage" recogniser \
 if [ -n "$CONDITION" ]; then
   (cd "$OUT/stage" && dotnet run --no-build -- --bench condition --dump "$OUT_W/dump.jsonl" \
     --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" --harness-pin "$HPIN_W" \
-    --out "$OUT_W" --condition "$CONDITION" --seed "$SEED" --negatives "$NEGATIVES_W") || exit $?
+    --out "$OUT_W" --condition "$CONDITION" --seed "$SEED" --negatives "$NEGATIVES_W" --audio-root "$AUDIO_W") || exit $?
   rc=0
   (cd "NativeBridge~" && ./build-windows/bin/vosk-bridge-harness.exe --model "$OUT_W/model" \
     --fixtures "$OUT_W/cond" --manifest "$OUT_W/cond/pin.json" \

@@ -86,7 +86,7 @@ namespace AbRig
                 if (verb == "condition")
                 {
                     if (
-                        args.Length != 20
+                        args.Length != 22
                         || args[2] != "--dump"
                         || args[4] != "--manifest"
                         || args[6] != "--pin"
@@ -96,10 +96,11 @@ namespace AbRig
                         || args[14] != "--condition"
                         || args[16] != "--seed"
                         || args[18] != "--negatives"
+                        || args[20] != "--audio-root"
                     )
                         throw new JoinedInput.Stop(
                             2,
-                            "usage: --bench condition --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-pin <pin.json> --out <dir> --condition <name> --seed <n> --negatives <manifest.json>"
+                            "usage: --bench condition --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-pin <pin.json> --out <dir> --condition <name> --seed <n> --negatives <manifest.json> --audio-root <dir>"
                         );
                     return BenchConditions.Condition(
                         args[3],
@@ -110,7 +111,8 @@ namespace AbRig
                         args[13],
                         args[15],
                         args[17],
-                        args[19]
+                        args[19],
+                        args[21]
                     );
                 }
                 if (verb == "matched-check")
@@ -154,7 +156,7 @@ namespace AbRig
                             "usage: --bench run <fast arguments> --cond-dump <cond.jsonl> --cond-manifest <manifest.json> --conditions <conditions.json> --cond-exit 0|1 --condition <name> --seed <n>"
                         );
                     ulong seed = BenchConditions.ParseSeed(args[^1]);
-                    List<BenchConditions.Step> steps = BenchConditions.Steps(args[^3]);
+                    List<BenchConditions.Step> steps = BenchConditions.Steps(args[^3], true);
                     curves = new BenchCurves.Inputs
                     {
                         DumpPath = args[^11],

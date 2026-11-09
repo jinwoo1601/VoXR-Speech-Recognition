@@ -75,6 +75,8 @@ namespace AbRig
             internal string Room;
             internal string Filter;
             internal string Level;
+            internal string GameAudio;
+            internal bool Sir;
             internal int Exit;
             internal long EndCases;
             internal long EndPassed;
@@ -180,7 +182,7 @@ namespace AbRig
                 Line("- Room response: " + conditioned.Room);
                 Line("- Mic filter: " + conditioned.Filter);
                 Line("- Level: " + conditioned.Level);
-                Line("- game audio: not supplied");
+                Line("- game audio: " + conditioned.GameAudio);
                 Line(
                     "- Labels: TTS-only, provisional; augmented numbers rank conditions, not field rates; digital mixing is a lower bound on difficulty, not a model of it"
                 );
@@ -346,6 +348,11 @@ namespace AbRig
                 Line("");
                 Line(
                     "One table per speed: a column per SNR step and the clean reference over the same cases, each cell with its n; no figure pooled across conditions."
+                        + (
+                            conditioned.Sir
+                                ? " With game audio, one table more, SIR: a column per SIR step at speed 1.0 and the clean reference over the same cases."
+                                : ""
+                        )
                 );
                 Tables(conditioned.Curves);
                 Line("");
