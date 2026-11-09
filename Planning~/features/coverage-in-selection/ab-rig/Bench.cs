@@ -74,9 +74,14 @@ namespace AbRig
                 }
                 if (verb == "condition-check")
                 {
-                    if (args.Length != 2)
-                        throw new JoinedInput.Stop(2, "usage: --bench condition-check");
-                    return BenchConditions.Check();
+                    if (args.Length == 2)
+                        return BenchConditions.Check(null, null, slots, commands);
+                    if (args.Length == 6 && args[2] == "--negatives" && args[4] == "--pin")
+                        return BenchConditions.Check(args[3], args[5], slots, commands);
+                    throw new JoinedInput.Stop(
+                        2,
+                        "usage: --bench condition-check [--negatives <manifest.json> --pin <expectations.json>]"
+                    );
                 }
                 if (verb == "condition")
                 {

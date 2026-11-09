@@ -2,7 +2,7 @@
 // Purpose:  The bench's condition pipeline: keyed streams, speed resampling, the synthetic room response and its RT60, pink noise, the mic filter, SNR and level, scaled truth and the grid; the condition and condition-check verbs
 // Layer:    Planning.AbRig
 // Owns:     BenchConditions (internal static class), BenchConditions.Rng (internal sealed class), BenchConditions.Step (internal sealed class)
-// Depends:  Bench, JoinedInput
+// Depends:  Bench, JoinedInput, Joined, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition
 // ============================================================================
 using System;
 using System.Buffers.Binary;
@@ -13,6 +13,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using VoXR.Commands;
 using Clip = (
     string File,
     string Source,
@@ -909,7 +910,12 @@ namespace AbRig
 
         static Rng Toy(string tag) => new Rng(7, "toy", "s1.0-snr20", tag);
 
-        internal static int Check()
+        internal static int Check(
+            string negatives,
+            string pin,
+            VoxrSlotDefinition[] slots,
+            VoxrCommandDefinition[] commands
+        )
         {
             const string want6 = "daac876762908855 9b71c328362baba3 1abf92c5592540b9 67c22ae9cf9d190f";
 
@@ -1213,9 +1219,134 @@ namespace AbRig
                 "s0.9-snr20 s0.9-snr15 s0.9-snr10 s0.9-snr5 s1.0-snr20 s1.0-snr15 s1.0-snr10 s1.0-snr5 s1.1-snr20 s1.1-snr15 s1.1-snr10 s1.1-snr5 | 12 | 1 | condition: unknown condition \"s0.8-snr20\": valid: grid, s0.9-snr20, s0.9-snr15, s0.9-snr10, s0.9-snr5, s1.0-snr20, s1.0-snr15, s1.0-snr10, s1.0-snr5, s1.1-snr20, s1.1-snr15, s1.1-snr10, s1.1-snr5"
             );
 
+            if (negatives != null)
+                PhraseList(negatives, pin, slots, commands);
+
             Console.WriteLine();
             Console.WriteLine($"{checks - failures}/{checks} condition checks verified against known-value toys.");
             return failures == 0 ? 0 : 1;
+        }
+
+        static void PhraseList(
+            string negatives,
+            string pin,
+            VoxrSlotDefinition[] slots,
+            VoxrCommandDefinition[] commands
+        )
+        {
+            JoinedInput.Manifest m = JoinedInput.ReadManifest(negatives);
+            JoinedInput.Pin p = JoinedInput.ReadPin(pin);
+            var words = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string entry in p.Grammar)
+                if (entry != "[unk]")
+                    foreach (string w in entry.Split(' '))
+                        words.Add(w);
+
+            int outOfSet = 0;
+            int nearMiss = 0;
+            int other = 0;
+            int noCommand = 0;
+            int lowercase = 0;
+            foreach (JoinedInput.ManifestCase c in m.Cases)
+            {
+                if (c.Category == "negative-out-of-set")
+                    outOfSet++;
+                else if (c.Category == "negative-near-miss")
+                    nearMiss++;
+                else
+                    other++;
+                if (c.ExpectedIntent == "" && c.ExpectedSlots.Length == 0)
+                    noCommand++;
+                if (
+                    c.Phrase != null
+                    && c.Segments == null
+                    && System.Text.RegularExpressions.Regex.IsMatch(c.Phrase, "^[a-z]+( [a-z]+)*$")
+                )
+                    lowercase++;
+            }
+            Expect(
+                "24",
+                "the list",
+                m.Cases.Count + " cases: " + outOfSet + " negative-out-of-set, " + nearMiss + " negative-near-miss, " + other + " other; no-command " + noCommand + "; lowercase " + lowercase,
+                "16 cases: 8 negative-out-of-set, 8 negative-near-miss, 0 other; no-command 16; lowercase 16"
+            );
+
+            JoinedScorer.Outcome control = OneFinal(
+                new JoinedInput.ManifestCase
+                {
+                    Name = "control",
+                    File = "control",
+                    Phrase = "cease fire",
+                    ExpectedIntent = "cease_fire",
+                    ExpectedSlots = [],
+                },
+                p,
+                slots,
+                commands
+            );
+            Expect("25", "control: cease fire", control.Class + " fires=" + control.FireTimes.Length, "correct-fire fires=1");
+
+            for (int i = 0; i < m.Cases.Count; i++)
+            {
+                JoinedInput.ManifestCase c = m.Cases[i];
+                var shared = new List<string>();
+                foreach (string w in c.Phrase.Split(' '))
+                    if (words.Contains(w))
+                        shared.Add(w);
+                string g = shared.Count > 0 ? string.Join(" ", shared) : "none";
+                string where = (26 + i).ToString(CultureInfo.InvariantCulture);
+                string what = c.Name + " [" + g + "]";
+                if (c.Category == "negative-out-of-set")
+                {
+                    Expect(where, what, g, "none");
+                    continue;
+                }
+                JoinedScorer.Outcome s = OneFinal(c, p, slots, commands);
+                Expect(
+                    where,
+                    what,
+                    "shares " + shared.Count + " | " + s.Class + " fires=" + s.FireTimes.Length + " pending=" + s.Pending.ToString(),
+                    "shares 1 | correct-no-fire fires=0 pending=False"
+                );
+            }
+        }
+
+        static JoinedScorer.Outcome OneFinal(
+            JoinedInput.ManifestCase c,
+            JoinedInput.Pin p,
+            VoxrSlotDefinition[] slots,
+            VoxrCommandDefinition[] commands
+        )
+        {
+            string[] w = c.Phrase.Split(' ');
+            var payload = new StringBuilder("{\"result\":[");
+            for (int i = 0; i < w.Length; i++)
+            {
+                if (i > 0)
+                    payload.Append(',');
+                string at = i.ToString(CultureInfo.InvariantCulture);
+                payload.Append("{\"conf\":1.0,\"end\":" + at + ".5,\"start\":" + at + ",\"word\":\"" + w[i] + "\"}");
+            }
+            payload.Append("],\"text\":\"" + c.Phrase + "\"}");
+            var d = new JoinedInput.DumpCase
+            {
+                Name = c.Name,
+                SampleRate = 48000,
+                Samples = 48000L * w.Length,
+            };
+            d.Results.Add(
+                new JoinedInput.DumpResult
+                {
+                    Seq = 0,
+                    Final = true,
+                    Consumed = 48000L * w.Length,
+                    Payload = payload.ToString(),
+                }
+            );
+            d.Finals.Add(c.Phrase);
+            JoinedScorer.Outcome s = Joined.ScoreRecogniser(c, d, slots, commands);
+            Joined.AppliedGrammarGuard(c.Name, s.AppliedGrammar, p);
+            return s;
         }
     }
 }

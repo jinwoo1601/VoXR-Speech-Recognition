@@ -1,0 +1,166 @@
+{
+    "voice": "en_US-lessac-medium",
+    "provenance": "Stand-in negative set (adr-0007): voice en_US-lessac-medium, synthesized with piper-tts by Tests~/Fixtures/generate.py. Synthetic TTS evidence cannot rank decoders (C12).",
+    "cases": [
+        {
+            "file": "audio/negatives/neg_oos_what_time_is_the_briefing.wav",
+            "speech": [{ "start": 17795, "end": 71777 }],
+            "category": "negative-out-of-set",
+            "phrase": "what time is the briefing",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_the_coffee_here_is_terrible.wav",
+            "speech": [{ "start": 17379, "end": 84857 }],
+            "category": "negative-out-of-set",
+            "phrase": "the coffee here is terrible",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_could_you_repeat_the_question.wav",
+            "speech": [{ "start": 15851, "end": 72713 }],
+            "category": "negative-out-of-set",
+            "phrase": "could you repeat the question",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_where_is_everybody.wav",
+            "speech": [{ "start": 19333, "end": 59214 }],
+            "category": "negative-out-of-set",
+            "phrase": "where is everybody",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_my_headset_feels_heavy.wav",
+            "speech": [{ "start": 17570, "end": 87304 }],
+            "category": "negative-out-of-set",
+            "phrase": "my headset feels heavy",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_check_the_shield_status.wav",
+            "speech": [{ "start": 22067, "end": 85150 }],
+            "category": "negative-out-of-set",
+            "phrase": "check the shield status",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_good_job_pilot.wav",
+            "speech": [{ "start": 16890, "end": 54953 }],
+            "category": "negative-out-of-set",
+            "phrase": "good job pilot",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_oos_let_me_think_about_this.wav",
+            "speech": [{ "start": 17609, "end": 68726 }],
+            "category": "negative-out-of-set",
+            "phrase": "let me think about this",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Out-of-set negative (adr-0007): no word in the pin's grammar; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_the_fire_alarm_went_off.wav",
+            "speech": [{ "start": 17187, "end": 72157 }],
+            "category": "negative-near-miss",
+            "phrase": "the fire alarm went off",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"fire\" with cease_fire but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_we_lost_the_target.wav",
+            "speech": [{ "start": 17724, "end": 64417 }],
+            "category": "negative-near-miss",
+            "phrase": "we lost the target",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"target\" with approach_target but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_keep_your_distance.wav",
+            "speech": [{ "start": 24341, "end": 62920 }],
+            "category": "negative-near-miss",
+            "phrase": "keep your distance",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"distance\" with set_distance_named but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_the_weapons_are_offline.wav",
+            "speech": [{ "start": 16001, "end": 73517 }],
+            "category": "negative-near-miss",
+            "phrase": "the weapons are offline",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"weapons\" with mode_weapons but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_change_the_heading_later.wav",
+            "speech": [{ "start": 14410, "end": 68398 }],
+            "category": "negative-near-miss",
+            "phrase": "change the heading later",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"heading\" with set_heading but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_resume_the_meeting.wav",
+            "speech": [{ "start": 17778, "end": 61004 }],
+            "category": "negative-near-miss",
+            "phrase": "resume the meeting",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"resume\" with resume_fire but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_navigation_is_broken.wav",
+            "speech": [{ "start": 17569, "end": 74009 }],
+            "category": "negative-near-miss",
+            "phrase": "navigation is broken",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"navigation\" with mode_navigation but is no command; no command may fire."
+        },
+        {
+            "file": "audio/negatives/neg_near_when_does_the_launch_start.wav",
+            "speech": [{ "start": 17776, "end": 70132 }],
+            "category": "negative-near-miss",
+            "phrase": "when does the launch start",
+            "peak": 0.2,
+            "expectedIntent": "",
+            "expectedSlots": [],
+            "description": "Near-miss negative (adr-0007): shares \"launch\" with launch_weapon but is no command; no command may fire."
+        }
+    ]
+}
