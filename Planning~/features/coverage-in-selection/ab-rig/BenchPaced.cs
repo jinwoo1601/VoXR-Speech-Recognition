@@ -14,7 +14,7 @@ namespace AbRig
     static class BenchPaced
     {
         internal const long ReadSamples = 4096;
-        internal const long PacedPadding = 48000;
+        internal const long PacedPadding = 49152;
         internal const string Unpaced = "unpaced";
 
         internal sealed class Factor

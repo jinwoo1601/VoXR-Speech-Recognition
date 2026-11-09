@@ -530,6 +530,7 @@ int RunHarness(int argc, char** argv) {
     }
 
     const std::vector<float> padding(48000 + RingBuffer<float>::kCapacity, 0.0f);
+    constexpr size_t kPacedPadding = 49152;
 
     std::vector<FixtureOutcome> outcomes;
     bool run_error = false;
@@ -571,8 +572,8 @@ int RunHarness(int argc, char** argv) {
                         if (wait_err.empty()) {
                             r.frontEndSamples = fe_samples;
                             r.frontEndDigest = HexDigest(fe_digest);
-                            if (PushPaced(padding.data(), 48000, r) && SpinConsumed(r))
-                                PushAll(padding.data() + 48000, padding.size() - 48000, r);
+                            if (PushPaced(padding.data(), kPacedPadding, r) && SpinConsumed(r))
+                                PushAll(padding.data() + kPacedPadding, padding.size() - kPacedPadding, r);
                         } else {
                             r.errors.push_back(wait_err);
                         }
