@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, then the harness on <out>/cond, no report
+# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, the harness on <out>/cond, then --bench run with the conditioned block
 # Layer:    Planning.AbRig
 # Owns:     (script, no public types)
 # Depends:  stage.sh, Bench, BenchConditions, vosk-bridge-harness, confgen, py
@@ -79,6 +79,7 @@ HARNESS="NativeBridge~/build-windows/bin/vosk-bridge-harness.exe"
 CONFGEN="NativeBridge~/build-confgen/bin/confgen/debug/confgen.dll"
 MODEL="NativeBridge~/vendor/vosk-model-small-en-us-0.15"
 MANIFEST="Tests~/Fixtures/audio/manifest.json"
+NEGATIVES="Tests~/Fixtures/audio/negatives/manifest.json"
 FIXTURES="Tests~/Fixtures/audio/tts"
 PACE=960
 
@@ -88,6 +89,7 @@ PACE=960
 for f in "$PIN" "$MANIFEST"; do
   [ -f "$f" ] || die "not a file: $f"
 done
+[ -z "$CONDITION" ] || [ -f "$NEGATIVES" ] || die "not a file: $NEGATIVES"
 [ -d "$FIXTURES" ] || die "not a directory: $FIXTURES"
 [ -z "$NAMED" ] || command -v py >/dev/null 2>&1 ||
   die "no py on PATH: a named configuration writes the harness's pin copy with py"
@@ -119,6 +121,7 @@ MODEL_W="$(abspath "$MODEL")"
 MANIFEST_W="$(abspath "$MANIFEST")"
 PIN_W="$(abspath "$PIN")"
 ROOT_W="$(abspath "Tests~/Fixtures")"
+NEGATIVES_W="$(abspath "$NEGATIVES")"
 
 rc=0
 dotnet "$CONFGEN_W" --model "$MODEL_W" --out "$OUT_W/model" --profile "$PROFILE" --mode "$MODE" || rc=$?
@@ -164,7 +167,7 @@ env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$REF" "$OUT/stage" recogniser \
 if [ -n "$CONDITION" ]; then
   (cd "$OUT/stage" && dotnet run --no-build -- --bench condition --dump "$OUT_W/dump.jsonl" \
     --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" --harness-pin "$HPIN_W" \
-    --out "$OUT_W" --condition "$CONDITION" --seed "$SEED") || exit $?
+    --out "$OUT_W" --condition "$CONDITION" --seed "$SEED" --negatives "$NEGATIVES_W") || exit $?
   rc=0
   (cd "NativeBridge~" && ./build-windows/bin/vosk-bridge-harness.exe --model "$OUT_W/model" \
     --fixtures "$OUT_W/cond" --manifest "$OUT_W/cond/pin.json" \
@@ -173,8 +176,7 @@ if [ -n "$CONDITION" ]; then
     cat "$OUT/cond.err" >&2
     die "harness on cond/ exit $rc: no report"
   fi
-  echo "$OUT_W/cond.jsonl"
-  exit 0
+  COND_EXIT="$rc"
 fi
 
 if [ -n "$PACED" ]; then
@@ -191,7 +193,8 @@ fi
   --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" \
   --harness-exit "$HARNESS_EXIT" --report "$OUT_W/report.md" \
   ${NAMED:+--profile "$PROFILE" --mode "$MODE"} \
-  ${PACED:+--matched "$OUT_W/matched.jsonl" --matched-exit "$MATCHED_EXIT" --paced "$OUT_W/paced.jsonl" --paced-exit "$PACED_EXIT" --pace "$PACE"}) || exit $?
+  ${PACED:+--matched "$OUT_W/matched.jsonl" --matched-exit "$MATCHED_EXIT" --paced "$OUT_W/paced.jsonl" --paced-exit "$PACED_EXIT" --pace "$PACE"} \
+  ${CONDITION:+--cond-dump "$OUT_W/cond.jsonl" --cond-manifest "$OUT_W/cond/manifest.json" --conditions "$OUT_W/cond/conditions.json" --cond-exit "$COND_EXIT" --condition "$CONDITION" --seed "$SEED"}) || exit $?
 
 echo "$OUT_W/report.md"
 exit 0

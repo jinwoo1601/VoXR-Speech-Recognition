@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The bench's condition pipeline: keyed streams, speed resampling, the synthetic room response and its RT60, pink noise, the mic filter, SNR and level, scaled truth and the grid; the condition and condition-check verbs
+// Purpose:  The bench's condition pipeline: keyed streams, speed resampling, the synthetic room response and its RT60, pink noise, the mic filter, SNR and level, scaled truth and the grid; the condition and condition-check verbs; the negative set's clips and the noise-only twins
 // Layer:    Planning.AbRig
 // Owns:     BenchConditions (internal static class), BenchConditions.Rng (internal sealed class), BenchConditions.Step (internal sealed class)
 // Depends:  Bench, JoinedInput, Joined, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition
@@ -127,7 +127,24 @@ namespace AbRig
             return grid;
         }
 
-        static List<Step> Steps(string name)
+        internal static ulong ParseSeed(string seedText)
+        {
+            if (
+                !ulong.TryParse(
+                    seedText,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out ulong seed
+                )
+            )
+                throw new JoinedInput.Stop(
+                    2,
+                    "condition: --seed \"" + seedText + "\" is not an unsigned 64-bit decimal"
+                );
+            return seed;
+        }
+
+        internal static List<Step> Steps(string name)
         {
             if (name == "grid")
                 return new List<Step>(Grid);
@@ -604,6 +621,18 @@ namespace AbRig
             Clip partner = speech[
                 (int)Math.Floor(new Rng(seed, clip, step.Id, "partner").Uniform() * speech.Count)
             ];
+            return Noise(seed, clip, c.Name, step, scaled, partner);
+        }
+
+        static Clip Noise(
+            ulong seed,
+            string clip,
+            string source,
+            Step step,
+            (long Start, long End)[] speech,
+            Clip partner
+        )
+        {
             double[] n = Filter(Pink(new Rng(seed, clip, step.Id, "noise"), partner.Y.Length));
             double k = partner.NoiseRms / Rms(n);
             var y = new short[n.Length];
@@ -619,10 +648,10 @@ namespace AbRig
             }
             return (
                 clip,
-                c.Name,
+                source,
                 step.Id,
                 y,
-                scaled,
+                speech,
                 0,
                 0,
                 0,
@@ -683,27 +712,19 @@ namespace AbRig
             string harnessPin,
             string outDir,
             string name,
-            string seedText
+            string seedText,
+            string negativesPath
         )
         {
-            if (
-                !ulong.TryParse(
-                    seedText,
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out ulong seed
-                )
-            )
-                throw new JoinedInput.Stop(
-                    2,
-                    "condition: --seed \"" + seedText + "\" is not an unsigned 64-bit decimal"
-                );
+            ulong seed = ParseSeed(seedText);
             List<Step> steps = Steps(name);
             Bench.Prelude prelude = Bench.FastPrelude(dumpPath, null, manifestPath, pinPath, root);
             JsonElement harness = JoinedInput.ParseObject(
                 File.ReadAllText(harnessPin, JoinedInput.StrictUtf8),
                 harnessPin
             );
+            JoinedInput.Manifest negatives = JoinedInput.ReadManifest(negativesPath);
+            Bench.TruthCheck(negatives, root);
             var cases = new List<JoinedInput.ManifestCase>();
             foreach (JoinedInput.ManifestCase c in prelude.Manifest.Cases)
                 if (c.Category != "pause-lead" && c.Category != "ladder")
@@ -739,11 +760,55 @@ namespace AbRig
                         clips[i, j] = FreeClip(seed, cases[i], steps[j], sources[i], speech);
             }
 
+            var written = new List<(Clip K, JoinedInput.ManifestCase C)>();
+            for (int i = 0; i < cases.Count; i++)
+                for (int j = 0; j < steps.Count; j++)
+                    written.Add((clips[i, j], cases[i]));
+            foreach (JoinedInput.ManifestCase n in negatives.Cases)
+            {
+                short[] pcm = Bench.ReadPcm(Path.Combine(root, n.File));
+                var source = new double[pcm.Length];
+                for (int k = 0; k < pcm.Length; k++)
+                    source[k] = pcm[k] / 32768.0;
+                Clip clean = (n.Name, n.Name, "clean", pcm, n.Speech, 0, 0, 0, 0, 0, 0, 0, null, 0);
+                written.Add((clean, n));
+                foreach (Step step in steps)
+                    written.Add((SpeechClip(seed, n, step, source), n));
+            }
+            var noiseOnly = new JoinedInput.ManifestCase
+            {
+                Category = "noise-only",
+                ExpectedIntent = "",
+                ExpectedSlots = [],
+            };
+            int twins = 0;
+            for (int i = 0; i < cases.Count; i++)
+            {
+                if (cases[i].Speech.Length == 0)
+                    continue;
+                twins++;
+                string stem = Path.GetFileNameWithoutExtension(cases[i].Name);
+                for (int j = 0; j < steps.Count; j++)
+                    written.Add(
+                        (
+                            Noise(
+                                seed,
+                                stem + "__noise__" + steps[j].Id + ".wav",
+                                cases[i].Name,
+                                steps[j],
+                                Array.Empty<(long Start, long End)>(),
+                                clips[i, j]
+                            ),
+                            noiseOnly
+                        )
+                    );
+            }
+
             string cond = outDir + "/cond";
             if (Path.Exists(cond))
                 throw new JoinedInput.Stop(2, "condition: " + cond + " exists: empty it first");
             Directory.CreateDirectory(cond);
-            foreach (Clip k in clips)
+            foreach (var (k, _) in written)
                 WriteWav(cond + "/" + k.File, k.Y);
 
             WriteJson(
@@ -759,7 +824,7 @@ namespace AbRig
                             continue;
                         }
                         w.WriteStartArray("cases");
-                        foreach (Clip k in clips)
+                        foreach (var (k, _) in written)
                         {
                             w.WriteStartObject();
                             w.WriteString("file", k.File);
@@ -779,44 +844,41 @@ namespace AbRig
                     w.WriteString("voice", prelude.Voice.GetString());
                     w.WriteString("provenance", prelude.Manifest.Provenance);
                     w.WriteStartArray("cases");
-                    for (int i = 0; i < cases.Count; i++)
-                        for (int j = 0; j < steps.Count; j++)
+                    foreach (var (k, c) in written)
+                    {
+                        w.WriteStartObject();
+                        w.WriteString("file", "cond/" + k.File);
+                        w.WriteStartArray("speech");
+                        foreach (var span in k.Speech)
                         {
-                            JoinedInput.ManifestCase c = cases[i];
-                            Clip k = clips[i, j];
                             w.WriteStartObject();
-                            w.WriteString("file", "cond/" + k.File);
-                            w.WriteStartArray("speech");
-                            foreach (var span in k.Speech)
-                            {
-                                w.WriteStartObject();
-                                w.WriteNumber("start", span.Start);
-                                w.WriteNumber("end", span.End);
-                                w.WriteEndObject();
-                            }
-                            w.WriteEndArray();
-                            w.WriteString("category", c.Category);
-                            if (c.Phrase != null)
-                                w.WriteString("phrase", c.Phrase);
-                            else if (c.Segments != null)
-                            {
-                                w.WriteStartArray("segments");
-                                foreach (string s in c.Segments)
-                                    w.WriteStringValue(s);
-                                w.WriteEndArray();
-                            }
-                            w.WriteString("expectedIntent", c.ExpectedIntent);
-                            w.WriteStartArray("expectedSlots");
-                            foreach (KeyValuePair<string, string> slot in c.ExpectedSlots)
-                            {
-                                w.WriteStartObject();
-                                w.WriteString("name", slot.Key);
-                                w.WriteString("value", slot.Value);
-                                w.WriteEndObject();
-                            }
-                            w.WriteEndArray();
+                            w.WriteNumber("start", span.Start);
+                            w.WriteNumber("end", span.End);
                             w.WriteEndObject();
                         }
+                        w.WriteEndArray();
+                        w.WriteString("category", c.Category);
+                        if (c.Phrase != null)
+                            w.WriteString("phrase", c.Phrase);
+                        else if (c.Segments != null)
+                        {
+                            w.WriteStartArray("segments");
+                            foreach (string s in c.Segments)
+                                w.WriteStringValue(s);
+                            w.WriteEndArray();
+                        }
+                        w.WriteString("expectedIntent", c.ExpectedIntent);
+                        w.WriteStartArray("expectedSlots");
+                        foreach (KeyValuePair<string, string> slot in c.ExpectedSlots)
+                        {
+                            w.WriteStartObject();
+                            w.WriteString("name", slot.Key);
+                            w.WriteString("value", slot.Value);
+                            w.WriteEndObject();
+                        }
+                        w.WriteEndArray();
+                        w.WriteEndObject();
+                    }
                     w.WriteEndArray();
                     w.WriteEndObject();
                 }
@@ -846,13 +908,18 @@ namespace AbRig
                     w.WriteEndArray();
                     w.WriteString("levelDistribution", "log-uniform");
                     w.WriteStartArray("clips");
-                    foreach (Clip k in clips)
+                    foreach (var (k, _) in written)
                     {
                         w.WriteStartObject();
                         w.WriteString("file", k.File);
                         w.WriteString("source", k.Source);
                         w.WriteString("condition", k.Condition);
-                        if (k.Partner == null)
+                        if (k.Partner != null)
+                        {
+                            w.WriteString("partner", k.Partner);
+                            w.WriteNumber("rms", k.Rms);
+                        }
+                        else if (k.Condition != "clean")
                         {
                             w.WriteNumber("drawnRt60", k.T);
                             w.WriteNumber("draws", k.Draws);
@@ -860,11 +927,6 @@ namespace AbRig
                             w.WriteNumber("snr", k.Snr);
                             w.WriteNumber("peak", k.Peak);
                             w.WriteNumber("rt60", k.Rt60);
-                        }
-                        else
-                        {
-                            w.WriteString("partner", k.Partner);
-                            w.WriteNumber("rms", k.Rms);
                         }
                         w.WriteEndObject();
                     }
@@ -876,12 +938,20 @@ namespace AbRig
             JoinedInput.ReadManifest(cond + "/manifest.json");
             Console.Out.WriteLine(
                 "condition: wrote "
-                    + clips.Length
+                    + written.Count
                     + " clips: "
                     + cases.Count
                     + " cases x "
                     + steps.Count
-                    + " conditions, seed "
+                    + " conditions, "
+                    + negatives.Cases.Count
+                    + " negatives clean and x "
+                    + steps.Count
+                    + ", "
+                    + twins
+                    + " noise-only twins x "
+                    + steps.Count
+                    + ", seed "
                     + seed.ToString(CultureInfo.InvariantCulture)
             );
             return 0;

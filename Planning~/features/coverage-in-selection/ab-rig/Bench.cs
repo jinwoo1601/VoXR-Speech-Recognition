@@ -1,8 +1,8 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast and paced runs, the matched-chunk check, the condition verbs' dispatch
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast, paced and conditioned runs, the matched-chunk check, the condition verbs' dispatch
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class), Bench.Prelude (sealed class)
-// Depends:  Program, BenchConditions, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
+// Depends:  Program, BenchConditions, BenchCurves, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -86,7 +86,7 @@ namespace AbRig
                 if (verb == "condition")
                 {
                     if (
-                        args.Length != 18
+                        args.Length != 20
                         || args[2] != "--dump"
                         || args[4] != "--manifest"
                         || args[6] != "--pin"
@@ -95,10 +95,11 @@ namespace AbRig
                         || args[12] != "--out"
                         || args[14] != "--condition"
                         || args[16] != "--seed"
+                        || args[18] != "--negatives"
                     )
                         throw new JoinedInput.Stop(
                             2,
-                            "usage: --bench condition --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-pin <pin.json> --out <dir> --condition <name> --seed <n>"
+                            "usage: --bench condition --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-pin <pin.json> --out <dir> --condition <name> --seed <n> --negatives <manifest.json>"
                         );
                     return BenchConditions.Condition(
                         args[3],
@@ -108,7 +109,8 @@ namespace AbRig
                         args[11],
                         args[13],
                         args[15],
-                        args[17]
+                        args[17],
+                        args[19]
                     );
                 }
                 if (verb == "matched-check")
@@ -135,6 +137,35 @@ namespace AbRig
                             "usage: --bench matched-check --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --matched <matched.jsonl> --pace <samples>"
                         );
                     return MatchedCheck(args[3], args[5], args[7], args[9], args[11], p);
+                }
+                BenchCurves.Inputs curves = null;
+                if (args.Length >= 26 && args[^12] == "--cond-dump")
+                {
+                    if (
+                        args[^10] != "--cond-manifest"
+                        || args[^8] != "--conditions"
+                        || args[^6] != "--cond-exit"
+                        || (args[^5] != "0" && args[^5] != "1")
+                        || args[^4] != "--condition"
+                        || args[^2] != "--seed"
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench run <fast arguments> --cond-dump <cond.jsonl> --cond-manifest <manifest.json> --conditions <conditions.json> --cond-exit 0|1 --condition <name> --seed <n>"
+                        );
+                    ulong seed = BenchConditions.ParseSeed(args[^1]);
+                    List<BenchConditions.Step> steps = BenchConditions.Steps(args[^3]);
+                    curves = new BenchCurves.Inputs
+                    {
+                        DumpPath = args[^11],
+                        ManifestPath = args[^9],
+                        ConditionsPath = args[^7],
+                        Exit = int.Parse(args[^5]),
+                        Condition = args[^3],
+                        Seed = seed,
+                        Steps = steps,
+                    };
+                    args = args[..^12];
                 }
                 long pace = 0;
                 bool named =
@@ -177,6 +208,11 @@ namespace AbRig
                         2,
                         "usage: --bench run --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-exit 0|1 --report <report.md> [--profile <name> --mode <name>] [--matched <matched.jsonl> --matched-exit 0|1 --paced <paced.jsonl> --paced-exit 0|1 --pace <samples>]"
                     );
+                if (curves != null && paced)
+                    throw new JoinedInput.Stop(
+                        2,
+                        "run: --condition with --paced is not built yet (bench-conditions Phase 5)"
+                    );
                 return FastRun(
                     args[3],
                     args[5],
@@ -193,7 +229,8 @@ namespace AbRig
                     paced ? int.Parse(args[b + 3]) : 0,
                     paced ? args[b + 5] : null,
                     paced ? int.Parse(args[b + 7]) : 0,
-                    pace
+                    pace,
+                    curves
                 );
             }
             catch (JoinedInput.Stop stop)
@@ -236,7 +273,8 @@ namespace AbRig
             int matchedExit,
             string pacedPath,
             int pacedExit,
-            long pace
+            long pace,
+            BenchCurves.Inputs curves
         )
         {
             reading = reportPath;
@@ -249,6 +287,8 @@ namespace AbRig
                 pinPath,
                 root
             );
+            if (curves != null)
+                BenchCurves.Read(curves);
             string[] stagedFrom = prelude.StagedFrom;
             JoinedInput.Dump dump = prelude.Dump;
             JoinedInput.Manifest manifest = prelude.Manifest;
@@ -296,28 +336,79 @@ namespace AbRig
             var rows = new List<BenchReport.Case>();
             var words = new List<(string[] Ref, JoinedInput.Word[] Hyp)>();
             var classes = new List<(string Class, int ExtraFires)>();
+            var fast = new List<BenchCurves.Entry>();
             for (int i = 0; i < manifest.Cases.Count; i++)
             {
                 JoinedInput.ManifestCase c = manifest.Cases[i];
                 JoinedInput.DumpCase d = dumpByCase[c.Name];
                 JoinedScorer.Outcome s = outcomes[i];
-                BenchReport.Case row = Stamps(c, d, s, t);
-                string[] reference = BenchMetrics.Reference(c.Phrase, c.Segments);
-                JoinedInput.Word[] hypothesis = BenchMetrics.Hypothesis(d.Words);
-                row.Wer =
-                    reference.Length == 0
-                        ? "excluded (silence)"
-                        : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
-                row.Pending =
-                    s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
-                    : s.Pending ? "pending"
-                    : "-";
+                BenchReport.Case row = Row(
+                    c,
+                    d,
+                    s,
+                    t,
+                    out string[] reference,
+                    out JoinedInput.Word[] hypothesis
+                );
                 rows.Add(row);
                 words.Add((reference, hypothesis));
                 classes.Add((s.Class, s.ExtraFires));
+                fast.Add(
+                    new BenchCurves.Entry
+                    {
+                        C = c,
+                        D = d,
+                        S = s,
+                        Reference = reference,
+                        Hypothesis = hypothesis,
+                        Row = row,
+                        Source = c.Name,
+                        Condition = "clean",
+                    }
+                );
             }
             BenchMetrics.Scored scored = BenchMetrics.Score(words);
             BenchMetrics.CommandScore command = BenchMetrics.Command(classes);
+
+            BenchReport.Conditioned conditioned = null;
+            if (curves != null)
+            {
+                var condByCase = new Dictionary<string, JoinedInput.DumpCase>(
+                    StringComparer.Ordinal
+                );
+                foreach (JoinedInput.DumpCase c in curves.Dump.Cases)
+                    condByCase.Add(c.Name, c);
+                var entries = new List<BenchCurves.Entry>();
+                foreach (JoinedInput.ManifestCase c in curves.Manifest.Cases)
+                {
+                    JoinedInput.DumpCase d = condByCase[c.Name];
+                    JoinedScorer.Outcome s = Joined.ScoreRecogniser(c, d, slots, commands);
+                    Joined.AppliedGrammarGuard(c.Name, s.AppliedGrammar, pin);
+                    BenchReport.Case row = Row(
+                        c,
+                        d,
+                        s,
+                        t,
+                        out string[] reference,
+                        out JoinedInput.Word[] hypothesis
+                    );
+                    (string Source, string Condition) clip = curves.Clips[c.Name];
+                    entries.Add(
+                        new BenchCurves.Entry
+                        {
+                            C = c,
+                            D = d,
+                            S = s,
+                            Reference = reference,
+                            Hypothesis = hypothesis,
+                            Row = row,
+                            Source = clip.Source,
+                            Condition = clip.Condition,
+                        }
+                    );
+                }
+                conditioned = BenchCurves.Section(curves, fast, entries);
+            }
 
             BenchReport.Paced section =
                 matchedPath == null
@@ -354,7 +445,7 @@ namespace AbRig
                 EndPassed = endPassed,
                 Cases = dump.Cases.Count,
             };
-            string text = BenchReport.Build(header, rows, command, scored, section);
+            string text = BenchReport.Build(header, rows, command, scored, section, conditioned);
             reading = reportPath;
             BenchReport.Write(reportPath, text);
             return 0;
@@ -516,6 +607,29 @@ namespace AbRig
                     + " cases."
             );
             return 0;
+        }
+
+        static BenchReport.Case Row(
+            JoinedInput.ManifestCase c,
+            JoinedInput.DumpCase d,
+            JoinedScorer.Outcome s,
+            long t,
+            out string[] reference,
+            out JoinedInput.Word[] hypothesis
+        )
+        {
+            BenchReport.Case row = Stamps(c, d, s, t);
+            reference = BenchMetrics.Reference(c.Phrase, c.Segments);
+            hypothesis = BenchMetrics.Hypothesis(d.Words);
+            row.Wer =
+                reference.Length == 0
+                    ? "excluded (silence)"
+                    : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
+            row.Pending =
+                s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
+                : s.Pending ? "pending"
+                : "-";
+            return row;
         }
 
         static BenchReport.Case Stamps(
@@ -903,6 +1017,18 @@ namespace AbRig
             twenty54.Failures.Add("`errors` [\"boom\"]");
             Expect("54", "F7 finding: a failed decode in the 20 ms dump", Found(BenchPaced.Finding("toy", Timeline(null, ("fire", 48000)), twenty54, "correct-fire", "correct-fire")), "case \"toy\": failed decode in the 20 ms dump: unparseable result (`raw`) at seq 1; `errors` [\"boom\"]");
 
+            var f55 = BenchCurves.FalseFire(0, 4, 192000, 48000);
+            Expect("55", "F7 false fires: none in four cases", f55.PerCase + " | " + f55.PerHour, "0 — set too easy | 0 — set too easy");
+            var f56 = BenchCurves.FalseFire(3, 3, 172800000, 48000);
+            Expect("56", "F7 false fires: per case and per hour", f56.PerCase + " | " + f56.PerHour, "1.0000 | 3.0000");
+            var f57 = BenchCurves.FalseFire(0, 0, 0, 48000);
+            Expect("57", "F7 false fires: no negative cases", f57.PerCase + " | " + f57.PerHour, "undefined (no negative cases) | undefined (no negative cases)");
+            var o58 = new JoinedScorer.Outcome { Class = "false-fire", ExtraFires = 2, FireTimes = new[] { 1.0, 2.0, 3.0 } };
+            Expect("58", "F7 fires of a negative: first and extra", BenchCurves.Fires(o58).ToString(CultureInfo.InvariantCulture), "3");
+            Expect("59", "F8 cell: a value with its n", BenchCurves.Cell(BenchMetrics.Value.Of(0.5), 2, 3), "0.5000 (n=2 phrases, 3 cases)");
+            var r60 = new List<string[]> { new[] { "a", "b" }, new[] { "a", "b" }, new[] { "c" } };
+            Expect("60", "F8 n: distinct reference texts, cases", BenchCurves.Phrases(r60) + " phrases, " + r60.Count + " cases", "2 phrases, 3 cases");
+
             Console.WriteLine();
             Console.WriteLine(
                 $"{checks - failures}/{checks} metric checks verified against hand-computed toy cases."
@@ -910,7 +1036,7 @@ namespace AbRig
             return failures == 0 ? 0 : 1;
         }
 
-        static int TruthCheck(JoinedInput.Manifest manifest, string root)
+        internal static int TruthCheck(JoinedInput.Manifest manifest, string root)
         {
             var missing = new List<string>();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)

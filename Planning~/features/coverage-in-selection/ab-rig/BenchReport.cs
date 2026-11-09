@@ -1,7 +1,7 @@
 // ============================================================================
-// Purpose:  The bench's report: fast mode's header and per-case rows, and a paced run's section, built into one deterministic markdown text, written and printed
+// Purpose:  The bench's report: fast mode's header and per-case rows, and a paced run's section, and a conditioned run's header lines and sections, built into one deterministic markdown text, written and printed
 // Layer:    Planning.AbRig
-// Owns:     BenchReport (internal static class), BenchReport.Header (internal sealed class), BenchReport.Case (internal sealed class), BenchReport.Paced (internal sealed class)
+// Owns:     BenchReport (internal static class), BenchReport.Header (internal sealed class), BenchReport.Case (internal sealed class), BenchReport.Paced (internal sealed class), BenchReport.Conditioned (internal sealed class)
 // Depends:  BenchMetrics, Joined, JoinedReport, JoinedScorer
 // ============================================================================
 using System;
@@ -67,6 +67,25 @@ namespace AbRig
             internal List<string> Finding = new List<string>();
         }
 
+        internal sealed class Conditioned
+        {
+            internal string Seed;
+            internal string Conditions;
+            internal string Noise;
+            internal string Room;
+            internal string Filter;
+            internal string Level;
+            internal int Exit;
+            internal long EndCases;
+            internal long EndPassed;
+            internal List<(Case Case, string Source, string Condition)> Rows =
+                new List<(Case Case, string Source, string Condition)>();
+            internal List<(string Title, string[] Header, List<string[]> Rows)> Curves =
+                new List<(string Title, string[] Header, List<string[]> Rows)>();
+            internal List<(string Title, string[] Header, List<string[]> Rows)> Negatives =
+                new List<(string Title, string[] Header, List<string[]> Rows)>();
+        }
+
         internal static string Offset(long n, long d) =>
             ((double)n / d).ToString("+0.000;-0.000;0.000", CultureInfo.InvariantCulture);
 
@@ -77,11 +96,28 @@ namespace AbRig
             List<Case> cases,
             BenchMetrics.CommandScore command,
             BenchMetrics.Scored scored,
-            Paced paced = null
+            Paced paced = null,
+            Conditioned conditioned = null
         )
         {
             var sb = new StringBuilder();
             void Line(string text) => sb.Append(text).Append('\n');
+            void Tables(List<(string Title, string[] Header, List<string[]> Rows)> tables)
+            {
+                foreach ((string Title, string[] Header, List<string[]> Rows) table in tables)
+                {
+                    Line("");
+                    Line("### " + table.Title);
+                    Line("");
+                    Line("| " + string.Join(" | ", table.Header) + " |");
+                    var rule = new StringBuilder("|");
+                    for (int k = 0; k < table.Header.Length; k++)
+                        rule.Append("---|");
+                    Line(rule.ToString());
+                    foreach (string[] row in table.Rows)
+                        Line("| " + string.Join(" | ", row) + " |");
+                }
+            }
 
             Line(paced == null ? "# Bench report — fast replay" : "# Bench report — paced replay");
             Line("");
@@ -134,12 +170,35 @@ namespace AbRig
             );
             Line("- Voice: " + h.Voice);
             Line("- Provenance: " + h.Provenance);
-            Line("- Seed: none — clean renders, no condition applied");
+            if (conditioned == null)
+                Line("- Seed: none — clean renders, no condition applied");
+            else
+            {
+                Line("- Seed: " + conditioned.Seed);
+                Line("- Conditions: " + conditioned.Conditions);
+                Line("- Noise: " + conditioned.Noise);
+                Line("- Room response: " + conditioned.Room);
+                Line("- Mic filter: " + conditioned.Filter);
+                Line("- Level: " + conditioned.Level);
+                Line("- game audio: not supplied");
+                Line(
+                    "- Labels: TTS-only, provisional; augmented numbers rank conditions, not field rates; digital mixing is a lower bound on difficulty, not a model of it"
+                );
+            }
             Line("- Harness exit: " + Int(h.HarnessExit));
             Line("- Dump end: cases " + Int(h.EndCases) + ", passed " + Int(h.EndPassed));
             Line(
                 "- Self-check: " + Int(h.Cases) + "/" + Int(h.Cases) + " cases' finals equal the pin"
             );
+            if (conditioned != null)
+                Line(
+                    "- Conditioned harness exit: "
+                        + Int(conditioned.Exit)
+                        + "; dump end: cases "
+                        + Int(conditioned.EndCases)
+                        + ", passed "
+                        + Int(conditioned.EndPassed)
+                );
             if (paced != null)
             {
                 Line(
@@ -228,6 +287,75 @@ namespace AbRig
             Line("| Stray words (silence case) | " + Int(scored.Stray) + " |");
             Line("| ECE (" + Int(BenchMetrics.EceBins) + " bins) | " + scored.Ece + " |");
             Line("| NCE | " + scored.Nce + " |");
+            if (conditioned != null)
+            {
+                Line("");
+                Line("## Conditioned latency");
+                Line("");
+                Line(
+                    "Offsets in s from the end of the clip's last scaled speech segment, signed, per clip and condition, no aggregate; none: no such stamp; n/a: no speech."
+                );
+                Line("");
+                Line("| Clip | Source | Category | Condition | First partial | Finals | Command event |");
+                Line("|---|---|---|---|---|---|---|");
+                foreach ((Case Case, string Source, string Condition) r in conditioned.Rows)
+                    Line(
+                        "| "
+                            + r.Case.Name
+                            + " | "
+                            + r.Source
+                            + " | "
+                            + (r.Case.Category.Length == 0 ? "-" : r.Case.Category)
+                            + " | "
+                            + r.Condition
+                            + " | "
+                            + r.Case.FirstPartial
+                            + " | "
+                            + r.Case.Finals
+                            + " | "
+                            + r.Case.CommandEvent
+                            + " |"
+                    );
+                Line("");
+                Line("## Conditioned accuracy");
+                Line("");
+                Line("Per clip and condition; each condition's totals are its curve points.");
+                Line("");
+                Line("| Clip | Condition | Class | Finals | Extra fires | Pending | WER |");
+                Line("|---|---|---|---|---|---|---|");
+                foreach ((Case Case, string Source, string Condition) r in conditioned.Rows)
+                    Line(
+                        "| "
+                            + r.Case.Name
+                            + " | "
+                            + r.Condition
+                            + " | "
+                            + r.Case.Class
+                            + " | "
+                            + Int(r.Case.FinalCount)
+                            + " | "
+                            + Int(r.Case.ExtraFires)
+                            + " | "
+                            + r.Case.Pending
+                            + " | "
+                            + r.Case.Wer
+                            + " |"
+                    );
+                Line("");
+                Line("## Curves");
+                Line("");
+                Line(
+                    "One table per speed: a column per SNR step and the clean reference over the same cases, each cell with its n; no figure pooled across conditions."
+                );
+                Tables(conditioned.Curves);
+                Line("");
+                Line("## Negative set");
+                Line("");
+                Line(
+                    "**Provisional, stand-in (adr-0007):** false fires, first and extra, per negative case and per hour of negative audio, apart from the positive classes and never netted; zero reads \"0 — set too easy\"."
+                );
+                Tables(conditioned.Negatives);
+            }
             if (paced == null)
                 return sb.ToString();
             Line("");
