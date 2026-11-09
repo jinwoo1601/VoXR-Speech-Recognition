@@ -8,7 +8,10 @@
 // output, and every input defect is a named stop: exit 2 with the file (and line, for the
 // dump) or the case and key. Unknown dump record keys are ignored (`schema` versions the
 // dump: 1, or 2 with the bridge positions, read strictly; feat-joined-rig-recogniser,
-// *Schema 2*); the manifest and the pin are read strictly (feat-joined-rig-parser, *Marks*).
+// *Schema 2*), save that a read with `pace` set reads `pace`, `wall`, `pushes` and `reads`
+// strictly, refusing them for a fast dump and requiring them for a paced one
+// (bench-paced-mode, *Stamps*); the manifest and the pin are read strictly
+// (feat-joined-rig-parser, *Marks*).
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,8 +22,6 @@ namespace AbRig
 {
     static class JoinedInput
     {
-        // A named stop: Joined.Run prints each line to stderr and exits with Code (2 an input
-        // or guard stop, 3 the kill check).
         internal sealed class Stop : Exception
         {
             internal readonly int Code;
@@ -34,8 +35,6 @@ namespace AbRig
             }
         }
 
-        // One `payload.result` entry of a non-empty final: Vosk's `word`, `conf`, `start`, `end`,
-        // each number read straight to a float as VoxrJsonParser.ParseWordsFromJson reads it.
         internal sealed class Word
         {
             internal string Text;
@@ -47,32 +46,18 @@ namespace AbRig
         internal sealed class DumpCase
         {
             internal string Name;
-
-            // The `case` record's `samples` (the WAV's) and `sampleRate`: audio time is
-            // `consumed` / SampleRate, end of audio Samples / SampleRate (*The clock*).
             internal long Samples;
             internal long SampleRate;
-
-            // Ordered `text`s of the case's `final:true` records, empty ones dropped.
             internal readonly List<string> Finals = new List<string>();
-
-            // Each of Finals' `payload.result` words, parallel to Finals.
             internal readonly List<Word[]> Words = new List<Word[]>();
-
-            // Why the case is a failed decode (`raw`, an `error` payload, non-empty `errors`);
-            // empty = decoded.
             internal readonly List<string> Failures = new List<string>();
-
-            // The `case-end` record's `pushed`, and its `consumed` (null in schema 1).
             internal long Pushed;
             internal long? Consumed;
-
-            // Every `result` record of the case, in dump order.
             internal readonly List<DumpResult> Results = new List<DumpResult>();
+            internal List<(long End, long Due, long Made)> Pushes;
+            internal List<(long Consumed, long At, long Pushed)> Reads;
         }
 
-        // One `result` record: `Consumed` and `Origin` are null in schema 1; exactly one of
-        // `Payload` (the payload's raw JSON text) and `Raw` is set.
         internal sealed class DumpResult
         {
             internal long Seq;
@@ -81,6 +66,7 @@ namespace AbRig
             internal long? Origin;
             internal string Payload;
             internal string Raw;
+            internal long? Wall;
         }
 
         internal sealed class Dump
@@ -88,11 +74,12 @@ namespace AbRig
             internal string Path;
             internal JsonElement Header;
             internal long Schema;
-            internal long? DecoderRate; // null in schema 1
+            internal long? DecoderRate;
             internal double Gain;
             internal string Libvosk;
             internal string[] Grammar;
             internal string ModelConf;
+            internal long? Pace;
             internal readonly List<DumpCase> Cases = new List<DumpCase>();
         }
 
@@ -167,9 +154,9 @@ namespace AbRig
             "modelConf",
         };
 
-        // --- dump -------------------------------------------------------------------------
+        internal static Dump ReadDump(string path) => ReadDump(path, null);
 
-        internal static Dump ReadDump(string path)
+        internal static Dump ReadDump(string path, long? pace)
         {
             string text = File.ReadAllText(path, StrictUtf8);
             string[] lines = SplitLines(text);
@@ -181,9 +168,6 @@ namespace AbRig
             DumpCase open = null;
             long nextSeq = 0;
             bool ended = false;
-
-            // Schema 2, per open case: the last result's `consumed` (0 before any) and the
-            // case's `origin` (null before its first result).
             long lastConsumed = 0;
             long? caseOrigin = null;
 
@@ -231,6 +215,23 @@ namespace AbRig
                     )
                         dump.ModelConf = Str(rec, "modelConf", where);
                     Int(rec, "ringCapacity", where);
+                    if (pace.HasValue)
+                    {
+                        if (rec.TryGetProperty("pace", out _))
+                            dump.Pace = Int(rec, "pace", where);
+                        if (pace.Value == 0 && dump.Pace.HasValue)
+                            throw new Stop(
+                                2,
+                                where + ": `pace` " + dump.Pace.Value + ", expected none (a fast dump)"
+                            );
+                        if (pace.Value > 0 && !dump.Pace.HasValue)
+                            throw new Stop(2, where + ": no `pace`, expected " + pace.Value);
+                        if (dump.Pace.HasValue && dump.Pace.Value != pace.Value)
+                            throw new Stop(
+                                2,
+                                where + ": `pace` " + dump.Pace.Value + ", expected " + pace.Value
+                            );
+                    }
                     dump.Header = rec;
                     continue;
                 }
@@ -290,8 +291,6 @@ namespace AbRig
                         var entry = new DumpResult { Seq = seq, Final = isFinal };
                         if (dump.Schema == 2)
                         {
-                            // F1's evidence: within a case `consumed` never decreases and never
-                            // passes `pushed`, and `origin` is constant.
                             long consumed = Int(rec, "consumed", where);
                             long origin = Int(rec, "origin", where);
                             if (consumed < 0)
@@ -332,6 +331,10 @@ namespace AbRig
                             entry.Consumed = consumed;
                             entry.Origin = origin;
                         }
+                        if (pace > 0)
+                            entry.Wall = Int(rec, "wall", where);
+                        else if (pace == 0 && rec.TryGetProperty("wall", out _))
+                            throw WithoutPace(where, "wall");
                         open.Results.Add(entry);
 
                         if (rec.TryGetProperty("raw", out JsonElement raw))
@@ -401,6 +404,18 @@ namespace AbRig
                         JsonElement errors = Arr(rec, "errors", where);
                         if (errors.GetArrayLength() > 0)
                             open.Failures.Add("`errors` " + errors.GetRawText());
+                        if (pace > 0)
+                        {
+                            open.Pushes = Triples(rec, "pushes", where);
+                            open.Reads = Triples(rec, "reads", where);
+                        }
+                        else if (pace == 0)
+                        {
+                            if (rec.TryGetProperty("pushes", out _))
+                                throw WithoutPace(where, "pushes");
+                            if (rec.TryGetProperty("reads", out _))
+                                throw WithoutPace(where, "reads");
+                        }
                         open = null;
                         break;
                     }
@@ -442,8 +457,6 @@ namespace AbRig
             return dump;
         }
 
-        // A non-empty final's `payload.result`: required, each entry an object with a string
-        // `word` and numeric `conf`, `start`, `end` (only empty-text finals may lack it).
         static Word[] ReadWords(JsonElement payload, string where)
         {
             JsonElement result = Arr(payload, "result", where);
@@ -657,7 +670,6 @@ namespace AbRig
             return manifest;
         }
 
-        // `expectedSlots`: an array of objects, each exactly a string `name` and a string `value`.
         static KeyValuePair<string, string>[] ReadExpectedSlots(JsonElement value, string named)
         {
             string bad =
@@ -733,10 +745,6 @@ namespace AbRig
             return pin;
         }
 
-        // --- joins ------------------------------------------------------------------------
-
-        // Case sets are the readers' (ruled 2026-10-14, "Exit 2, reader stop"): every dump case
-        // in the manifest and the reverse; with `pinned`, the pin's and the dump's sets equal.
         internal static void Join(Dump dump, Manifest manifest, Pin pin, bool pinned)
         {
             var dumpNames = new HashSet<string>(StringComparer.Ordinal);
@@ -782,8 +790,6 @@ namespace AbRig
                 throw new Stop(2, lines.ToArray());
         }
 
-        // --- JSON helpers: a missing or mistyped field is a stop naming `where` --------------
-
         internal static JsonElement ParseObject(string line, string where)
         {
             try
@@ -821,8 +827,6 @@ namespace AbRig
             }
         }
 
-        // No object at any depth names a key twice (ruled 2026-10-15, "Reject duplicates"):
-        // the first repeat is a stop naming the key, never a silent last-one-wins.
         static void RejectDuplicateKeys(JsonElement value, string where)
         {
             if (value.ValueKind == JsonValueKind.Object)
@@ -840,8 +844,6 @@ namespace AbRig
                     RejectDuplicateKeys(e, where);
         }
 
-        // The text's LF-separated lines, the empty element after a closing LF dropped; empty
-        // text gives none. A CR stays in its line for the caller to refuse.
         internal static string[] SplitLines(string text)
         {
             string[] lines = text.Split('\n');
@@ -908,5 +910,26 @@ namespace AbRig
             }
             return result;
         }
+
+        static List<(long, long, long)> Triples(JsonElement obj, string key, string where)
+        {
+            var result = new List<(long, long, long)>();
+            foreach (JsonElement e in Arr(obj, key, where).EnumerateArray())
+            {
+                var v = new long[3];
+                int n = 0;
+                if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() == 3)
+                    foreach (JsonElement x in e.EnumerateArray())
+                        if (x.ValueKind == JsonValueKind.Number && x.TryGetInt64(out v[n]))
+                            n++;
+                if (n != 3)
+                    throw new Stop(2, where + ": missing or mistyped field `" + key + "`");
+                result.Add((v[0], v[1], v[2]));
+            }
+            return result;
+        }
+
+        static Stop WithoutPace(string where, string key) =>
+            new Stop(2, where + ": `" + key + "` without `pace` in the header");
     }
 }

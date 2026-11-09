@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
@@ -81,6 +82,19 @@ struct DumpWriter {
 
 DumpWriter dump_writer;
 
+struct PacedTrace {
+    uint32_t chunk = 0;
+    std::chrono::steady_clock::time_point t0;
+    std::vector<std::array<int64_t, 3>> pushes, reads;
+};
+
+PacedTrace paced;
+
+int64_t Micros() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - paced.t0)
+        .count();
+}
+
 void DumpCase(const std::string& file, size_t samples, uint32_t sample_rate) {
     ordered_json rec;
     rec["kind"] = "case";
@@ -98,21 +112,20 @@ void DumpCaseEnd(const FixtureOutcome& r) {
     rec["pushed"] = r.pushed;
     rec["consumed"] = r.consumed;
     rec["errors"] = r.errors;
+    if (paced.chunk != 0) {
+        rec["pushes"] = paced.pushes;
+        rec["reads"] = paced.reads;
+    }
     dump_writer.Write(rec);
 }
 
-// Pops everything currently queued. Result strings are copied immediately —
-// the pointer from vosk_bridge_get_result dies on the next call. Non-final
-// {"error": ...} entries (ring overflow, device error) fail the run loudly.
 void DrainResults(FixtureOutcome& r) {
     int is_final = 0, length = 0;
     const char* p = nullptr;
     while ((p = vosk_bridge_get_result(&is_final, &length)) != nullptr) {
         std::string payload(p, static_cast<size_t>(length));
-        // Dumped before handling, re-parsed as ordered_json so Vosk's own key
-        // order survives; every result of one drain carries that drain's pair,
-        // and its own bridge position (consumed, origin).
         if (dump_writer.enabled) {
+            const int64_t wall = paced.chunk != 0 ? Micros() : 0;
             int64_t consumed = 0, origin = 0;
             vosk_bridge_get_result_position(&consumed, &origin);
             ordered_json rec;
@@ -124,6 +137,8 @@ void DrainResults(FixtureOutcome& r) {
             rec["prevPushed"] = r.prevPushed;
             rec["consumed"] = consumed;
             rec["origin"] = origin;
+            if (paced.chunk != 0)
+                rec["wall"] = wall;
             ordered_json parsed = ordered_json::parse(payload, nullptr, false);
             if (parsed.is_discarded())
                 rec["raw"] = payload;
@@ -148,6 +163,15 @@ void DrainResults(FixtureOutcome& r) {
         }
     }
     r.prevPushed = r.pushed;
+}
+
+int64_t Poll(FixtureOutcome& r) {
+    const int64_t consumed = vosk_bridge_get_consumed();
+    const int64_t at = Micros();
+    if (consumed != (paced.reads.empty() ? 0 : paced.reads.back()[0]))
+        paced.reads.push_back({consumed, at, static_cast<int64_t>(r.pushed)});
+    DrainResults(r);
+    return at;
 }
 
 // Pushes the whole buffer with clamped-write pacing: a short write means the
@@ -182,27 +206,98 @@ bool PushAll(const float* data, size_t count, FixtureOutcome& r) {
     return true;
 }
 
-std::string WaitFrontEnd(uint64_t samples, uint64_t* out_output_samples, uint64_t* out_digest) {
+bool PushPaced(const float* data, size_t count, FixtureOutcome& r) {
+    size_t offset = 0;
+    while (offset < count) {
+        const size_t stop = offset + std::min<size_t>(paced.chunk, count - offset);
+        const int64_t end = static_cast<int64_t>(r.pushed + (stop - offset));
+        const int64_t due = (end * 1000000 + 47999) / 48000;
+        int64_t at = Poll(r);
+        int64_t since = std::max(due, at);
+        while (true) {
+            if (at >= due) {
+                int written = vosk_bridge_push_audio(data + offset, static_cast<uint32_t>(stop - offset));
+                if (written < 0) {
+                    r.errors.push_back("vosk_bridge_push_audio returned error " +
+                                       std::to_string(written));
+                    return false;
+                }
+                offset += static_cast<size_t>(written);
+                r.pushed += static_cast<size_t>(written);
+                if (offset == stop) {
+                    paced.pushes.push_back({end, due, at});
+                    break;
+                }
+                if (written > 0) {
+                    since = at;
+                } else if (at - since > 10000000) {
+                    r.errors.push_back("recognition thread stalled (ring never drained)");
+                    return false;
+                }
+            }
+            std::this_thread::yield();
+            at = Poll(r);
+        }
+    }
+    return true;
+}
+
+template <class Pause, class Stalled>
+std::string WaitFrontEndBy(uint64_t samples, uint64_t* out_output_samples, uint64_t* out_digest, Pause pause,
+                           Stalled stalled) {
     uint64_t seen = 0;
     int rc = vosk_bridge_get_frontend_stats(&seen, out_output_samples, out_digest,
                                             nullptr, nullptr, nullptr);
-    int stalled = 0;
     while (rc == VOSK_BRIDGE_OK && seen != samples) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        pause();
         uint64_t now = 0;
         rc = vosk_bridge_get_frontend_stats(&now, out_output_samples, out_digest,
                                             nullptr, nullptr, nullptr);
-        if (now != seen) {
+        const bool moved = now != seen;
+        if (moved)
             seen = now;
-            stalled = 0;
-        } else if (++stalled > 2000) {
+        if (stalled(moved))
             return "front end stalled: input " + std::to_string(now) + " of " +
                    std::to_string(samples) + " samples";
-        }
     }
     if (rc != VOSK_BRIDGE_OK)
         return "vosk_bridge_get_frontend_stats failed with code " + std::to_string(rc);
     return "";
+}
+
+std::string WaitFrontEnd(uint64_t samples, uint64_t* out_output_samples, uint64_t* out_digest) {
+    return WaitFrontEndBy(samples, out_output_samples, out_digest,
+                          [] { std::this_thread::sleep_for(std::chrono::milliseconds(5)); },
+                          [n = 0](bool moved) mutable { if (moved) n = 0; return !moved && ++n > 2000; });
+}
+
+std::string WaitFrontEndPaced(uint64_t samples, uint64_t* out_output_samples, uint64_t* out_digest,
+                              FixtureOutcome& r) {
+    int64_t at = Micros(), since = at;
+    return WaitFrontEndBy(samples, out_output_samples, out_digest,
+                          [&] { std::this_thread::yield(); at = Poll(r); },
+                          [&](bool moved) { if (moved) since = at; return at - since > 10000000; });
+}
+
+bool SpinConsumed(FixtureOutcome& r) {
+    int64_t at = Poll(r), since = at;
+    size_t seen = paced.reads.size();
+    while (true) {
+        const int64_t consumed = paced.reads.empty() ? 0 : paced.reads.back()[0];
+        if (consumed == static_cast<int64_t>(r.pushed))
+            return true;
+        if (paced.reads.size() != seen) {
+            seen = paced.reads.size();
+            since = at;
+        } else if (at - since > 10000000) {
+            r.errors.push_back("drain stalled: consumed " +
+                               std::to_string(consumed) + " of " +
+                               std::to_string(r.pushed) + " pushed");
+            return false;
+        }
+        std::this_thread::yield();
+        at = Poll(r);
+    }
 }
 
 std::string HexDigest(uint64_t digest) {
@@ -220,6 +315,7 @@ int Fail(const std::string& msg) {
 
 int RunHarness(int argc, char** argv) {
     std::string model_dir, fixtures_dir, manifest_path, dump_path;
+    std::optional<std::string> paced_arg;
     bool write_baseline = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -229,10 +325,24 @@ int RunHarness(int argc, char** argv) {
         else if (arg == "--manifest" && i + 1 < argc) manifest_path = argv[++i];
         else if (arg == "--write-baseline") write_baseline = true;
         else if (arg == "--dump" && i + 1 < argc) { dump_path = argv[++i]; dump_writer.enabled = true; }
-        else return Fail("unknown or incomplete argument: " + arg + "\nusage: vosk-bridge-harness --model <dir> --fixtures <dir> --manifest <expectations.json> [--write-baseline] [--dump <file>]");
+        else if (arg == "--paced" && i + 1 < argc) paced_arg = argv[++i];
+        else return Fail("unknown or incomplete argument: " + arg + "\nusage: vosk-bridge-harness --model <dir> --fixtures <dir> --manifest <expectations.json> [--write-baseline] [--dump <file> [--paced <samples>]]");
     }
     if (model_dir.empty() || fixtures_dir.empty() || manifest_path.empty())
         return Fail("--model, --fixtures and --manifest are all required");
+    if (paced_arg) {
+        if (!dump_writer.enabled)
+            return Fail("--paced needs --dump");
+        if (write_baseline)
+            return Fail("--paced cannot write the baseline");
+        const std::string& value = *paced_arg;
+        const bool digits = !value.empty() && value.size() <= 5 &&
+                            std::all_of(value.begin(), value.end(), [](char ch) { return ch >= '0' && ch <= '9'; });
+        const unsigned long chunk = digits ? std::stoul(value) : 0;
+        if (chunk < 1 || chunk > 16384)
+            return Fail("--paced takes a chunk of 1 to 16384 samples: " + value);
+        paced.chunk = static_cast<uint32_t>(chunk);
+    }
 
     const std::string conf_path = model_dir + "/conf/model.conf";
     std::optional<std::string> conf;
@@ -334,6 +444,8 @@ int RunHarness(int argc, char** argv) {
         header["grammar"] = manifest["grammar"];
         header["ringCapacity"] = RingBuffer<float>::kCapacity;
         header["decoderRate"] = kDecoderRate;
+        if (paced.chunk != 0)
+            header["pace"] = paced.chunk;
         dump_writer.Write(header);
     }
 
@@ -423,6 +535,10 @@ int RunHarness(int argc, char** argv) {
     bool run_error = false;
 
     for (auto& c : manifest["cases"]) {
+        if (paced.chunk != 0) {
+            paced.pushes.clear();
+            paced.reads.clear();
+        }
         FixtureOutcome r;
         r.file = c.value("file", "");
         if (c.contains("expectedFinals") && c["expectedFinals"].is_array())
@@ -447,7 +563,21 @@ int RunHarness(int argc, char** argv) {
                 r.errors.push_back("vosk_bridge_start_push failed with code " +
                                    std::to_string(rc));
             } else {
-                if (PushAll(wav.samples.data(), wav.samples.size(), r)) {
+                if (paced.chunk != 0) {
+                    paced.t0 = std::chrono::steady_clock::now();
+                    if (PushPaced(wav.samples.data(), wav.samples.size(), r)) {
+                        uint64_t fe_samples = 0, fe_digest = 0;
+                        std::string wait_err = WaitFrontEndPaced(wav.samples.size(), &fe_samples, &fe_digest, r);
+                        if (wait_err.empty()) {
+                            r.frontEndSamples = fe_samples;
+                            r.frontEndDigest = HexDigest(fe_digest);
+                            if (PushPaced(padding.data(), 48000, r) && SpinConsumed(r))
+                                PushAll(padding.data() + 48000, padding.size() - 48000, r);
+                        } else {
+                            r.errors.push_back(wait_err);
+                        }
+                    }
+                } else if (PushAll(wav.samples.data(), wav.samples.size(), r)) {
                     uint64_t fe_samples = 0, fe_digest = 0;
                     std::string wait_err = WaitFrontEnd(wav.samples.size(), &fe_samples, &fe_digest);
                     if (wait_err.empty()) {
