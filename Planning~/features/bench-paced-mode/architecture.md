@@ -103,6 +103,7 @@ Lowest risk first: rig-only arithmetic and readers with no native edit, then the
 
 - **Assets code cannot author:** none new. Needed as provisioned: `NativeBridge~/vendor/` per `NativeBridge~/harness/README.md` *Provisioning a branch tree* (a copy from the hub; a download only if the hub lacks it, the human's), Command 3's toolchain (Android NDK and SDK `cmake.exe`/`ninja.exe`, Visual Studio 2022), the .NET SDK 10, `py` for a named configuration. **Human step:** the maintainer reads one case's paced numbers in the green run's report and judges them plausible (§9), possible from Phase 3's green run.
 - Phase 1 — persisted plan (2026-11-09): [plan-1.md](plan-1.md)
+- Phase 2 — persisted plan (2026-11-09): [plan-2.md](plan-2.md)
 
 ## Risks, tradeoffs & open questions
 
