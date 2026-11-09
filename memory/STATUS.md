@@ -12,7 +12,7 @@ updated: 2026-11-09
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-bench-paced-mode`**: feature; full; path development; stage product-docs - audio-bench row 4; head `f66b597` · ruling G2 · 2026-11-09 · the human · "Accept; numbers plausible (Recommended)"
+- **`feat-bench-paced-mode`**: feature; full; path development; stage product-docs - next: product docs; head `8507e3b` · ruling G2 · 2026-11-09 · the human · "Accept; numbers plausible (Recommended)"
 
 ## Deferred
 
