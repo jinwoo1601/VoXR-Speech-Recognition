@@ -1,10 +1,10 @@
 # STATUS — VoXR-Speech-Recognition
 
-updated: 2026-11-09
+updated: 2026-11-10
 
 ## Current
 
-- **`main` at PR #199 `8de2f69`; `v2.0.0`; RSE-2 held; next: `g0-open` an audio-bench row.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198, #199.
+- **`main` at PR #200 `767748e`; `v2.0.0`; running: `feat-bench-conditions`; RSE-2 held.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198, #199, #200.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,6 +12,7 @@ updated: 2026-11-09
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
+- **`feat-bench-conditions`**: feature; full; development; implement - row 2; P5 plan `05b108a`, build uncommitted; BLOCKED on BCN-1; next: merge main after it, re-run V15, V9, gate
 
 ## Deferred
 
