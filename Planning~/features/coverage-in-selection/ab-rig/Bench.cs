@@ -1,8 +1,8 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast and paced runs, the matched-chunk check
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast and paced runs, the matched-chunk check, the condition verbs' dispatch
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class), Bench.Prelude (sealed class)
-// Depends:  Program, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
+// Depends:  Program, BenchConditions, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,7 @@ namespace AbRig
         const int FrameTolerance = 960;
         const int TailSamples = 48000;
 
-        sealed class Prelude
+        internal sealed class Prelude
         {
             internal string[] StagedFrom;
             internal JoinedInput.Dump Dump;
@@ -71,6 +71,40 @@ namespace AbRig
                             "usage: --bench truth-check --manifest <manifest.json> --fixtures-root <dir>"
                         );
                     return TruthCheck(JoinedInput.ReadManifest(args[3]), args[5]);
+                }
+                if (verb == "condition-check")
+                {
+                    if (args.Length != 2)
+                        throw new JoinedInput.Stop(2, "usage: --bench condition-check");
+                    return BenchConditions.Check();
+                }
+                if (verb == "condition")
+                {
+                    if (
+                        args.Length != 18
+                        || args[2] != "--dump"
+                        || args[4] != "--manifest"
+                        || args[6] != "--pin"
+                        || args[8] != "--fixtures-root"
+                        || args[10] != "--harness-pin"
+                        || args[12] != "--out"
+                        || args[14] != "--condition"
+                        || args[16] != "--seed"
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench condition --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-pin <pin.json> --out <dir> --condition <name> --seed <n>"
+                        );
+                    return BenchConditions.Condition(
+                        args[3],
+                        args[5],
+                        args[7],
+                        args[9],
+                        args[11],
+                        args[13],
+                        args[15],
+                        args[17]
+                    );
                 }
                 if (verb == "matched-check")
                 {
@@ -321,7 +355,7 @@ namespace AbRig
             return 0;
         }
 
-        static Prelude FastPrelude(
+        internal static Prelude FastPrelude(
             string dumpPath,
             long? pace,
             string manifestPath,
@@ -880,52 +914,11 @@ namespace AbRig
             if (missing.Count > 0)
                 throw new JoinedInput.Stop(2, missing.ToArray());
 
-            string Shown(long? v) =>
-                v.HasValue ? v.Value.ToString(CultureInfo.InvariantCulture) : "none";
-
             var failed = new List<string>();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
             {
                 short[] pcm = ReadPcm(Path.Combine(root, c.File));
-                int n =
-                    c.Segments != null && c.Segments.Length > 0 ? c.Segments.Length
-                    : !string.IsNullOrEmpty(c.Phrase) ? 1
-                    : 0;
-                int k = c.Speech.Length;
-                bool ok;
-                string detail;
-                if (n > 0)
-                {
-                    long? last = null;
-                    for (long i = (long)pcm.Length - TailSamples - 1; i >= 0; i--)
-                        if (Math.Abs((int)pcm[i]) >= TruthFloor)
-                        {
-                            last = i + 1;
-                            break;
-                        }
-                    long? end = k > 0 ? c.Speech[k - 1].End : null;
-                    long? diff = end.HasValue && last.HasValue ? end - last : null;
-                    bool inClip = true;
-                    foreach (var span in c.Speech)
-                        if (span.End > pcm.Length)
-                            inClip = false;
-                    ok =
-                        k == n
-                        && inClip
-                        && diff.HasValue
-                        && Math.Abs(diff.Value) <= FrameTolerance;
-                    detail =
-                        $"segments={k}/{n} end={Shown(end)} last={Shown(last)} diff={Shown(diff)}";
-                }
-                else
-                {
-                    long floorSamples = 0;
-                    foreach (short s in pcm)
-                        if (Math.Abs((int)s) >= TruthFloor)
-                            floorSamples++;
-                    ok = k == 0 && floorSamples == 0;
-                    detail = $"segments={k}/0 floor-samples={Shown(floorSamples)}";
-                }
+                bool ok = TruthRule(pcm, c, c.Speech, TailSamples, out string detail);
                 if (!ok)
                     failed.Add(c.Name);
                 Console.WriteLine($"{(ok ? "ok  " : "FAIL")}  {c.Name, -68} {detail}");
@@ -949,7 +942,59 @@ namespace AbRig
             return 0;
         }
 
-        static short[] ReadPcm(string path)
+        internal static bool TruthRule(
+            short[] pcm,
+            JoinedInput.ManifestCase c,
+            (long Start, long End)[] speech,
+            long tail,
+            out string detail
+        )
+        {
+            string Shown(long? v) =>
+                v.HasValue ? v.Value.ToString(CultureInfo.InvariantCulture) : "none";
+
+            int n =
+                c.Segments != null && c.Segments.Length > 0 ? c.Segments.Length
+                : !string.IsNullOrEmpty(c.Phrase) ? 1
+                : 0;
+            int k = speech.Length;
+            bool ok;
+            if (n > 0)
+            {
+                long? last = null;
+                for (long i = (long)pcm.Length - tail - 1; i >= 0; i--)
+                    if (Math.Abs((int)pcm[i]) >= TruthFloor)
+                    {
+                        last = i + 1;
+                        break;
+                    }
+                long? end = k > 0 ? speech[k - 1].End : null;
+                long? diff = end.HasValue && last.HasValue ? end - last : null;
+                bool inClip = true;
+                foreach (var span in speech)
+                    if (span.End > pcm.Length)
+                        inClip = false;
+                ok =
+                    k == n
+                    && inClip
+                    && diff.HasValue
+                    && Math.Abs(diff.Value) <= FrameTolerance;
+                detail =
+                    $"segments={k}/{n} end={Shown(end)} last={Shown(last)} diff={Shown(diff)}";
+            }
+            else
+            {
+                long floorSamples = 0;
+                foreach (short s in pcm)
+                    if (Math.Abs((int)s) >= TruthFloor)
+                        floorSamples++;
+                ok = k == 0 && floorSamples == 0;
+                detail = $"segments={k}/0 floor-samples={Shown(floorSamples)}";
+            }
+            return ok;
+        }
+
+        internal static short[] ReadPcm(string path)
         {
             float[] f;
             try

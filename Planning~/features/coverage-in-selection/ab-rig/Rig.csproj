@@ -20,7 +20,8 @@
            flag doccheck          the issue #83 documentation pin
            flag bench             time and allocation per Parse over the utterances on stdin,
                                   or metrics-check, truth-check, run (bench-fast-replay)
-                                  or matched-check (bench-paced-mode);
+                                  or matched-check (bench-paced-mode)
+                                  or condition, condition-check (bench-conditions);
                                   each a recogniser stage
            flag prefix-verdicts   the eager verdict over every growing prefix of each utterance
            flag verdicts          the eager verdict beside what the flush would fire

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run
+# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, then the harness on <out>/cond, no report
 # Layer:    Planning.AbRig
 # Owns:     (script, no public types)
-# Depends:  stage.sh, Bench, vosk-bridge-harness, confgen, py
+# Depends:  stage.sh, Bench, BenchConditions, vosk-bridge-harness, confgen, py
 # =============================================================================
 set -euo pipefail
 
@@ -14,7 +14,7 @@ die() {
   exit 2
 }
 
-REF="" BUFFER="" WINDOW="" PIN="" OUT="" PROFILE="" MODE="" GAIN="" PACED=""
+REF="" BUFFER="" WINDOW="" PIN="" OUT="" PROFILE="" MODE="" GAIN="" PACED="" CONDITION="" SEED=""
 
 take() {
   [ -z "${!1}" ] || die "$2 given twice"
@@ -27,7 +27,7 @@ while [ $# -gt 0 ]; do
   case "$opt" in
     --paced)
       [ -z "$PACED" ] || die "--paced given twice"; PACED=1; shift; continue ;;
-    --ref | --buffer | --window | --pin | --out | --profile | --mode | --gain)
+    --ref | --buffer | --window | --pin | --out | --profile | --mode | --gain | --condition | --seed)
       [ $# -ge 2 ] || die "$opt needs a value" ;;
     *) die "unknown argument: $opt" ;;
   esac
@@ -40,6 +40,8 @@ while [ $# -gt 0 ]; do
     --profile) take PROFILE "$opt" "$2" ;;
     --mode) take MODE "$opt" "$2" ;;
     --gain) take GAIN "$opt" "$2" ;;
+    --condition) take CONDITION "$opt" "$2" ;;
+    --seed) take SEED "$opt" "$2" ;;
   esac
   shift 2
 done
@@ -59,6 +61,10 @@ esac
 GAIN_RE='^(0|-[0-9]*[1-9][0-9]*(\.[0-9]+)?|-[0-9]+\.[0-9]*[1-9][0-9]*)$'
 [ -z "$GAIN" ] || [[ $GAIN =~ $GAIN_RE ]] ||
   die "--gain must be 0 or a negative decimal in dBFS, as -18 or -12.5: $GAIN"
+[ -z "$SEED" ] || [ -n "$CONDITION" ] || die "--seed needs --condition"
+[ -z "$CONDITION" ] || [ -n "$SEED" ] || die "--condition needs --seed"
+[ -z "$CONDITION" ] || [ -z "$PACED" ] ||
+  die "--condition with --paced is not built yet (bench-conditions Phase 5)"
 
 REF="${REF:-WORKTREE}"
 PIN="${PIN:-NativeBridge~/harness/expectations.json}"
@@ -67,6 +73,8 @@ PROFILE="${PROFILE:-Automatic}"
 MODE="${MODE:-Continuous}"
 [ -z "$NAMED" ] || { [[ $OUT == .scratch/?* ]] && [[ $OUT != *..* ]]; } ||
   die "--out must lie under .scratch/ for a named configuration (the harness's pin copy is written there): $OUT"
+[ -z "$CONDITION" ] || { [[ $OUT == .scratch/?* ]] && [[ $OUT != *..* ]]; } ||
+  die "--out must lie under .scratch/ for a conditioned run (the conditioned audio is written there): $OUT"
 HARNESS="NativeBridge~/build-windows/bin/vosk-bridge-harness.exe"
 CONFGEN="NativeBridge~/build-confgen/bin/confgen/debug/confgen.dll"
 MODEL="NativeBridge~/vendor/vosk-model-small-en-us-0.15"
@@ -87,11 +95,12 @@ done
   die "no py on PATH: --paced names a failing case with py"
 
 mkdir -p "$OUT"
-for d in "$OUT/model" "$OUT/stage"; do
+for d in "$OUT/model" "$OUT/stage" "$OUT/cond"; do
   if [ -e "$d" ]; then find "$d" -delete; fi
 done
 find "$OUT" -maxdepth 1 \( -name dump.jsonl -o -name harness.json -o -name harness.err -o -name report.md -o -name harness-pin.json \
-  -o -name matched.jsonl -o -name matched.json -o -name matched.err -o -name paced.jsonl -o -name paced.json -o -name paced.err \) -delete
+  -o -name matched.jsonl -o -name matched.json -o -name matched.err -o -name paced.jsonl -o -name paced.json -o -name paced.err \
+  -o -name cond.jsonl -o -name cond.json -o -name cond.err \) -delete
 
 abspath() {
   if command -v cygpath >/dev/null 2>&1; then
@@ -124,6 +133,7 @@ if [ -n "$NAMED" ]; then
   [ "$rc" -eq 0 ] || die "pin copy: py exit $rc: no report"
   HPIN="$OUT_W/harness-pin.json"
 fi
+HPIN_W="$HPIN"; [ -n "$NAMED" ] || HPIN_W="$(abspath "NativeBridge~/$HPIN")"
 
 rc=0
 (cd "NativeBridge~" && ./build-windows/bin/vosk-bridge-harness.exe --model "$OUT_W/model" \
@@ -150,6 +160,22 @@ pass() {
 env -u MSYS_NO_PATHCONV bash "$HERE/stage.sh" "$REF" "$OUT/stage" recogniser \
   ${BUFFER:+--buffer "$BUFFER" --window "$WINDOW"} || die "$REF: stage failed"
 (cd "$OUT/stage" && dotnet build -v q --nologo) || die "$REF: build failed"
+
+if [ -n "$CONDITION" ]; then
+  (cd "$OUT/stage" && dotnet run --no-build -- --bench condition --dump "$OUT_W/dump.jsonl" \
+    --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" --harness-pin "$HPIN_W" \
+    --out "$OUT_W" --condition "$CONDITION" --seed "$SEED") || exit $?
+  rc=0
+  (cd "NativeBridge~" && ./build-windows/bin/vosk-bridge-harness.exe --model "$OUT_W/model" \
+    --fixtures "$OUT_W/cond" --manifest "$OUT_W/cond/pin.json" \
+    --dump "$OUT_W/cond.jsonl") >"$OUT/cond.json" 2>"$OUT/cond.err" || rc=$?
+  if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
+    cat "$OUT/cond.err" >&2
+    die "harness on cond/ exit $rc: no report"
+  fi
+  echo "$OUT_W/cond.jsonl"
+  exit 0
+fi
 
 if [ -n "$PACED" ]; then
   pass 16384 matched

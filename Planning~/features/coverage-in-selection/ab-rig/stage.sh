@@ -112,7 +112,7 @@ cp "$HERE/UnityStub.cs" "$HERE/Program.cs" "$HERE/Check.cs" "$HERE/DocCheck.cs" 
    "$OUT/"
 if [ "$LAYER" = "recogniser" ]; then
   cp "$HERE/JoinedRecogniser.cs" "$HERE/BridgeNative.cs" "$HERE/ModelExtractor.cs" \
-     "$HERE/Bench.cs" "$HERE/BenchMetrics.cs" "$HERE/BenchPaced.cs" "$HERE/BenchReport.cs" "$OUT/"
+     "$HERE/Bench.cs" "$HERE/BenchConditions.cs" "$HERE/BenchMetrics.cs" "$HERE/BenchPaced.cs" "$HERE/BenchReport.cs" "$OUT/"
 fi
 
 if [ -n "$BUFFER" ]; then

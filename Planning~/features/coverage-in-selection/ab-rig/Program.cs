@@ -139,8 +139,6 @@ namespace AbRig
                 ),
             };
 
-        // Mirrors VoxrCommandRecogniser.GetFollowUpGrammarWords() with no custom vocabularies
-        // configured — the state the fixture corpus was captured under.
         static string[] FollowUpWords()
         {
             var words = new HashSet<string>(StringComparer.Ordinal);
@@ -151,7 +149,7 @@ namespace AbRig
             return result;
         }
 
-        static readonly string[] BenchVerbs = { "metrics-check", "truth-check", "run", "matched-check" };
+        static readonly string[] BenchVerbs = { "metrics-check", "truth-check", "run", "matched-check", "condition", "condition-check" };
 
         internal static Func<
             string[],
@@ -244,7 +242,7 @@ namespace AbRig
             // less than the delta: same grammar, same utterance list, same iteration count.
             //
             // Bare --bench only: a bench verb after it (BenchVerbs: metrics-check, truth-check,
-            // run, matched-check) is dispatched above, to Bench's hook.
+            // run, matched-check, condition, condition-check) is dispatched above, to Bench's hook.
             if (Array.IndexOf(args, "--bench") >= 0)
             {
                 var benchParser = new VoxrCommandParser(Slots(), Commands(), VoxrCommandParser.DefaultCoverageWeight, FollowUpWords());
