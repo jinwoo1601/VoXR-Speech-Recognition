@@ -297,6 +297,7 @@ namespace AbRig
             if (curves != null)
             {
                 curves.Pace = matchedPath == null ? null : 0;
+                curves.Verb = "run";
                 BenchCurves.Read(curves);
             }
             string[] stagedFrom = prelude.StagedFrom;
@@ -588,6 +589,7 @@ namespace AbRig
             if (curves != null)
             {
                 curves.Pace = 0;
+                curves.Verb = "matched-check";
                 BenchCurves.Read(curves);
                 fast = curves.Dump;
             }
@@ -1090,6 +1092,110 @@ namespace AbRig
             JoinedInput.DumpCase matched64 = Timeline(28672, ("fire", 53249));
             matched64.Name = a61;
             Expect("64", "F13 matched check: a conditioned final 4097 apart", Caught(() => BenchPaced.CheckMatched(fastDump63, new JoinedInput.Dump { Path = "x", Cases = { matched64 } }).Count.ToString(CultureInfo.InvariantCulture)), "stop 3: matched-check: case \"a__s1.0-snr10.wav\": final 1 \"fire\" at consumed fast 49152, matched 53249: more than 4096 apart");
+
+            string dir65 = "metrics-check-toy";
+            Directory.CreateDirectory(dir65);
+            try
+            {
+                File.WriteAllText(dir65 + "/stale.json", "{\"seed\":\"7\",\"grid\":[\"s1.0-snr10\"],\"gameAudio\":\"not supplied\"}", JoinedInput.StrictUtf8);
+                var stale65 = new BenchCurves.Inputs { ConditionsPath = dir65 + "/stale.json", Verb = "run", Condition = "s1.0-snr20", Seed = 7 };
+                Expect(
+                    "65",
+                    "F11 stale cond/: the grid differs",
+                    Caught(() =>
+                    {
+                        BenchCurves.Read(stale65);
+                        return "read";
+                    }),
+                    "stop 2: run: metrics-check-toy/stale.json: written for seed 7, condition s1.0-snr10; this run: seed 7, condition s1.0-snr20: a stale cond/"
+                );
+
+                string a66 = "a__s1.0-snr20.wav";
+                string b66 = "b__s1.0-snr20.wav";
+                File.WriteAllText(dir65 + "/conditions.json", "{\"seed\":\"7\",\"grid\":[\"s1.0-snr20\"],\"gameAudio\":\"not supplied\",\"clips\":[{\"file\":\"" + a66 + "\",\"source\":\"a.wav\",\"condition\":\"s1.0-snr20\"}]}", JoinedInput.StrictUtf8);
+                File.WriteAllText(dir65 + "/manifest.json", "{\"provenance\":\"toy\",\"cases\":[{\"file\":\"cond/" + a66 + "\",\"expectedIntent\":\"\",\"expectedSlots\":[]},{\"file\":\"cond/" + b66 + "\",\"expectedIntent\":\"\",\"expectedSlots\":[]}]}", JoinedInput.StrictUtf8);
+                string Framed66(string name) =>
+                    "{\"kind\":\"case\",\"case\":\"" + name + "\",\"samples\":48000,\"sampleRate\":48000}\n{\"kind\":\"case-end\",\"case\":\"" + name + "\",\"results\":0,\"pushed\":48000,\"consumed\":48000,\"errors\":[]}\n";
+                File.WriteAllText(
+                    dir65 + "/dump.jsonl",
+                    "{\"kind\":\"header\",\"schema\":2,\"decoderRate\":100,\"manifest\":\"m\",\"fixtures\":\"f\",\"model\":\"o\",\"gain\":-18,\"libvosk\":\"v\",\"grammar\":[],\"ringCapacity\":65536}\n" + Framed66(a66) + Framed66(b66) + "{\"kind\":\"end\",\"cases\":2,\"passed\":2}\n",
+                    JoinedInput.StrictUtf8
+                );
+                var missing66 = new BenchCurves.Inputs
+                {
+                    DumpPath = dir65 + "/dump.jsonl",
+                    ManifestPath = dir65 + "/manifest.json",
+                    ConditionsPath = dir65 + "/conditions.json",
+                    Verb = "matched-check",
+                    Condition = "s1.0-snr20",
+                    Seed = 7,
+                    Pace = 0,
+                };
+                Expect(
+                    "66",
+                    "F11 a manifest case not in the sidecar's clips",
+                    Caught(() =>
+                    {
+                        BenchCurves.Read(missing66);
+                        return "read";
+                    }),
+                    "stop 2: matched-check: metrics-check-toy/manifest.json: case \"b__s1.0-snr20.wav\" is not in metrics-check-toy/conditions.json"
+                );
+            }
+            finally
+            {
+                Directory.Delete(dir65, true);
+            }
+
+            BenchCurves.Entry Entry67(string name, string category, string intent, string cls, double[] fires, string phrase, string hyp, long samples, string source, string condition) =>
+                new BenchCurves.Entry
+                {
+                    C = new JoinedInput.ManifestCase { Name = name, Category = category, ExpectedIntent = intent },
+                    D = new JoinedInput.DumpCase { Name = name, Samples = samples, SampleRate = 48000 },
+                    S = new JoinedScorer.Outcome { Class = cls, FireTimes = fires },
+                    Reference = BenchMetrics.Reference(phrase, null),
+                    Hypothesis = Hyp(hyp),
+                    Source = source,
+                    Condition = condition,
+                };
+            using (
+                JsonDocument sidecar67 = JsonDocument.Parse(
+                    "{\"seed\":\"7\",\"grid\":[\"s1.0-snr20\"],\"noise\":\"generated (pink Gaussian)\",\"room\":\"synthetic (exponential decay)\",\"gameAudio\":\"not supplied\",\"highPassHz\":100,\"peakHz\":3000,\"peakGainDb\":4,\"peakQ\":1,\"lowPassHz\":7000,\"drrDb\":10,\"levelRange\":[0.04,0.4],\"levelDistribution\":\"log-uniform\"}"
+                )
+            )
+            {
+                var x67 = new BenchCurves.Inputs
+                {
+                    Condition = "s1.0-snr20",
+                    Steps = BenchConditions.Steps("s1.0-snr20", false),
+                    Sidecar = sidecar67.RootElement,
+                };
+                var fast67 = new List<BenchCurves.Entry> { Entry67("p.wav", "toy", "fire", "correct-fire", new[] { 1.0 }, "fire", "fire@1", 48000, "p.wav", "clean") };
+                var conditioned67 = new List<BenchCurves.Entry>
+                {
+                    Entry67("n.wav", BenchConditions.OutOfSet, "", "correct-no-fire", Array.Empty<double>(), "stand by", "", 96000, "n.wav", "clean"),
+                    Entry67("p__s1.0-snr20.wav", "toy", "fire", "missed", Array.Empty<double>(), "fire", "", 48000, "p.wav", "s1.0-snr20"),
+                    Entry67("n__s1.0-snr20.wav", BenchConditions.OutOfSet, "", "false-fire", new[] { 1.0, 2.0 }, "stand by", "", 96000, "n.wav", "s1.0-snr20"),
+                };
+                BenchReport.Conditioned section67 = BenchCurves.Section(x67, fast67, conditioned67);
+                var curve67 = section67.Curves[0];
+                var negative67 = section67.Negatives[0];
+                Expect(
+                    "67",
+                    "F11 Section: intent and false-fire cells, one step",
+                    string.Join(
+                        " | ",
+                        curve67.Title,
+                        curve67.Rows[0][1],
+                        curve67.Rows[0][2],
+                        curve67.Rows[6][2],
+                        negative67.Rows[0][2],
+                        negative67.Rows[0][3],
+                        negative67.Rows[1][3]
+                    ),
+                    "Speed 1.0 | 1.0000 (n=1 phrases, 1 cases) | 0.0000 (n=1 phrases, 1 cases) | 2.0000 (n=1 phrases, 1 cases) | 0 — set too easy (fires 0, cases 1, 2.0 s) | 2.0000 (fires 2, cases 1, 2.0 s) | 3600.0000 (fires 2, cases 1, 2.0 s)"
+                );
+            }
 
             Console.WriteLine();
             Console.WriteLine(

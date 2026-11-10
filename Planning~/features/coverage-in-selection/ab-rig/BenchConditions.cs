@@ -116,6 +116,11 @@ namespace AbRig
 
         const string Accepted = "RIFF WAV, PCM 16-bit or float 32-bit, 1 or 2 channels, any rate";
         internal const string NotSupplied = "not supplied";
+        internal const string OutOfSet = "negative-out-of-set";
+        internal const string NearMiss = "negative-near-miss";
+        internal const string NoiseOnly = "noise-only";
+        internal const string GameAudioOnly = "game-audio-only";
+        internal const string Silence = "silence";
         const string Smallroom = "slr28/RIRS_NOISES/simulated_rirs/smallroom";
         const int Rate = 48000;
         const double HighPassHz = 100;
@@ -243,7 +248,7 @@ namespace AbRig
         static string ClipName(JoinedInput.ManifestCase c, Step step) =>
             Path.GetFileNameWithoutExtension(c.Name) + "__" + step.Id + ".wav";
 
-        static long Scale(long x, int f) => (20 * x + f) / (2 * f);
+        static long Scale(long x, int f) => Scale(x, f, 10);
 
         static long Scale(long x, int num, int den) => (2L * den * x + num) / (2L * num);
 
@@ -379,7 +384,7 @@ namespace AbRig
                 for (int k = 1; k < h.Length; k++)
                     h[k] *= gain;
                 double rt60 = Rt60(h);
-                if (rt60 >= Rt60Min && rt60 <= Rt60Max)
+                if (Eligible(rt60))
                     return (h, t, draw, rt60);
             }
             throw new JoinedInput.Stop(
@@ -427,8 +432,7 @@ namespace AbRig
             return -60 / (sxy / sxx) / Rate;
         }
 
-        static bool Eligible(double rt60) =>
-            !double.IsNaN(rt60) && rt60 >= Rt60Min && rt60 <= Rt60Max;
+        static bool Eligible(double rt60) => rt60 >= Rt60Min && rt60 <= Rt60Max;
 
         internal static double[] Trim(double[] h)
         {
@@ -787,14 +791,20 @@ namespace AbRig
 
         static string Shown(double v) => v.ToString("F3", CultureInfo.InvariantCulture);
 
-        static string Outside(string clip, int step, double snr, double peak, double rt60)
+        static string Outside(string clip, Step step, double snr, double peak, double rt60)
         {
             string at = "condition: clip \"" + clip + "\": ";
-            if (!(Math.Abs(snr - step) <= SnrTolerance))
-                return at + "realized SNR " + Shown(snr) + " dB at step " + step + ": outside F2";
+            if (!(Math.Abs(snr - step.SnrDb) <= SnrTolerance))
+                return at
+                    + "realized "
+                    + (step.Game ? "SIR " : "SNR ")
+                    + Shown(snr)
+                    + " dB at step "
+                    + step.Id
+                    + ": outside F2";
             if (!(peak >= LevelMin && peak <= LevelMax))
                 return at + "peak " + Shown(peak) + ": outside F2";
-            if (!(rt60 >= Rt60Min && rt60 <= Rt60Max))
+            if (!Eligible(rt60))
                 return at + "RT60 " + Shown(rt60) + " s: outside F2";
             return null;
         }
@@ -805,6 +815,14 @@ namespace AbRig
             for (int i = 0; i < s.Length; i++)
                 pcm[i] = (short)(s[i] * 32768);
             return pcm;
+        }
+
+        static double[] ToDouble(short[] pcm)
+        {
+            var s = new double[pcm.Length];
+            for (int k = 0; k < pcm.Length; k++)
+                s[k] = pcm[k] / 32768.0;
+            return s;
         }
 
         static void SpeedTruth(
@@ -823,6 +841,18 @@ namespace AbRig
                         + "\": truth rule failed on the speed stage: "
                         + detail
                 );
+        }
+
+        static (double[] S1, (long Start, long End)[] Speech) Speeded(
+            JoinedInput.ManifestCase c,
+            Step step,
+            double[] source
+        )
+        {
+            double[] s1 = Resample(source, step.Speed);
+            (long Start, long End)[] speech = ScaleSpeech(c.Speech, step.Speed);
+            SpeedTruth(ClipName(c, step), s1, c, speech, step.Speed);
+            return (s1, speech);
         }
 
         static double[] Window(
@@ -921,14 +951,13 @@ namespace AbRig
             ulong seed,
             JoinedInput.ManifestCase c,
             Step step,
-            double[] source,
+            (double[] S1, (long Start, long End)[] Speech) speed,
             AddOns a
         )
         {
             string clip = ClipName(c, step);
-            double[] s1 = Resample(source, step.Speed);
-            (long Start, long End)[] speech = ScaleSpeech(c.Speech, step.Speed);
-            SpeedTruth(clip, s1, c, speech, step.Speed);
+            double[] s1 = speed.S1;
+            (long Start, long End)[] speech = speed.Speech;
             var room = RoomFor(seed, clip, step, a);
             double[] s = Filter(Convolve(s1, room.H));
             double[] n = Interferer(seed, clip, step, s1.Length, speech, a, out string file, out long offset);
@@ -938,7 +967,7 @@ namespace AbRig
             double ga = g * mix.A;
             double snr = Realized(y, n, ga, speech);
             double peak = Peak(y);
-            string outside = Outside(clip, step.SnrDb, snr, peak, room.Rt60);
+            string outside = Outside(clip, step, snr, peak, room.Rt60);
             if (outside != null)
                 throw new JoinedInput.Stop(2, outside);
             var carried = new double[n.Length];
@@ -969,15 +998,12 @@ namespace AbRig
             ulong seed,
             JoinedInput.ManifestCase c,
             Step step,
-            double[] source,
+            (long Start, long End)[] scaled,
             List<Clip> speech,
             AddOns a
         )
         {
             string clip = ClipName(c, step);
-            double[] s1 = Resample(source, step.Speed);
-            (long Start, long End)[] scaled = ScaleSpeech(c.Speech, step.Speed);
-            SpeedTruth(clip, s1, c, scaled, step.Speed);
             Clip partner = speech[
                 (int)Math.Floor(new Rng(seed, clip, step.Id, "partner").Uniform() * speech.Count)
             ];
@@ -1090,6 +1116,15 @@ namespace AbRig
             string audioRoot
         )
         {
+            if (
+                Array.IndexOf(Path.GetFullPath(outDir).Split('/', '\\'), ".scratch") < 0
+                || Array.IndexOf(outDir.Split('/', '\\'), "..") >= 0
+            )
+                throw new JoinedInput.Stop(
+                    2,
+                    "condition: --out must lie under .scratch/ (the conditioned audio is written there): "
+                        + outDir
+                );
             ulong seed = ParseSeed(seedText);
             List<Step> steps = Steps(name, Directory.Exists(audioRoot + "/game-audio"));
             Bench.Prelude prelude = Bench.FastPrelude(dumpPath, null, manifestPath, pinPath, root);
@@ -1121,11 +1156,23 @@ namespace AbRig
 
             var sources = new double[cases.Count][];
             for (int i = 0; i < cases.Count; i++)
+                sources[i] = ToDouble(Bench.ReadPcm(Path.Combine(root, cases[i].File)));
+            var speeds = new Dictionary<
+                (JoinedInput.ManifestCase C, int Speed),
+                (double[] S1, (long Start, long End)[] Speech)
+            >();
+            (double[] S1, (long Start, long End)[] Speech) Speed(
+                JoinedInput.ManifestCase c,
+                Step step,
+                double[] source
+            )
             {
-                short[] pcm = Bench.ReadPcm(Path.Combine(root, cases[i].File));
-                sources[i] = new double[pcm.Length];
-                for (int k = 0; k < pcm.Length; k++)
-                    sources[i][k] = pcm[k] / 32768.0;
+                if (!speeds.TryGetValue((c, step.Speed), out var s))
+                {
+                    s = Speeded(c, step, source);
+                    speeds.Add((c, step.Speed), s);
+                }
+                return s;
             }
             var clips = new Clip[cases.Count, steps.Count];
             for (int j = 0; j < steps.Count; j++)
@@ -1134,12 +1181,12 @@ namespace AbRig
                 for (int i = 0; i < cases.Count; i++)
                     if (cases[i].Speech.Length > 0)
                     {
-                        clips[i, j] = SpeechClip(seed, cases[i], steps[j], sources[i], a);
+                        clips[i, j] = SpeechClip(seed, cases[i], steps[j], Speed(cases[i], steps[j], sources[i]), a);
                         speech.Add(clips[i, j]);
                     }
                 for (int i = 0; i < cases.Count; i++)
                     if (cases[i].Speech.Length == 0)
-                        clips[i, j] = FreeClip(seed, cases[i], steps[j], sources[i], speech, a);
+                        clips[i, j] = FreeClip(seed, cases[i], steps[j], Speed(cases[i], steps[j], sources[i]).Speech, speech, a);
             }
 
             var written = new List<(Clip K, JoinedInput.ManifestCase C)>();
@@ -1149,23 +1196,21 @@ namespace AbRig
             foreach (JoinedInput.ManifestCase n in negatives.Cases)
             {
                 short[] pcm = Bench.ReadPcm(Path.Combine(root, n.File));
-                var source = new double[pcm.Length];
-                for (int k = 0; k < pcm.Length; k++)
-                    source[k] = pcm[k] / 32768.0;
+                double[] source = ToDouble(pcm);
                 Clip clean = (n.Name, n.Name, "clean", pcm, n.Speech, 0, 0, 0, 0, 0, 0, 0, null, 0, null, null, 0);
                 written.Add((clean, n));
                 foreach (Step step in steps)
-                    written.Add((SpeechClip(seed, n, step, source, a), n));
+                    written.Add((SpeechClip(seed, n, step, Speed(n, step, source), a), n));
             }
             var noiseOnly = new JoinedInput.ManifestCase
             {
-                Category = "noise-only",
+                Category = NoiseOnly,
                 ExpectedIntent = "",
                 ExpectedSlots = [],
             };
             var gameOnly = new JoinedInput.ManifestCase
             {
-                Category = "game-audio-only",
+                Category = GameAudioOnly,
                 ExpectedIntent = "",
                 ExpectedSlots = [],
             };
@@ -1735,17 +1780,18 @@ namespace AbRig
                 same21 = back[i] == y21[i];
             Expect("21", "WAV written, ReadPcm from a temp file", same21 ? "same" : "differs", "same");
 
+            Step s22 = Steps("s1.0-snr20", false)[0];
             Expect(
                 "22",
                 "Outside at step 20: SNR, peak, RT60, all inside",
                 string.Join(
                     " | ",
-                    Outside("toy", 20, 19.4, 0.2, 0.3),
-                    Outside("toy", 20, 20, 0.41, 0.3),
-                    Outside("toy", 20, 20, 0.2, 0.51),
-                    Outside("toy", 20, 20.4, 0.4, 0.5) ?? "null"
+                    Outside("toy", s22, 19.4, 0.2, 0.3),
+                    Outside("toy", s22, 20, 0.41, 0.3),
+                    Outside("toy", s22, 20, 0.2, 0.51),
+                    Outside("toy", s22, 20.4, 0.4, 0.5) ?? "null"
                 ),
-                "condition: clip \"toy\": realized SNR 19.400 dB at step 20: outside F2 | condition: clip \"toy\": peak 0.410: outside F2 | condition: clip \"toy\": RT60 0.510 s: outside F2 | null"
+                "condition: clip \"toy\": realized SNR 19.400 dB at step s1.0-snr20: outside F2 | condition: clip \"toy\": peak 0.410: outside F2 | condition: clip \"toy\": RT60 0.510 s: outside F2 | null"
             );
 
             var ids = new List<string>();
@@ -1963,6 +2009,58 @@ namespace AbRig
                 "s0.9-snr20 s0.9-snr15 s0.9-snr10 s0.9-snr5 s1.0-snr20 s1.0-snr15 s1.0-snr10 s1.0-snr5 s1.1-snr20 s1.1-snr15 s1.1-snr10 s1.1-snr5 game-sir20 game-sir10 game-sir5 game-sir0 | 16 | condition: \"game-sir5\" needs game audio (game-audio/ under the add-on root): not supplied"
             );
 
+            var a53 = new AddOns { Root = "toy" };
+            var x53 = new double[57600];
+            for (int k = 2400; k < 7200; k++)
+                x53[k] = 0.5 * Math.Sin(2 * Math.PI * 1000 * k / Rate);
+            JoinedInput.ManifestCase Spoken53(string name) =>
+                new JoinedInput.ManifestCase { Name = name, Phrase = "toy", Speech = new[] { (2400L, 7200L) } };
+            JoinedInput.ManifestCase caseA = Spoken53("a.wav");
+            JoinedInput.ManifestCase caseB = Spoken53("b.wav");
+            Step s53 = Steps("s1.0-snr20", false)[0];
+            Clip alone53 = SpeechClip(7, caseA, s53, Speeded(caseA, s53, x53), a53);
+
+            var c53 = new JoinedInput.ManifestCase { Name = "c.wav", Speech = Array.Empty<(long Start, long End)>() };
+            Clip twin53 = FreeClip(7, c53, s53, Speeded(c53, s53, new double[300]).Speech, new List<Clip> { alone53 }, a53);
+            double[] n53 = Interferer(7, twin53.File, s53, alone53.Y.Length, null, a53, out _, out _);
+            double k53 = alone53.NoiseRms / Rms(n53);
+            var scaled53 = new double[n53.Length];
+            bool same53 = twin53.Y.Length == n53.Length;
+            for (int i = 0; i < n53.Length; i++)
+            {
+                scaled53[i] = k53 * n53[i];
+                same53 &= i < twin53.Y.Length && twin53.Y[i] == Math.Round(scaled53[i] * 32768);
+            }
+            double e53 = Math.Abs(Rms(scaled53) - alone53.NoiseRms);
+            Expect("53", "FreeClip twin: k n samples, RMS = partner's 1e-9", (same53 ? "same" : "differs") + " " + (e53 <= 1e-9 ? "within" : "error " + R(e53)) + " " + twin53.Partner, "same within a__s1.0-snr20.wav");
+
+            SpeechClip(7, caseB, s53, Speeded(caseB, s53, x53), a53);
+            Clip after54 = SpeechClip(7, caseA, s53, Speeded(caseA, s53, x53), a53);
+            Clip listed54 = default;
+            foreach (JoinedInput.ManifestCase c54 in new[] { caseA, caseB })
+            {
+                Clip k54 = SpeechClip(7, c54, s53, Speeded(c54, s53, x53), a53);
+                if (c54 == caseA)
+                    listed54 = k54;
+            }
+            Expect(
+                "54",
+                "SpeechClip A: alone, after B, with B in the list",
+                (alone53.Y.AsSpan().SequenceEqual(after54.Y) ? "same" : "differs") + " " + (alone53.Y.AsSpan().SequenceEqual(listed54.Y) ? "same" : "differs"),
+                "same same"
+            );
+
+            var parts55 = new List<string>();
+            foreach (string id55 in new[] { "s0.9-snr20", "s1.1-snr20" })
+            {
+                Step s55 = Steps(id55, false)[0];
+                Clip k55 = SpeechClip(7, caseA, s55, Speeded(caseA, s55, x53), a53);
+                parts55.Add(id55 + ": " + k55.Speech[0].Start + "-" + k55.Speech[0].End);
+            }
+            Expect("55", "SpeechClip at 0.9, 1.1: Scale of each bound", string.Join(", ", parts55), "s0.9-snr20: 2667-8000, s1.1-snr20: 2182-6545");
+
+            Expect("56", "Outside at a game step: SIR", Outside("toy", Steps("game-sir10", true)[0], 9.2, 0.2, 0.3), "condition: clip \"toy\": realized SIR 9.200 dB at step game-sir10: outside F2");
+
             if (negatives != null)
                 PhraseList(negatives, pin, slots, commands);
 
@@ -1993,9 +2091,9 @@ namespace AbRig
             int lowercase = 0;
             foreach (JoinedInput.ManifestCase c in m.Cases)
             {
-                if (c.Category == "negative-out-of-set")
+                if (c.Category == OutOfSet)
                     outOfSet++;
-                else if (c.Category == "negative-near-miss")
+                else if (c.Category == NearMiss)
                     nearMiss++;
                 else
                     other++;
@@ -2040,7 +2138,7 @@ namespace AbRig
                 string g = shared.Count > 0 ? string.Join(" ", shared) : "none";
                 string where = (26 + i).ToString(CultureInfo.InvariantCulture);
                 string what = c.Name + " [" + g + "]";
-                if (c.Category == "negative-out-of-set")
+                if (c.Category == OutOfSet)
                 {
                     Expect(where, what, g, "none");
                     continue;

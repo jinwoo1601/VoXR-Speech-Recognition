@@ -1,7 +1,7 @@
 // ============================================================================
 // Purpose:  The bench's conditioned scoring: the cond/ inputs read and checked, per-condition curves and the negative set's false fires, assembled into a report section, the SIR tables
 // Layer:    Planning.AbRig
-// Owns:     BenchCurves (internal static class), BenchCurves.Inputs (internal sealed class), BenchCurves.Set (internal sealed class), BenchCurves.Entry (internal sealed class)
+// Owns:     BenchCurves (internal static class), BenchCurves.Inputs (internal sealed class), BenchCurves.Entry (internal sealed class)
 // Depends:  BenchConditions, BenchMetrics, BenchReport, JoinedInput, JoinedScorer
 // ============================================================================
 using System;
@@ -19,6 +19,7 @@ namespace AbRig
             internal string DumpPath;
             internal string ManifestPath;
             internal string ConditionsPath;
+            internal string Verb;
             internal int Exit;
             internal string Condition;
             internal ulong Seed;
@@ -30,12 +31,6 @@ namespace AbRig
             internal Dictionary<string, (string Source, string Condition)> Clips;
             internal long EndCases;
             internal long EndPassed;
-        }
-
-        internal sealed class Set
-        {
-            internal string Condition;
-            internal readonly List<Entry> Entries = new List<Entry>();
         }
 
         internal sealed class Entry
@@ -55,18 +50,18 @@ namespace AbRig
 
         static readonly string[] Groups =
         {
-            "negative-out-of-set",
-            "negative-near-miss",
-            "noise-only",
-            "silence",
+            BenchConditions.OutOfSet,
+            BenchConditions.NearMiss,
+            BenchConditions.NoiseOnly,
+            BenchConditions.Silence,
         };
 
         static readonly string[] GameGroups =
         {
-            "negative-out-of-set",
-            "negative-near-miss",
-            "game-audio-only",
-            "silence",
+            BenchConditions.OutOfSet,
+            BenchConditions.NearMiss,
+            BenchConditions.GameAudioOnly,
+            BenchConditions.Silence,
         };
 
         static readonly string[] Metrics =
@@ -105,7 +100,8 @@ namespace AbRig
             if (written != seed || string.Join(", ", grid) != string.Join(", ", ids))
                 throw new JoinedInput.Stop(
                     2,
-                    "run: "
+                    x.Verb
+                        + ": "
                         + x.ConditionsPath
                         + ": written for seed "
                         + written
@@ -128,14 +124,15 @@ namespace AbRig
             foreach (JoinedInput.DumpCase c in dump.Cases)
                 if (c.Failures.Count > 0)
                     failed.Add(
-                        "run: conditioned case \""
+                        x.Verb
+                            + ": conditioned case \""
                             + c.Name
                             + "\": failed decode: "
                             + string.Join("; ", c.Failures)
                     );
             if (failed.Count > 0)
             {
-                failed.Add("run: no report");
+                failed.Add(x.Verb + ": no report");
                 throw new JoinedInput.Stop(2, failed.ToArray());
             }
 
@@ -159,7 +156,8 @@ namespace AbRig
                 names.Add(c.Name);
                 if (!clips.ContainsKey(c.Name))
                     missing.Add(
-                        "run: "
+                        x.Verb
+                            + ": "
                             + x.ManifestPath
                             + ": case \""
                             + c.Name
@@ -170,7 +168,7 @@ namespace AbRig
             foreach (string file in files)
                 if (!names.Contains(file))
                     missing.Add(
-                        "run: " + x.ConditionsPath + ": clip \"" + file + "\" is not in " + x.ManifestPath
+                        x.Verb + ": " + x.ConditionsPath + ": clip \"" + file + "\" is not in " + x.ManifestPath
                     );
             if (missing.Count > 0)
                 throw new JoinedInput.Stop(2, missing.ToArray());
@@ -240,24 +238,24 @@ namespace AbRig
 
         static long Rate(List<Entry> entries) => entries.Count > 0 ? entries[0].D.SampleRate : 0;
 
-        static List<Entry> Group(Set set, string category)
+        static List<Entry> Group(List<Entry> set, string category)
         {
             var group = new List<Entry>();
-            foreach (Entry e in set.Entries)
+            foreach (Entry e in set)
                 if (e.C.Category == category)
                     group.Add(e);
             return group;
         }
 
-        static List<Entry> Basis(Set set)
+        static List<Entry> Basis(List<Entry> set)
         {
             var basis = new List<Entry>();
-            foreach (Entry e in set.Entries)
+            foreach (Entry e in set)
                 if (
-                    e.C.Category != "negative-out-of-set"
-                    && e.C.Category != "negative-near-miss"
-                    && e.C.Category != "noise-only"
-                    && e.C.Category != "game-audio-only"
+                    e.C.Category != BenchConditions.OutOfSet
+                    && e.C.Category != BenchConditions.NearMiss
+                    && e.C.Category != BenchConditions.NoiseOnly
+                    && e.C.Category != BenchConditions.GameAudioOnly
                 )
                     basis.Add(e);
             return basis;
@@ -385,19 +383,19 @@ namespace AbRig
             foreach (Entry e in conditioned)
                 section.Rows.Add((e.Row, e.Source, e.Condition));
 
-            var sets = new Dictionary<string, Set>(StringComparer.Ordinal);
-            var clean = new Set { Condition = "clean" };
-            sets.Add(clean.Condition, clean);
+            var sets = new Dictionary<string, List<Entry>>(StringComparer.Ordinal);
+            var clean = new List<Entry>();
+            sets.Add("clean", clean);
             foreach (BenchConditions.Step step in x.Steps)
-                sets.Add(step.Id, new Set { Condition = step.Id });
+                sets.Add(step.Id, new List<Entry>());
             foreach (Entry e in conditioned)
-                sets[e.Condition].Entries.Add(e);
+                sets[e.Condition].Add(e);
             var fastByName = new Dictionary<string, Entry>(StringComparer.Ordinal);
             var fastSilence = new List<Entry>();
             foreach (Entry e in fast)
             {
                 fastByName.Add(e.C.Name, e);
-                if (e.C.Category == "silence")
+                if (e.C.Category == BenchConditions.Silence)
                     fastSilence.Add(e);
             }
 
@@ -434,11 +432,11 @@ namespace AbRig
                     cleanBasis.Add(fastByName[e.Source]);
                 var cleanNegatives = new List<Entry>();
                 foreach (string group in groups)
-                    cleanNegatives.AddRange(group == "silence" ? fastSilence : Group(clean, group));
+                    cleanNegatives.AddRange(group == BenchConditions.Silence ? fastSilence : Group(clean, group));
                 var columns = new List<string[]> { Column(cleanBasis, cleanNegatives) };
                 foreach (BenchConditions.Step step in steps)
                 {
-                    Set at = sets[step.Id];
+                    List<Entry> at = sets[step.Id];
                     var negatives = new List<Entry>();
                     foreach (string group in groups)
                         negatives.AddRange(Group(at, group));
@@ -460,13 +458,13 @@ namespace AbRig
                 {
                     var perCase = new List<string> { group, "per case" };
                     var perHour = new List<string> { group, "per hour" };
-                    if (group == "noise-only" || group == "game-audio-only")
+                    if (group == BenchConditions.NoiseOnly || group == BenchConditions.GameAudioOnly)
                     {
                         perCase.Add(NoCleanForm);
                         perHour.Add(NoCleanForm);
                     }
                     else
-                        Rates(group == "silence" ? fastSilence : Group(clean, group), perCase, perHour);
+                        Rates(group == BenchConditions.Silence ? fastSilence : Group(clean, group), perCase, perHour);
                     foreach (BenchConditions.Step step in steps)
                         Rates(Group(sets[step.Id], group), perCase, perHour);
                     negativeRows.Add(perCase.ToArray());
