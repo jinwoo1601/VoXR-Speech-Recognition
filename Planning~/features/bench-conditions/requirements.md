@@ -2,8 +2,8 @@
 type: requirements
 feature: bench-conditions
 topic: audio-bench
-status: draft
-updated: 2026-11-09
+status: accepted
+updated: 2026-11-10
 sources:
   - Planning~/design-docs/audio-bench.md
   - Planning~/design-docs/audio-bench/decisions/adr-0004-seeded-on-the-fly-conditions.md
@@ -101,16 +101,18 @@ The Phase D numbers today come from clean single-voice TTS only, and the phantom
 
 ## 9. Acceptance criteria (G2)
 
-- [ ] A green conditioned fast run over the grid, the clean reference's self-check passing.
-- [ ] A run naming no condition gives a report byte-identical to `main`'s on the same inputs.
-- [ ] Mutation: one pin altered in a scratch copy makes a conditioned run refuse numbers and name the case.
-- [ ] Two runs with one seed give identical reports; another seed gives different conditioned audio.
-- [ ] The F2 and F3 toy checks pass.
-- [ ] The report gives the curves with n per point (F8), the negative set's false fires with both labels (F7), and every F10 header field.
-- [ ] A run without title audio says "game audio: not supplied" (F11).
-- [ ] Command 3 is green; `git diff main` is empty for the committed WAVs, `expectations.json` and the bridge's public interface.
-- [ ] Human-only verification: the maintainer listens to one conditioned case per SNR step and approves the negative phrase list.
-- [ ] The commands the project's `verification` binding names are green.
+- [x] A green conditioned fast run over the grid, the clean reference's self-check passing. (phase 5 gate V5: two seed-7 grid runs exit 0, the self-check line twice, `condition: wrote 580 clips`; the review-fix CHECK C4)
+- [x] A run naming no condition gives a report byte-identical to `main`'s on the same inputs. (phase 5 gate V3 `cmp=0`; the review-fix CHECK C3 `cmp=0` against the baseline report)
+- [x] Mutation: one pin altered in a scratch copy makes a conditioned run refuse numbers and name the case. (phase 5 gate V7: exit 3, the case named, no `cond/`)
+- [x] Two runs with one seed give identical reports; another seed gives different conditioned audio. (phase 5 gate V5 `cmp=0`; V6 `differ=564 of 564` at seed 8)
+- [x] The F2 and F3 toy checks pass. (the review-fix CHECK C2: metrics-check 67/67, condition-check 38/38, with negatives 56/56)
+- [x] The report gives the curves with n per point (F8), the negative set's false fires with both labels (F7), and every F10 header field. (phase 3 and phase 5 gates V8; the G2 packet showed the curves and negative set of the seed-7 grid report)
+- [x] A run without title audio says "game audio: not supplied" (F11). (phase 4 and phase 5 gates: no default add-on root, game audio reported not supplied)
+- [x] Command 3 is green; `git diff main` is empty for the committed WAVs, `expectations.json` and the bridge's public interface. (Phase 5 V15 after the BCN-1 merge: arm64 exit 0, harness 52/52, exit 0; phase 5 gate V12 both diffs empty; the G2 preflight at `fc0d42a`, item 2)
+- [x] Human-only verification: the maintainer listens to one conditioned case per SNR step and approves the negative phrase list. (the maintainer at G2 on 2026-11-10, given `cease_fire__s1.0-snr20/15/10/5.wav` and the 16 phrases of `Tests~/Fixtures/audio/negatives/manifest.json`: "Accept: listened, approved")
+- [x] The commands the project's `verification` binding names are green. (Commands 1-2 EditMode 239/239, PlayMode 792/792 at every phase gate and the review-fix CHECK C1; Command 4 not triggered; the G2 preflight at `fc0d42a`, item 2)
+
+**Ruled at G2 on 2026-11-10** by the maintainer, in conversation (AskUserQuestion, "Accept: listened, approved"): accepted at head `fc0d42a`, with the third preflight in view — the first preflight's item 3 remediated by the as-built reconcile `8c6e086`, the second's items 3 and 4 by `fc0d42a` and the STATUS line. In the same ask the maintainer deferred to STATUS the three items the reconcile routed out (the resampling cache's memory, the D5 report lines not naming the condition, the RT60 stop text's en dash): "Defer all three (Recommended)". The fork-default takes since Phase 1 were listed at G2.
 
 ## 10. Open questions
 

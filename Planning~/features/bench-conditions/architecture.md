@@ -2,7 +2,7 @@
 type: architecture
 feature: bench-conditions
 topic: audio-bench
-status: draft
+status: accepted
 updated: 2026-11-10
 sources:
   - Planning~/features/bench-conditions/requirements.md
