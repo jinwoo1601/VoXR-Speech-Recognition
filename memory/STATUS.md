@@ -12,7 +12,7 @@ updated: 2026-11-10
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-bench-conditions`**: feature; full; path development; stage review - P5 built `6eb5d57`; review VERIFY done, 12/17 confirmed; next: review-cycle RULE (F6 deferral ask)
+- **`feat-bench-conditions`**: feature; full; path development; stage review - P5 built `6eb5d57`; review RULE done (F6 deferred BCN-2, F7 flag half rejected); next: review-cycle FIX
 
 ## Deferred
 
@@ -42,3 +42,4 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **BPM-1** · OPEN · light-lane · v2026-11-09 — bench-paced-mode GAP-1 residue: no durable toy for `CheckMatched` aggregation, the `Paired` stop or `Assemble`/`Build(Paced)`; gate steps V11-V13 only
 - **BPM-2** · OPEN · light-lane · v2026-11-09 — bench-paced-mode CONV-1 residue: `ab-rig/Bench.cs` :4 Owns lists `Bench.Prelude (sealed class)` with no visibility
 - **BPM-3** · OPEN · light-lane · v2026-11-09 — `host_run.py`'s 180 s `UNITY_TIMEOUT` leaves little margin: PlayMode took 131-160 s in bench-paced-mode's CHECK runs
+- **BCN-2** · OPEN · light-lane · v2026-11-10 — bench-conditions F6: `Clip` (BenchConditions.cs :17-35) is a 17-field tuple, kind in zeros/nulls; NoiseRms/Rms swap compiles: clip type or kind field
