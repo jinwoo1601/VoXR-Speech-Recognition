@@ -1,8 +1,8 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast and paced runs, the matched-chunk check
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast, paced and conditioned runs, the matched-chunk check, the condition verbs' dispatch, paced under one condition
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class), Bench.Prelude (sealed class)
-// Depends:  Program, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
+// Depends:  Program, BenchConditions, BenchCurves, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,7 @@ namespace AbRig
         const int FrameTolerance = 960;
         const int TailSamples = 48000;
 
-        sealed class Prelude
+        internal sealed class Prelude
         {
             internal string[] StagedFrom;
             internal JoinedInput.Dump Dump;
@@ -72,6 +72,78 @@ namespace AbRig
                         );
                     return TruthCheck(JoinedInput.ReadManifest(args[3]), args[5]);
                 }
+                if (verb == "condition-check")
+                {
+                    if (args.Length == 2)
+                        return BenchConditions.Check(null, null, slots, commands);
+                    if (args.Length == 6 && args[2] == "--negatives" && args[4] == "--pin")
+                        return BenchConditions.Check(args[3], args[5], slots, commands);
+                    throw new JoinedInput.Stop(
+                        2,
+                        "usage: --bench condition-check [--negatives <manifest.json> --pin <expectations.json>]"
+                    );
+                }
+                if (verb == "condition")
+                {
+                    if (
+                        args.Length != 22
+                        || args[2] != "--dump"
+                        || args[4] != "--manifest"
+                        || args[6] != "--pin"
+                        || args[8] != "--fixtures-root"
+                        || args[10] != "--harness-pin"
+                        || args[12] != "--out"
+                        || args[14] != "--condition"
+                        || args[16] != "--seed"
+                        || args[18] != "--negatives"
+                        || args[20] != "--audio-root"
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench condition --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-pin <pin.json> --out <dir> --condition <name> --seed <n> --negatives <manifest.json> --audio-root <dir>"
+                        );
+                    return BenchConditions.Condition(
+                        args[3],
+                        args[5],
+                        args[7],
+                        args[9],
+                        args[11],
+                        args[13],
+                        args[15],
+                        args[17],
+                        args[19],
+                        args[21]
+                    );
+                }
+                BenchCurves.Inputs curves = null;
+                if (args.Length >= 26 && args[^12] == "--cond-dump")
+                {
+                    if (
+                        args[^10] != "--cond-manifest"
+                        || args[^8] != "--conditions"
+                        || args[^6] != "--cond-exit"
+                        || (args[^5] != "0" && args[^5] != "1")
+                        || args[^4] != "--condition"
+                        || args[^2] != "--seed"
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench run|matched-check <its arguments> --cond-dump <cond.jsonl> --cond-manifest <manifest.json> --conditions <conditions.json> --cond-exit 0|1 --condition <name> --seed <n>"
+                        );
+                    ulong seed = BenchConditions.ParseSeed(args[^1]);
+                    List<BenchConditions.Step> steps = BenchConditions.Steps(args[^3], true);
+                    curves = new BenchCurves.Inputs
+                    {
+                        DumpPath = args[^11],
+                        ManifestPath = args[^9],
+                        ConditionsPath = args[^7],
+                        Exit = int.Parse(args[^5]),
+                        Condition = args[^3],
+                        Seed = seed,
+                        Steps = steps,
+                    };
+                    args = args[..^12];
+                }
                 if (verb == "matched-check")
                 {
                     if (
@@ -93,9 +165,14 @@ namespace AbRig
                     )
                         throw new JoinedInput.Stop(
                             2,
-                            "usage: --bench matched-check --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --matched <matched.jsonl> --pace <samples>"
+                            "usage: --bench matched-check --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --matched <matched.jsonl> --pace <samples> [<the conditioned block>]"
                         );
-                    return MatchedCheck(args[3], args[5], args[7], args[9], args[11], p);
+                    if (curves != null && curves.Condition == "grid")
+                        throw new JoinedInput.Stop(
+                            2,
+                            "matched-check: --condition grid with --paced: pacing the grid is refused (adr-0003); name one condition"
+                        );
+                    return MatchedCheck(args[3], args[5], args[7], args[9], args[11], p, curves);
                 }
                 long pace = 0;
                 bool named =
@@ -138,6 +215,11 @@ namespace AbRig
                         2,
                         "usage: --bench run --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-exit 0|1 --report <report.md> [--profile <name> --mode <name>] [--matched <matched.jsonl> --matched-exit 0|1 --paced <paced.jsonl> --paced-exit 0|1 --pace <samples>]"
                     );
+                if (curves != null && paced && curves.Condition == "grid")
+                    throw new JoinedInput.Stop(
+                        2,
+                        "run: --condition grid with --paced: pacing the grid is refused (adr-0003); name one condition"
+                    );
                 return FastRun(
                     args[3],
                     args[5],
@@ -154,7 +236,8 @@ namespace AbRig
                     paced ? int.Parse(args[b + 3]) : 0,
                     paced ? args[b + 5] : null,
                     paced ? int.Parse(args[b + 7]) : 0,
-                    pace
+                    pace,
+                    curves
                 );
             }
             catch (JoinedInput.Stop stop)
@@ -197,7 +280,8 @@ namespace AbRig
             int matchedExit,
             string pacedPath,
             int pacedExit,
-            long pace
+            long pace,
+            BenchCurves.Inputs curves
         )
         {
             reading = reportPath;
@@ -210,6 +294,12 @@ namespace AbRig
                 pinPath,
                 root
             );
+            if (curves != null)
+            {
+                curves.Pace = matchedPath == null ? null : 0;
+                curves.Verb = "run";
+                BenchCurves.Read(curves);
+            }
             string[] stagedFrom = prelude.StagedFrom;
             JoinedInput.Dump dump = prelude.Dump;
             JoinedInput.Manifest manifest = prelude.Manifest;
@@ -230,8 +320,9 @@ namespace AbRig
                 if (twenty.Schema != 2)
                     throw new JoinedInput.Stop(2, pacedPath + ": schema 1, no positions");
                 reading = null;
-                matchedByCase = BenchPaced.CheckMatched(prelude.Dump, matched);
-                pacedByCase = BenchPaced.Paired(prelude.Dump, twenty, "20 ms");
+                JoinedInput.Dump pairing = curves == null ? prelude.Dump : curves.Dump;
+                matchedByCase = BenchPaced.CheckMatched(pairing, matched);
+                pacedByCase = BenchPaced.Paired(pairing, twenty, "20 ms");
             }
 
             Joined.GrammarPinGuard(grammarJson, pin, stagedFrom);
@@ -257,38 +348,91 @@ namespace AbRig
             var rows = new List<BenchReport.Case>();
             var words = new List<(string[] Ref, JoinedInput.Word[] Hyp)>();
             var classes = new List<(string Class, int ExtraFires)>();
+            var fast = new List<BenchCurves.Entry>();
             for (int i = 0; i < manifest.Cases.Count; i++)
             {
                 JoinedInput.ManifestCase c = manifest.Cases[i];
                 JoinedInput.DumpCase d = dumpByCase[c.Name];
                 JoinedScorer.Outcome s = outcomes[i];
-                BenchReport.Case row = Stamps(c, d, s, t);
-                string[] reference = BenchMetrics.Reference(c.Phrase, c.Segments);
-                JoinedInput.Word[] hypothesis = BenchMetrics.Hypothesis(d.Words);
-                row.Wer =
-                    reference.Length == 0
-                        ? "excluded (silence)"
-                        : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
-                row.Pending =
-                    s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
-                    : s.Pending ? "pending"
-                    : "-";
+                BenchReport.Case row = Row(
+                    c,
+                    d,
+                    s,
+                    t,
+                    out string[] reference,
+                    out JoinedInput.Word[] hypothesis
+                );
                 rows.Add(row);
                 words.Add((reference, hypothesis));
                 classes.Add((s.Class, s.ExtraFires));
+                fast.Add(
+                    new BenchCurves.Entry
+                    {
+                        C = c,
+                        D = d,
+                        S = s,
+                        Reference = reference,
+                        Hypothesis = hypothesis,
+                        Row = row,
+                        Source = c.Name,
+                        Condition = "clean",
+                    }
+                );
             }
             BenchMetrics.Scored scored = BenchMetrics.Score(words);
             BenchMetrics.CommandScore command = BenchMetrics.Command(classes);
+
+            BenchReport.Conditioned conditioned = null;
+            Dictionary<string, JoinedInput.DumpCase> condByCase = null;
+            List<BenchCurves.Entry> entries = null;
+            if (curves != null)
+            {
+                condByCase = new Dictionary<string, JoinedInput.DumpCase>(
+                    StringComparer.Ordinal
+                );
+                foreach (JoinedInput.DumpCase c in curves.Dump.Cases)
+                    condByCase.Add(c.Name, c);
+                entries = new List<BenchCurves.Entry>();
+                foreach (JoinedInput.ManifestCase c in curves.Manifest.Cases)
+                {
+                    JoinedInput.DumpCase d = condByCase[c.Name];
+                    JoinedScorer.Outcome s = Joined.ScoreRecogniser(c, d, slots, commands);
+                    Joined.AppliedGrammarGuard(c.Name, s.AppliedGrammar, pin);
+                    BenchReport.Case row = Row(
+                        c,
+                        d,
+                        s,
+                        t,
+                        out string[] reference,
+                        out JoinedInput.Word[] hypothesis
+                    );
+                    (string Source, string Condition) clip = curves.Clips[c.Name];
+                    entries.Add(
+                        new BenchCurves.Entry
+                        {
+                            C = c,
+                            D = d,
+                            S = s,
+                            Reference = reference,
+                            Hypothesis = hypothesis,
+                            Row = row,
+                            Source = clip.Source,
+                            Condition = clip.Condition,
+                        }
+                    );
+                }
+                conditioned = BenchCurves.Section(curves, fast, entries);
+            }
 
             BenchReport.Paced section =
                 matchedPath == null
                     ? null
                     : BenchPaced.Assemble(
-                        manifest,
-                        dumpByCase,
+                        curves == null ? manifest : curves.Manifest,
+                        curves == null ? dumpByCase : condByCase,
                         matchedByCase,
                         pacedByCase,
-                        outcomes,
+                        curves == null ? outcomes : entries.ConvertAll(e => e.S),
                         pin,
                         slots,
                         commands,
@@ -297,6 +441,8 @@ namespace AbRig
                         matchedExit,
                         pacedExit
                     );
+            if (section != null && curves != null)
+                section.Condition = curves.Condition;
             var header = new BenchReport.Header
             {
                 Profile = profile,
@@ -315,13 +461,13 @@ namespace AbRig
                 EndPassed = endPassed,
                 Cases = dump.Cases.Count,
             };
-            string text = BenchReport.Build(header, rows, command, scored, section);
+            string text = BenchReport.Build(header, rows, command, scored, section, conditioned);
             reading = reportPath;
             BenchReport.Write(reportPath, text);
             return 0;
         }
 
-        static Prelude FastPrelude(
+        internal static Prelude FastPrelude(
             string dumpPath,
             long? pace,
             string manifestPath,
@@ -434,25 +580,44 @@ namespace AbRig
             string pinPath,
             string root,
             string matchedPath,
-            long pace
+            long pace,
+            BenchCurves.Inputs curves
         )
         {
             Prelude prelude = FastPrelude(dumpPath, 0, manifestPath, pinPath, root);
+            JoinedInput.Dump fast = prelude.Dump;
+            if (curves != null)
+            {
+                curves.Pace = 0;
+                curves.Verb = "matched-check";
+                BenchCurves.Read(curves);
+                fast = curves.Dump;
+            }
             reading = matchedPath;
             JoinedInput.Dump matched = JoinedInput.ReadDump(matchedPath, pace);
             if (matched.Schema != 2)
                 throw new JoinedInput.Stop(2, matchedPath + ": schema 1, no positions");
             reading = null;
-            BenchPaced.CheckMatched(prelude.Dump, matched);
-            int cases = prelude.Dump.Cases.Count;
+            BenchPaced.CheckMatched(fast, matched);
+            int cases = fast.Cases.Count;
             Console.Out.WriteLine(
-                "matched-check: "
-                    + cases
-                    + "/"
-                    + cases
-                    + " cases' finals and first partials within 4096 samples of the fast dump's at pace "
-                    + pace
-                    + "."
+                curves == null
+                    ? "matched-check: "
+                        + cases
+                        + "/"
+                        + cases
+                        + " cases' finals and first partials within 4096 samples of the fast dump's at pace "
+                        + pace
+                        + "."
+                    : "matched-check: "
+                        + cases
+                        + "/"
+                        + cases
+                        + " conditioned clips' finals and first partials within 4096 samples of the conditioned fast dump's at pace "
+                        + pace
+                        + ", condition "
+                        + curves.Condition
+                        + "."
             );
             int measured = 0;
             int merged = 0;
@@ -474,9 +639,32 @@ namespace AbRig
                     + mergedCases
                     + "/"
                     + cases
-                    + " cases."
+                    + (curves == null ? " cases." : " conditioned clips.")
             );
             return 0;
+        }
+
+        static BenchReport.Case Row(
+            JoinedInput.ManifestCase c,
+            JoinedInput.DumpCase d,
+            JoinedScorer.Outcome s,
+            long t,
+            out string[] reference,
+            out JoinedInput.Word[] hypothesis
+        )
+        {
+            BenchReport.Case row = Stamps(c, d, s, t);
+            reference = BenchMetrics.Reference(c.Phrase, c.Segments);
+            hypothesis = BenchMetrics.Hypothesis(d.Words);
+            row.Wer =
+                reference.Length == 0
+                    ? "excluded (silence)"
+                    : BenchMetrics.Align(reference, hypothesis).Wer.ToString();
+            row.Pending =
+                s.Pending && s.FireTimes.Length == 0 ? "pending, timed out"
+                : s.Pending ? "pending"
+                : "-";
+            return row;
         }
 
         static BenchReport.Case Stamps(
@@ -642,6 +830,18 @@ namespace AbRig
 
         static string Found(List<string> lines) =>
             lines.Count == 0 ? "none" : string.Join(" | ", lines);
+
+        static string Caught(Func<string> f)
+        {
+            try
+            {
+                return f();
+            }
+            catch (JoinedInput.Stop stop)
+            {
+                return "stop " + stop.Code + ": " + stop.Lines[0];
+            }
+        }
 
         static string ReadLines(string text, long? pace)
         {
@@ -864,6 +1064,139 @@ namespace AbRig
             twenty54.Failures.Add("`errors` [\"boom\"]");
             Expect("54", "F7 finding: a failed decode in the 20 ms dump", Found(BenchPaced.Finding("toy", Timeline(null, ("fire", 48000)), twenty54, "correct-fire", "correct-fire")), "case \"toy\": failed decode in the 20 ms dump: unparseable result (`raw`) at seq 1; `errors` [\"boom\"]");
 
+            var f55 = BenchCurves.FalseFire(0, 4, 192000, 48000);
+            Expect("55", "F7 false fires: none in four cases", f55.PerCase + " | " + f55.PerHour, "0 — set too easy | 0 — set too easy");
+            var f56 = BenchCurves.FalseFire(3, 3, 172800000, 48000);
+            Expect("56", "F7 false fires: per case and per hour", f56.PerCase + " | " + f56.PerHour, "1.0000 | 3.0000");
+            var f57 = BenchCurves.FalseFire(0, 0, 0, 48000);
+            Expect("57", "F7 false fires: no negative cases", f57.PerCase + " | " + f57.PerHour, "undefined (no negative cases) | undefined (no negative cases)");
+            var o58 = new JoinedScorer.Outcome { Class = "false-fire", ExtraFires = 2, FireTimes = new[] { 1.0, 2.0, 3.0 } };
+            Expect("58", "F7 fires of a negative: first and extra", BenchCurves.Fires(o58).ToString(CultureInfo.InvariantCulture), "3");
+            Expect("59", "F8 cell: a value with its n", BenchCurves.Cell(BenchMetrics.Value.Of(0.5), 2, 3), "0.5000 (n=2 phrases, 3 cases)");
+            var r60 = new List<string[]> { new[] { "a", "b" }, new[] { "a", "b" }, new[] { "c" } };
+            Expect("60", "F8 n: distinct reference texts, cases", BenchCurves.Phrases(r60) + " phrases, " + r60.Count + " cases", "2 phrases, 3 cases");
+
+            string a61 = "a__s1.0-snr10.wav";
+            string b61 = "b__s1.0-snr10.wav";
+            var fast61 = new JoinedInput.Dump { Path = "x", Cases = { new JoinedInput.DumpCase { Name = a61 }, new JoinedInput.DumpCase { Name = b61 } } };
+            var other61 = new JoinedInput.Dump { Path = "x", Cases = { new JoinedInput.DumpCase { Name = b61 }, new JoinedInput.DumpCase { Name = a61 } } };
+            Expect("61", "F13 pairing: conditioned clips, other order", Caught(() => BenchPaced.Paired(fast61, other61, "20 ms").Count.ToString(CultureInfo.InvariantCulture)), "2");
+            var other62 = new JoinedInput.Dump { Path = "x", Cases = { new JoinedInput.DumpCase { Name = a61 }, new JoinedInput.DumpCase { Name = "c__s1.0-snr10.wav" } } };
+            Expect("62", "F13 pairing: conditioned clips differ", Caught(() => BenchPaced.Paired(fast61, other62, "20 ms").Count.ToString(CultureInfo.InvariantCulture)), "stop 2: x: cases differ from the fast dump's: only in fast [\"b__s1.0-snr10.wav\"], only in 20 ms [\"c__s1.0-snr10.wav\"]");
+            JoinedInput.DumpCase fast63 = Timeline(24576, ("fire", 49152));
+            fast63.Name = a61;
+            JoinedInput.DumpCase matched63 = Timeline(28672, ("fire", 53248));
+            matched63.Name = a61;
+            var fastDump63 = new JoinedInput.Dump { Path = "x", Cases = { fast63 } };
+            Expect("63", "F13 matched check: a conditioned clip 4096 apart", Caught(() => BenchPaced.CheckMatched(fastDump63, new JoinedInput.Dump { Path = "x", Cases = { matched63 } }).Count.ToString(CultureInfo.InvariantCulture)), "1");
+            JoinedInput.DumpCase matched64 = Timeline(28672, ("fire", 53249));
+            matched64.Name = a61;
+            Expect("64", "F13 matched check: a conditioned final 4097 apart", Caught(() => BenchPaced.CheckMatched(fastDump63, new JoinedInput.Dump { Path = "x", Cases = { matched64 } }).Count.ToString(CultureInfo.InvariantCulture)), "stop 3: matched-check: case \"a__s1.0-snr10.wav\": final 1 \"fire\" at consumed fast 49152, matched 53249: more than 4096 apart");
+
+            string dir65 = "metrics-check-toy";
+            Directory.CreateDirectory(dir65);
+            try
+            {
+                File.WriteAllText(dir65 + "/stale.json", "{\"seed\":\"7\",\"grid\":[\"s1.0-snr10\"],\"gameAudio\":\"not supplied\"}", JoinedInput.StrictUtf8);
+                var stale65 = new BenchCurves.Inputs { ConditionsPath = dir65 + "/stale.json", Verb = "run", Condition = "s1.0-snr20", Seed = 7 };
+                Expect(
+                    "65",
+                    "F11 stale cond/: the grid differs",
+                    Caught(() =>
+                    {
+                        BenchCurves.Read(stale65);
+                        return "read";
+                    }),
+                    "stop 2: run: metrics-check-toy/stale.json: written for seed 7, condition s1.0-snr10; this run: seed 7, condition s1.0-snr20: a stale cond/"
+                );
+
+                string a66 = "a__s1.0-snr20.wav";
+                string b66 = "b__s1.0-snr20.wav";
+                File.WriteAllText(dir65 + "/conditions.json", "{\"seed\":\"7\",\"grid\":[\"s1.0-snr20\"],\"gameAudio\":\"not supplied\",\"clips\":[{\"file\":\"" + a66 + "\",\"source\":\"a.wav\",\"condition\":\"s1.0-snr20\"}]}", JoinedInput.StrictUtf8);
+                File.WriteAllText(dir65 + "/manifest.json", "{\"provenance\":\"toy\",\"cases\":[{\"file\":\"cond/" + a66 + "\",\"expectedIntent\":\"\",\"expectedSlots\":[]},{\"file\":\"cond/" + b66 + "\",\"expectedIntent\":\"\",\"expectedSlots\":[]}]}", JoinedInput.StrictUtf8);
+                string Framed66(string name) =>
+                    "{\"kind\":\"case\",\"case\":\"" + name + "\",\"samples\":48000,\"sampleRate\":48000}\n{\"kind\":\"case-end\",\"case\":\"" + name + "\",\"results\":0,\"pushed\":48000,\"consumed\":48000,\"errors\":[]}\n";
+                File.WriteAllText(
+                    dir65 + "/dump.jsonl",
+                    "{\"kind\":\"header\",\"schema\":2,\"decoderRate\":100,\"manifest\":\"m\",\"fixtures\":\"f\",\"model\":\"o\",\"gain\":-18,\"libvosk\":\"v\",\"grammar\":[],\"ringCapacity\":65536}\n" + Framed66(a66) + Framed66(b66) + "{\"kind\":\"end\",\"cases\":2,\"passed\":2}\n",
+                    JoinedInput.StrictUtf8
+                );
+                var missing66 = new BenchCurves.Inputs
+                {
+                    DumpPath = dir65 + "/dump.jsonl",
+                    ManifestPath = dir65 + "/manifest.json",
+                    ConditionsPath = dir65 + "/conditions.json",
+                    Verb = "matched-check",
+                    Condition = "s1.0-snr20",
+                    Seed = 7,
+                    Pace = 0,
+                };
+                Expect(
+                    "66",
+                    "F11 a manifest case not in the sidecar's clips",
+                    Caught(() =>
+                    {
+                        BenchCurves.Read(missing66);
+                        return "read";
+                    }),
+                    "stop 2: matched-check: metrics-check-toy/manifest.json: case \"b__s1.0-snr20.wav\" is not in metrics-check-toy/conditions.json"
+                );
+            }
+            finally
+            {
+                Directory.Delete(dir65, true);
+            }
+
+            BenchCurves.Entry Entry67(string name, string category, string intent, string cls, double[] fires, string phrase, string hyp, long samples, string source, string condition) =>
+                new BenchCurves.Entry
+                {
+                    C = new JoinedInput.ManifestCase { Name = name, Category = category, ExpectedIntent = intent },
+                    D = new JoinedInput.DumpCase { Name = name, Samples = samples, SampleRate = 48000 },
+                    S = new JoinedScorer.Outcome { Class = cls, FireTimes = fires },
+                    Reference = BenchMetrics.Reference(phrase, null),
+                    Hypothesis = Hyp(hyp),
+                    Source = source,
+                    Condition = condition,
+                };
+            using (
+                JsonDocument sidecar67 = JsonDocument.Parse(
+                    "{\"seed\":\"7\",\"grid\":[\"s1.0-snr20\"],\"noise\":\"generated (pink Gaussian)\",\"room\":\"synthetic (exponential decay)\",\"gameAudio\":\"not supplied\",\"highPassHz\":100,\"peakHz\":3000,\"peakGainDb\":4,\"peakQ\":1,\"lowPassHz\":7000,\"drrDb\":10,\"levelRange\":[0.04,0.4],\"levelDistribution\":\"log-uniform\"}"
+                )
+            )
+            {
+                var x67 = new BenchCurves.Inputs
+                {
+                    Condition = "s1.0-snr20",
+                    Steps = BenchConditions.Steps("s1.0-snr20", false),
+                    Sidecar = sidecar67.RootElement,
+                };
+                var fast67 = new List<BenchCurves.Entry> { Entry67("p.wav", "toy", "fire", "correct-fire", new[] { 1.0 }, "fire", "fire@1", 48000, "p.wav", "clean") };
+                var conditioned67 = new List<BenchCurves.Entry>
+                {
+                    Entry67("n.wav", BenchConditions.OutOfSet, "", "correct-no-fire", Array.Empty<double>(), "stand by", "", 96000, "n.wav", "clean"),
+                    Entry67("p__s1.0-snr20.wav", "toy", "fire", "missed", Array.Empty<double>(), "fire", "", 48000, "p.wav", "s1.0-snr20"),
+                    Entry67("n__s1.0-snr20.wav", BenchConditions.OutOfSet, "", "false-fire", new[] { 1.0, 2.0 }, "stand by", "", 96000, "n.wav", "s1.0-snr20"),
+                };
+                BenchReport.Conditioned section67 = BenchCurves.Section(x67, fast67, conditioned67);
+                var curve67 = section67.Curves[0];
+                var negative67 = section67.Negatives[0];
+                Expect(
+                    "67",
+                    "F11 Section: intent and false-fire cells, one step",
+                    string.Join(
+                        " | ",
+                        curve67.Title,
+                        curve67.Rows[0][1],
+                        curve67.Rows[0][2],
+                        curve67.Rows[6][2],
+                        negative67.Rows[0][2],
+                        negative67.Rows[0][3],
+                        negative67.Rows[1][3]
+                    ),
+                    "Speed 1.0 | 1.0000 (n=1 phrases, 1 cases) | 0.0000 (n=1 phrases, 1 cases) | 2.0000 (n=1 phrases, 1 cases) | 0 — set too easy (fires 0, cases 1, 2.0 s) | 2.0000 (fires 2, cases 1, 2.0 s) | 3600.0000 (fires 2, cases 1, 2.0 s)"
+                );
+            }
+
             Console.WriteLine();
             Console.WriteLine(
                 $"{checks - failures}/{checks} metric checks verified against hand-computed toy cases."
@@ -871,7 +1204,7 @@ namespace AbRig
             return failures == 0 ? 0 : 1;
         }
 
-        static int TruthCheck(JoinedInput.Manifest manifest, string root)
+        internal static int TruthCheck(JoinedInput.Manifest manifest, string root)
         {
             var missing = new List<string>();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
@@ -880,52 +1213,11 @@ namespace AbRig
             if (missing.Count > 0)
                 throw new JoinedInput.Stop(2, missing.ToArray());
 
-            string Shown(long? v) =>
-                v.HasValue ? v.Value.ToString(CultureInfo.InvariantCulture) : "none";
-
             var failed = new List<string>();
             foreach (JoinedInput.ManifestCase c in manifest.Cases)
             {
                 short[] pcm = ReadPcm(Path.Combine(root, c.File));
-                int n =
-                    c.Segments != null && c.Segments.Length > 0 ? c.Segments.Length
-                    : !string.IsNullOrEmpty(c.Phrase) ? 1
-                    : 0;
-                int k = c.Speech.Length;
-                bool ok;
-                string detail;
-                if (n > 0)
-                {
-                    long? last = null;
-                    for (long i = (long)pcm.Length - TailSamples - 1; i >= 0; i--)
-                        if (Math.Abs((int)pcm[i]) >= TruthFloor)
-                        {
-                            last = i + 1;
-                            break;
-                        }
-                    long? end = k > 0 ? c.Speech[k - 1].End : null;
-                    long? diff = end.HasValue && last.HasValue ? end - last : null;
-                    bool inClip = true;
-                    foreach (var span in c.Speech)
-                        if (span.End > pcm.Length)
-                            inClip = false;
-                    ok =
-                        k == n
-                        && inClip
-                        && diff.HasValue
-                        && Math.Abs(diff.Value) <= FrameTolerance;
-                    detail =
-                        $"segments={k}/{n} end={Shown(end)} last={Shown(last)} diff={Shown(diff)}";
-                }
-                else
-                {
-                    long floorSamples = 0;
-                    foreach (short s in pcm)
-                        if (Math.Abs((int)s) >= TruthFloor)
-                            floorSamples++;
-                    ok = k == 0 && floorSamples == 0;
-                    detail = $"segments={k}/0 floor-samples={Shown(floorSamples)}";
-                }
+                bool ok = TruthRule(pcm, c, c.Speech, TailSamples, out string detail);
                 if (!ok)
                     failed.Add(c.Name);
                 Console.WriteLine($"{(ok ? "ok  " : "FAIL")}  {c.Name, -68} {detail}");
@@ -949,7 +1241,59 @@ namespace AbRig
             return 0;
         }
 
-        static short[] ReadPcm(string path)
+        internal static bool TruthRule(
+            short[] pcm,
+            JoinedInput.ManifestCase c,
+            (long Start, long End)[] speech,
+            long tail,
+            out string detail
+        )
+        {
+            string Shown(long? v) =>
+                v.HasValue ? v.Value.ToString(CultureInfo.InvariantCulture) : "none";
+
+            int n =
+                c.Segments != null && c.Segments.Length > 0 ? c.Segments.Length
+                : !string.IsNullOrEmpty(c.Phrase) ? 1
+                : 0;
+            int k = speech.Length;
+            bool ok;
+            if (n > 0)
+            {
+                long? last = null;
+                for (long i = (long)pcm.Length - tail - 1; i >= 0; i--)
+                    if (Math.Abs((int)pcm[i]) >= TruthFloor)
+                    {
+                        last = i + 1;
+                        break;
+                    }
+                long? end = k > 0 ? speech[k - 1].End : null;
+                long? diff = end.HasValue && last.HasValue ? end - last : null;
+                bool inClip = true;
+                foreach (var span in speech)
+                    if (span.End > pcm.Length)
+                        inClip = false;
+                ok =
+                    k == n
+                    && inClip
+                    && diff.HasValue
+                    && Math.Abs(diff.Value) <= FrameTolerance;
+                detail =
+                    $"segments={k}/{n} end={Shown(end)} last={Shown(last)} diff={Shown(diff)}";
+            }
+            else
+            {
+                long floorSamples = 0;
+                foreach (short s in pcm)
+                    if (Math.Abs((int)s) >= TruthFloor)
+                        floorSamples++;
+                ok = k == 0 && floorSamples == 0;
+                detail = $"segments={k}/0 floor-samples={Shown(floorSamples)}";
+            }
+            return ok;
+        }
+
+        internal static short[] ReadPcm(string path)
         {
             float[] f;
             try
