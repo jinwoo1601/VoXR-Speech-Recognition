@@ -12,7 +12,7 @@ updated: 2026-11-10
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-bench-conditions`**: feature; full; path development; stage product-docs - review done `8c7fd9e` (F6 deferred BCN-2); CATCH-UP level; next: g2-accept PREFLIGHT
+- **`feat-bench-conditions`**: feature; full; path development; stage product-docs - as-built reconciled `fc0d42a` (preflight items 3, 4 remediated); next: g2-accept PREFLIGHT re-run 3
 
 ## Deferred
 
