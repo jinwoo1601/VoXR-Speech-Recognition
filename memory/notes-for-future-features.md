@@ -27,3 +27,12 @@ Process and methodology lessons routed out of architecture docs' `## As-built de
 - Plans: where a plan dictates a copy, the architecture says "modelled on", not "reused".
 - Plans: a latency-axis feature needs a known-value toy for its stamp arithmetic in the plan's own checks (GAP-1).
 - Plans: a plan naming comment edits should say it overrides rule 1 at those sites, avoiding a BLOCKED round trip.
+
+
+## bench-conditions (2026-11-10)
+
+- Plan verification steps that `cd` into a stage dir and then resolve a relative path (`cygpath`, `abspath`) resolve it against the wrong root; make the path absolute before the `cd` (three plan defects, one gate fix round).
+- A read-back grep in a plan's V step must be checked against the line the code really prints; an unchecked grep reads as a false red (plan-5 V9).
+- PM-written check briefs carry the same risk as plans: C4's expected count and C5's subshell `cygpath` were brief defects, not code defects.
+- Plan files ran far over the 10 KB budget (17-22 KB) on every phase; the dictated contracts are the bulk.
+- Decision-register line citations go stale across phases; the as-built reconcile has to re-point them, so cite symbols where possible.

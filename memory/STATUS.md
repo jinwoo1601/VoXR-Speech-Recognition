@@ -4,7 +4,7 @@ updated: 2026-11-10
 
 ## Current
 
-- **`main` at PR #200 `767748e`; `v2.0.0`; running: `feat-bench-conditions`; RSE-2 held.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198, #199, #200.
+- **`main` at PR #201 `cae67e6`; `v2.0.0`; RSE-2 held; next: `g0-open` an audio-bench row.** `[Unreleased]`: #143–#154, #160, #161, #178, #185, batch B, EPR-11, #193, batches C–E, #198–#201.
 - **`lab-next-level-probes` (lab, marker branch, never checked out): Phase B probes in `.scratch/lab-next-level-probes/`; next: probe plan.**
 - **`release` held** by the human 2026-10-13 (RSE-1 first when it resumes; `2.1.0` proposed).
 - **Open issues:** none from the plan; follow-ups in `## Deferred` and `memory/backlog-candidates.md`.
@@ -12,7 +12,6 @@ updated: 2026-11-10
 - Phase B probes, re-ruled 2026-10-13, none run: suspect field-trigger table; TTS NCE/ECE dry run; Quest cough VAD test; Quest adb audio-effects session.
 - Phase C instruments: R1 merged (#177 parser half, #178 recogniser half; Phase D unblocked); R5 human corpus and R4 negative corpus not started.
 - Phase D after R1: R11 merged (#185), R15+R14 AGC/filter unit merged (#193); not started: R17 partials, R12 N-best, R22 union grammar, R41 lgraph, R30 listening states, model download-on-demand.
-- **`feat-bench-conditions`**: feature; full; stage product-docs - G2 accepted at `fc0d42a`; next: preflight re-run 4, RECORD · ruling G2 · 2026-11-10 · the human · "Accept: listened, approved"
 
 ## Deferred
 
@@ -43,3 +42,6 @@ Open entries only, one line each, at most 200 characters: `**<ID>** · <VERDICT>
 - **BPM-2** · OPEN · light-lane · v2026-11-09 — bench-paced-mode CONV-1 residue: `ab-rig/Bench.cs` :4 Owns lists `Bench.Prelude (sealed class)` with no visibility
 - **BPM-3** · OPEN · light-lane · v2026-11-09 — `host_run.py`'s 180 s `UNITY_TIMEOUT` leaves little margin: PlayMode took 131-160 s in bench-paced-mode's CHECK runs
 - **BCN-2** · OPEN · light-lane · v2026-11-10 — bench-conditions F6: `Clip` (BenchConditions.cs :17-35) is a 17-field tuple, kind in zeros/nulls; NoiseRms/Rms swap compiles: clip type or kind field
+- **BCN-3** · OPEN · light-lane · v2026-11-10 — bench-conditions F2 fix: the resample cache keeps every resampled source alive through `Condition()`, ~0.3 GB with these fixtures
+- **BCN-4** · OPEN · light-lane · v2026-11-10 — bench-conditions D5: under a condition the report's `- Mode: paced` and `Paced harness exits` lines (BenchReport.cs :132-138, :204-213) do not name it
+- **BCN-5** · OPEN · light-lane · v2026-11-10 — bench-conditions: the RT60 stop text uses an en dash (`0.2–0.5 s`, BenchConditions.cs :392, :1351) in console output; ASCII elsewhere
