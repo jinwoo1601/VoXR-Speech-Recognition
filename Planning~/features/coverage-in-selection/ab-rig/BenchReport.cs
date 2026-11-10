@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The bench's report: fast mode's header and per-case rows, and a paced run's section, and a conditioned run's header lines and sections, built into one deterministic markdown text, written and printed
+// Purpose:  The bench's report: fast mode's header and per-case rows, and a paced run's section, and a conditioned run's header lines and sections, built into one deterministic markdown text, written and printed, the paced section under one condition
 // Layer:    Planning.AbRig
 // Owns:     BenchReport (internal static class), BenchReport.Header (internal sealed class), BenchReport.Case (internal sealed class), BenchReport.Paced (internal sealed class), BenchReport.Conditioned (internal sealed class)
 // Depends:  BenchMetrics, Joined, JoinedReport, JoinedScorer
@@ -50,6 +50,7 @@ namespace AbRig
         internal sealed class Paced
         {
             internal long Pace;
+            internal string Condition;
             internal int MatchedExit;
             internal int PacedExit;
             internal List<(string Case, string Stage, string Audio, string Wall, string Compute)> Split =
@@ -212,11 +213,18 @@ namespace AbRig
                         + Int(paced.PacedExit)
                 );
                 Line(
-                    "- Matched-chunk check: "
-                        + Int(paced.Factors.Count)
-                        + "/"
-                        + Int(paced.Factors.Count)
-                        + " cases' finals and first partials within 4096 samples of the fast dump's at pace 16384"
+                    paced.Condition == null
+                        ? "- Matched-chunk check: "
+                            + Int(paced.Factors.Count)
+                            + "/"
+                            + Int(paced.Factors.Count)
+                            + " cases' finals and first partials within 4096 samples of the fast dump's at pace 16384"
+                        : "- Matched-chunk check: "
+                            + Int(paced.Factors.Count)
+                            + "/"
+                            + Int(paced.Factors.Count)
+                            + " conditioned clips' finals and first partials within 4096 samples of the conditioned fast dump's at pace 16384, condition "
+                            + paced.Condition
                 );
             }
             Line("");
@@ -366,11 +374,22 @@ namespace AbRig
             if (paced == null)
                 return sb.ToString();
             Line("");
-            Line("## Paced");
+            Line(paced.Condition == null ? "## Paced" : "## Paced — condition " + paced.Condition);
             Line("");
             Line(
                 "**Desktop-only, single run:** wall times, compute parts, the real-time factor and push lateness measure this machine in one run; their run-to-run spread is not measured, and they are never compared across machines."
             );
+            if (paced.Condition != null)
+            {
+                Line("");
+                Line(
+                    "The paced passes replay condition "
+                        + paced.Condition
+                        + "'s "
+                        + Int(paced.Factors.Count)
+                        + " conditioned clips; the clean cases are not paced."
+                );
+            }
             Line("");
             Line("### Latency split");
             Line("");

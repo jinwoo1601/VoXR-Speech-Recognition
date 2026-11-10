@@ -23,6 +23,7 @@ namespace AbRig
             internal string Condition;
             internal ulong Seed;
             internal List<BenchConditions.Step> Steps;
+            internal long? Pace;
             internal JoinedInput.Dump Dump;
             internal JoinedInput.Manifest Manifest;
             internal JsonElement Sidecar;
@@ -117,7 +118,7 @@ namespace AbRig
                         + ": a stale cond/"
                 );
 
-            JoinedInput.Dump dump = JoinedInput.ReadDump(x.DumpPath, null);
+            JoinedInput.Dump dump = JoinedInput.ReadDump(x.DumpPath, x.Pace);
             if (dump.Schema != 2)
                 throw new JoinedInput.Stop(2, x.DumpPath + ": schema 1, no positions");
             JoinedInput.Manifest manifest = JoinedInput.ReadManifest(x.ManifestPath);

@@ -1,5 +1,5 @@
 // ============================================================================
-// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast, paced and conditioned runs, the matched-chunk check, the condition verbs' dispatch
+// Purpose:  The rig's --bench verbs: the hook set from a module initializer, verb dispatch, the metric toy checks, the speech-truth check, the fast, paced and conditioned runs, the matched-chunk check, the condition verbs' dispatch, paced under one condition
 // Layer:    Planning.AbRig
 // Owns:     Bench (internal static class), Bench.Prelude (sealed class)
 // Depends:  Program, BenchConditions, BenchCurves, BenchMetrics, BenchPaced, BenchReport, Joined, JoinedInput, JoinedRecogniser, JoinedScorer, VoxrSlotDefinition, VoxrCommandDefinition, VoxrWavReader
@@ -115,6 +115,35 @@ namespace AbRig
                         args[21]
                     );
                 }
+                BenchCurves.Inputs curves = null;
+                if (args.Length >= 26 && args[^12] == "--cond-dump")
+                {
+                    if (
+                        args[^10] != "--cond-manifest"
+                        || args[^8] != "--conditions"
+                        || args[^6] != "--cond-exit"
+                        || (args[^5] != "0" && args[^5] != "1")
+                        || args[^4] != "--condition"
+                        || args[^2] != "--seed"
+                    )
+                        throw new JoinedInput.Stop(
+                            2,
+                            "usage: --bench run|matched-check <its arguments> --cond-dump <cond.jsonl> --cond-manifest <manifest.json> --conditions <conditions.json> --cond-exit 0|1 --condition <name> --seed <n>"
+                        );
+                    ulong seed = BenchConditions.ParseSeed(args[^1]);
+                    List<BenchConditions.Step> steps = BenchConditions.Steps(args[^3], true);
+                    curves = new BenchCurves.Inputs
+                    {
+                        DumpPath = args[^11],
+                        ManifestPath = args[^9],
+                        ConditionsPath = args[^7],
+                        Exit = int.Parse(args[^5]),
+                        Condition = args[^3],
+                        Seed = seed,
+                        Steps = steps,
+                    };
+                    args = args[..^12];
+                }
                 if (verb == "matched-check")
                 {
                     if (
@@ -136,38 +165,14 @@ namespace AbRig
                     )
                         throw new JoinedInput.Stop(
                             2,
-                            "usage: --bench matched-check --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --matched <matched.jsonl> --pace <samples>"
+                            "usage: --bench matched-check --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --matched <matched.jsonl> --pace <samples> [<the conditioned block>]"
                         );
-                    return MatchedCheck(args[3], args[5], args[7], args[9], args[11], p);
-                }
-                BenchCurves.Inputs curves = null;
-                if (args.Length >= 26 && args[^12] == "--cond-dump")
-                {
-                    if (
-                        args[^10] != "--cond-manifest"
-                        || args[^8] != "--conditions"
-                        || args[^6] != "--cond-exit"
-                        || (args[^5] != "0" && args[^5] != "1")
-                        || args[^4] != "--condition"
-                        || args[^2] != "--seed"
-                    )
+                    if (curves != null && curves.Condition == "grid")
                         throw new JoinedInput.Stop(
                             2,
-                            "usage: --bench run <fast arguments> --cond-dump <cond.jsonl> --cond-manifest <manifest.json> --conditions <conditions.json> --cond-exit 0|1 --condition <name> --seed <n>"
+                            "matched-check: --condition grid with --paced: pacing the grid is refused (adr-0003); name one condition"
                         );
-                    ulong seed = BenchConditions.ParseSeed(args[^1]);
-                    List<BenchConditions.Step> steps = BenchConditions.Steps(args[^3], true);
-                    curves = new BenchCurves.Inputs
-                    {
-                        DumpPath = args[^11],
-                        ManifestPath = args[^9],
-                        ConditionsPath = args[^7],
-                        Exit = int.Parse(args[^5]),
-                        Condition = args[^3],
-                        Seed = seed,
-                        Steps = steps,
-                    };
-                    args = args[..^12];
+                    return MatchedCheck(args[3], args[5], args[7], args[9], args[11], p, curves);
                 }
                 long pace = 0;
                 bool named =
@@ -210,10 +215,10 @@ namespace AbRig
                         2,
                         "usage: --bench run --dump <dump.jsonl> --manifest <manifest.json> --pin <expectations.json> --fixtures-root <dir> --harness-exit 0|1 --report <report.md> [--profile <name> --mode <name>] [--matched <matched.jsonl> --matched-exit 0|1 --paced <paced.jsonl> --paced-exit 0|1 --pace <samples>]"
                     );
-                if (curves != null && paced)
+                if (curves != null && paced && curves.Condition == "grid")
                     throw new JoinedInput.Stop(
                         2,
-                        "run: --condition with --paced is not built yet (bench-conditions Phase 5)"
+                        "run: --condition grid with --paced: pacing the grid is refused (adr-0003); name one condition"
                     );
                 return FastRun(
                     args[3],
@@ -290,7 +295,10 @@ namespace AbRig
                 root
             );
             if (curves != null)
+            {
+                curves.Pace = matchedPath == null ? null : 0;
                 BenchCurves.Read(curves);
+            }
             string[] stagedFrom = prelude.StagedFrom;
             JoinedInput.Dump dump = prelude.Dump;
             JoinedInput.Manifest manifest = prelude.Manifest;
@@ -311,8 +319,9 @@ namespace AbRig
                 if (twenty.Schema != 2)
                     throw new JoinedInput.Stop(2, pacedPath + ": schema 1, no positions");
                 reading = null;
-                matchedByCase = BenchPaced.CheckMatched(prelude.Dump, matched);
-                pacedByCase = BenchPaced.Paired(prelude.Dump, twenty, "20 ms");
+                JoinedInput.Dump pairing = curves == null ? prelude.Dump : curves.Dump;
+                matchedByCase = BenchPaced.CheckMatched(pairing, matched);
+                pacedByCase = BenchPaced.Paired(pairing, twenty, "20 ms");
             }
 
             Joined.GrammarPinGuard(grammarJson, pin, stagedFrom);
@@ -373,14 +382,16 @@ namespace AbRig
             BenchMetrics.CommandScore command = BenchMetrics.Command(classes);
 
             BenchReport.Conditioned conditioned = null;
+            Dictionary<string, JoinedInput.DumpCase> condByCase = null;
+            List<BenchCurves.Entry> entries = null;
             if (curves != null)
             {
-                var condByCase = new Dictionary<string, JoinedInput.DumpCase>(
+                condByCase = new Dictionary<string, JoinedInput.DumpCase>(
                     StringComparer.Ordinal
                 );
                 foreach (JoinedInput.DumpCase c in curves.Dump.Cases)
                     condByCase.Add(c.Name, c);
-                var entries = new List<BenchCurves.Entry>();
+                entries = new List<BenchCurves.Entry>();
                 foreach (JoinedInput.ManifestCase c in curves.Manifest.Cases)
                 {
                     JoinedInput.DumpCase d = condByCase[c.Name];
@@ -416,11 +427,11 @@ namespace AbRig
                 matchedPath == null
                     ? null
                     : BenchPaced.Assemble(
-                        manifest,
-                        dumpByCase,
+                        curves == null ? manifest : curves.Manifest,
+                        curves == null ? dumpByCase : condByCase,
                         matchedByCase,
                         pacedByCase,
-                        outcomes,
+                        curves == null ? outcomes : entries.ConvertAll(e => e.S),
                         pin,
                         slots,
                         commands,
@@ -429,6 +440,8 @@ namespace AbRig
                         matchedExit,
                         pacedExit
                     );
+            if (section != null && curves != null)
+                section.Condition = curves.Condition;
             var header = new BenchReport.Header
             {
                 Profile = profile,
@@ -566,25 +579,43 @@ namespace AbRig
             string pinPath,
             string root,
             string matchedPath,
-            long pace
+            long pace,
+            BenchCurves.Inputs curves
         )
         {
             Prelude prelude = FastPrelude(dumpPath, 0, manifestPath, pinPath, root);
+            JoinedInput.Dump fast = prelude.Dump;
+            if (curves != null)
+            {
+                curves.Pace = 0;
+                BenchCurves.Read(curves);
+                fast = curves.Dump;
+            }
             reading = matchedPath;
             JoinedInput.Dump matched = JoinedInput.ReadDump(matchedPath, pace);
             if (matched.Schema != 2)
                 throw new JoinedInput.Stop(2, matchedPath + ": schema 1, no positions");
             reading = null;
-            BenchPaced.CheckMatched(prelude.Dump, matched);
-            int cases = prelude.Dump.Cases.Count;
+            BenchPaced.CheckMatched(fast, matched);
+            int cases = fast.Cases.Count;
             Console.Out.WriteLine(
-                "matched-check: "
-                    + cases
-                    + "/"
-                    + cases
-                    + " cases' finals and first partials within 4096 samples of the fast dump's at pace "
-                    + pace
-                    + "."
+                curves == null
+                    ? "matched-check: "
+                        + cases
+                        + "/"
+                        + cases
+                        + " cases' finals and first partials within 4096 samples of the fast dump's at pace "
+                        + pace
+                        + "."
+                    : "matched-check: "
+                        + cases
+                        + "/"
+                        + cases
+                        + " conditioned clips' finals and first partials within 4096 samples of the conditioned fast dump's at pace "
+                        + pace
+                        + ", condition "
+                        + curves.Condition
+                        + "."
             );
             int measured = 0;
             int merged = 0;
@@ -606,7 +637,7 @@ namespace AbRig
                     + mergedCases
                     + "/"
                     + cases
-                    + " cases."
+                    + (curves == null ? " cases." : " conditioned clips.")
             );
             return 0;
         }
@@ -797,6 +828,18 @@ namespace AbRig
 
         static string Found(List<string> lines) =>
             lines.Count == 0 ? "none" : string.Join(" | ", lines);
+
+        static string Caught(Func<string> f)
+        {
+            try
+            {
+                return f();
+            }
+            catch (JoinedInput.Stop stop)
+            {
+                return "stop " + stop.Code + ": " + stop.Lines[0];
+            }
+        }
 
         static string ReadLines(string text, long? pace)
         {
@@ -1030,6 +1073,23 @@ namespace AbRig
             Expect("59", "F8 cell: a value with its n", BenchCurves.Cell(BenchMetrics.Value.Of(0.5), 2, 3), "0.5000 (n=2 phrases, 3 cases)");
             var r60 = new List<string[]> { new[] { "a", "b" }, new[] { "a", "b" }, new[] { "c" } };
             Expect("60", "F8 n: distinct reference texts, cases", BenchCurves.Phrases(r60) + " phrases, " + r60.Count + " cases", "2 phrases, 3 cases");
+
+            string a61 = "a__s1.0-snr10.wav";
+            string b61 = "b__s1.0-snr10.wav";
+            var fast61 = new JoinedInput.Dump { Path = "x", Cases = { new JoinedInput.DumpCase { Name = a61 }, new JoinedInput.DumpCase { Name = b61 } } };
+            var other61 = new JoinedInput.Dump { Path = "x", Cases = { new JoinedInput.DumpCase { Name = b61 }, new JoinedInput.DumpCase { Name = a61 } } };
+            Expect("61", "F13 pairing: conditioned clips, other order", Caught(() => BenchPaced.Paired(fast61, other61, "20 ms").Count.ToString(CultureInfo.InvariantCulture)), "2");
+            var other62 = new JoinedInput.Dump { Path = "x", Cases = { new JoinedInput.DumpCase { Name = a61 }, new JoinedInput.DumpCase { Name = "c__s1.0-snr10.wav" } } };
+            Expect("62", "F13 pairing: conditioned clips differ", Caught(() => BenchPaced.Paired(fast61, other62, "20 ms").Count.ToString(CultureInfo.InvariantCulture)), "stop 2: x: cases differ from the fast dump's: only in fast [\"b__s1.0-snr10.wav\"], only in 20 ms [\"c__s1.0-snr10.wav\"]");
+            JoinedInput.DumpCase fast63 = Timeline(24576, ("fire", 49152));
+            fast63.Name = a61;
+            JoinedInput.DumpCase matched63 = Timeline(28672, ("fire", 53248));
+            matched63.Name = a61;
+            var fastDump63 = new JoinedInput.Dump { Path = "x", Cases = { fast63 } };
+            Expect("63", "F13 matched check: a conditioned clip 4096 apart", Caught(() => BenchPaced.CheckMatched(fastDump63, new JoinedInput.Dump { Path = "x", Cases = { matched63 } }).Count.ToString(CultureInfo.InvariantCulture)), "1");
+            JoinedInput.DumpCase matched64 = Timeline(28672, ("fire", 53249));
+            matched64.Name = a61;
+            Expect("64", "F13 matched check: a conditioned final 4097 apart", Caught(() => BenchPaced.CheckMatched(fastDump63, new JoinedInput.Dump { Path = "x", Cases = { matched64 } }).Count.ToString(CultureInfo.InvariantCulture)), "stop 3: matched-check: case \"a__s1.0-snr10.wav\": final 1 \"fire\" at consumed fast 49152, matched 53249: more than 4096 apart");
 
             Console.WriteLine();
             Console.WriteLine(

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, the harness on <out>/cond, then --bench run with the conditioned block; --audio-root names the add-on root --bench condition reads
+# Purpose:  Run script for the bench: confgen, the harness's --dump run (on a pin copy for a named configuration), stage and build a ref, --bench run; with --paced, the --paced 16384 pass and --bench matched-check, then the --paced PACE pass before --bench run; with --condition and --seed, --bench condition after the build, the harness on <out>/cond, then --bench run with the conditioned block; --audio-root names the add-on root --bench condition reads; with --paced and one --condition, both paced passes replay <out>/cond with its pin copy, and --bench matched-check and run pair them with the conditioned dump
 # Layer:    Planning.AbRig
 # Owns:     (script, no public types)
 # Depends:  stage.sh, Bench, BenchConditions, vosk-bridge-harness, confgen, py
@@ -65,8 +65,7 @@ GAIN_RE='^(0|-[0-9]*[1-9][0-9]*(\.[0-9]+)?|-[0-9]+\.[0-9]*[1-9][0-9]*)$'
 [ -z "$SEED" ] || [ -n "$CONDITION" ] || die "--seed needs --condition"
 [ -z "$CONDITION" ] || [ -n "$SEED" ] || die "--condition needs --seed"
 [ -z "$AUDIO_ROOT" ] || [ -n "$CONDITION" ] || die "--audio-root needs --condition"
-[ -z "$CONDITION" ] || [ -z "$PACED" ] ||
-  die "--condition with --paced is not built yet (bench-conditions Phase 5)"
+[ -z "$PACED" ] || [ "$CONDITION" != grid ] || die "--condition grid with --paced: pacing the grid is refused (adr-0003); name one condition"
 
 REF="${REF:-WORKTREE}"
 PIN="${PIN:-NativeBridge~/harness/expectations.json}"
@@ -155,7 +154,7 @@ HARNESS_EXIT="$rc"
 pass() {
   rc=0
   (cd "NativeBridge~" && ./build-windows/bin/vosk-bridge-harness.exe --model "$OUT_W/model" \
-    --fixtures "../Tests~/Fixtures/audio/tts" --manifest "$HPIN" \
+    --fixtures "$3" --manifest "$4" \
     --paced "$1" --dump "$OUT_W/$2.jsonl") >"$OUT/$2.json" 2>"$OUT/$2.err" || rc=$?
   if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
     cat "$OUT/$2.err" >&2
@@ -184,12 +183,17 @@ if [ -n "$CONDITION" ]; then
 fi
 
 if [ -n "$PACED" ]; then
-  pass 16384 matched
+  PFIX="../Tests~/Fixtures/audio/tts" PPIN="$HPIN"
+  if [ -n "$CONDITION" ]; then
+    PFIX="$OUT_W/cond" PPIN="$OUT_W/cond/pin.json"
+  fi
+  pass 16384 matched "$PFIX" "$PPIN"
   MATCHED_EXIT="$rc"
   (cd "$OUT/stage" && dotnet run --no-build -- --bench matched-check --dump "$OUT_W/dump.jsonl" \
     --manifest "$MANIFEST_W" --pin "$PIN_W" --fixtures-root "$ROOT_W" \
-    --matched "$OUT_W/matched.jsonl" --pace 16384) || exit $?
-  pass "$PACE" paced
+    --matched "$OUT_W/matched.jsonl" --pace 16384 \
+    ${CONDITION:+--cond-dump "$OUT_W/cond.jsonl" --cond-manifest "$OUT_W/cond/manifest.json" --conditions "$OUT_W/cond/conditions.json" --cond-exit "$COND_EXIT" --condition "$CONDITION" --seed "$SEED"}) || exit $?
+  pass "$PACE" paced "$PFIX" "$PPIN"
   PACED_EXIT="$rc"
 fi
 
