@@ -32,7 +32,7 @@ The architecture doc is the **bottom floor** — the only one that touches code,
 |---|---|---|
 | Model + dynamics + forks | system design doc | "A failed upload is retried only on a retryable error, with backoff, and the queue drains oldest-first. Produces steady progress under partial failure and a bounded worst case." |
 | Numbers / tuning | the tuning pass | "Three attempts; backoff doubling from one second; at most ten uploads in flight." |
-| Buildable, testable contract | feature requirement doc — for a lite feature, its backlog row | "A file that fails on a retryable error is retried without the person re-selecting it. *Verify:* fail one file's first attempt; confirm it ends stored, with the attempt visible." |
+| Buildable, testable contract | requirements doc — for a lite feature, its backlog row | "A file that fails on a retryable error is retried without the person re-selecting it. *Verify:* fail one file's first attempt; confirm it ends stored, with the attempt visible." |
 | **How it is built** | **architecture doc** *(this)* | "`UploadQueue` holds per-file attempt state in a flat array — no allocation per retry; `RetryPolicy` classifies the failure and schedules the next attempt; the drain runs on the batch worker off the completion queue." |
 
 Stay on your floor: the numbers belong to the tuning pass, the acceptance check to requirements. The architecture doc owns the seams between components, the non-functional realization, the phase breakdown and the links to the plan files, not the plans.
@@ -131,4 +131,5 @@ A lite doc is `## User story`, `## Context & scope`, `## What this implements`, 
 
 <!-- harness:binding:start vc .claude/bindings/vc-git.md -->
 - System: git; GitHub, remote `origin` `https://github.com/jinwoo1601/VoXR-Speech-Recognition.git`, public; `gh` on the Windows PATH (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `jinwoo1601`
+- Auto-mode entries: excluded
 <!-- harness:binding:end vc -->

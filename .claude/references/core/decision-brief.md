@@ -2,7 +2,7 @@
 
 <!-- Written by the PM (or by `g0-open` / `g1-lock` / `g2-accept`) into
      .scratch/doc-writer-<slug>-brief.md before dispatch.
-     The doc-writer reads this file by ABSOLUTE path; it is its entire context.
+     The agent it names reads this file by ABSOLUTE path; it is its entire context.
      Anything not written here does not exist for the agent.
      One brief may name several targets and stays at most about 8,000
      characters (the delegation contract's ## The brief (down)).
@@ -10,7 +10,7 @@
 
 ## Task
 
-- Agent: `doc-writer`
+- Agent: `<doc-writer | the reconciling agent the product-docs binding names, at g2-accept PRODUCT DOCS — its G2 ruling the Decision record's Ruling line>`
 - Baseline model: `<the agent file's model:>`; downgrade for this dispatch: `<none | sonnet — a dictated edit, per the delegation contract's ## Modes>`
 - Binding to consult: `<the process-docs binding, when the target is a process doc | the lines this brief quotes under Decision record, when the target is a bindings file or project CLAUDE.md prose>`
 - Task: `<one line — what document or section is being written, and why now>`

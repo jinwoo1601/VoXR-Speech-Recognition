@@ -1,6 +1,6 @@
 # Review angle roster
 
-Each entry below is pasted into one `review-angle` agent's call prompt, together with the review brief's absolute path. Which angles a cycle runs is its depth profile — `review-cycle`'s `## Depth profiles` — and the review brief's `## Angles` field lists them. The full profile runs the composed roster set: this file plus each composed pack's own `.claude/references/<pack>/angle-roster.md` where it exists, and a pack's angles run exactly as the entries below do. EFF is dispatched only where the brief declares hot paths. MOVED is dispatched only where the brief's `## Master's changes` lists files: a brief with no such section, or none listed, leaves it out of every run, the composed roster set's included. No angle reports nits.
+Each entry below is pasted into one `review-angle` agent's call prompt, together with the review brief's absolute path. Which angles a cycle runs is its depth profile — `review-cycle`'s `## Depth profiles` — and the review brief's `## Angles` field lists them. The full profile runs the composed roster set: this file plus each composed pack's own `.claude/references/<pack>/angle-roster.md` where it exists, and a pack's angles run exactly as the entries below do. EFF is dispatched only where the brief declares hot paths. No angle reports nits.
 
 ## Correctness family
 
@@ -20,11 +20,6 @@ Do NOT report: single-file logic (LINE owns it).
 Where the change wraps, adapts, or mirrors another layer (adapter over another layer's model, serialization mirror, interface implementation), verify the wrapper preserves the wrapped contract: value ranges, units, null behavior, ordering, threading assumptions, error propagation.
 Do NOT report: the wrapped layer's own internal bugs unless the wrapper amplifies them.
 
-### MOVED — moved-target clash hunt
-Dispatched only where the brief's `## Master's changes` lists files.
-Read the `touches` and `calls` lines under the brief's `## Master's changes`: files the catch-up brought the target's changes into, that the branch changed or names. For each, read the target's change, as that section says, then what the branch's change assumes of that file, on a `calls` line in the files after `<-`: a signature, a field, a default, an ordering, a stated rule, a behaviour. The branch's change is read whole, from the block's `<base>` to its head before, whatever `## Scope`'s range. Report each assumption the target's change breaks: a semantic clash the catch-up did not mark as a conflict.
-Do NOT report: a path on an `other` line; a defect wholly inside the target's own change with no bearing on the branch; a changed line's own logic (LINE owns it), a behaviour the branch removed (GONE), or a contract whose ends the branch's change both holds (XFILE).
-
 ## Quality family
 
 ### REUSE — reuse of existing code
@@ -32,7 +27,7 @@ Find changed code that reimplements something that already exists in the codebas
 Do NOT report: near-misses where the existing code's semantics genuinely differ — check before claiming.
 
 ### SIMP — simplification
-Find changed code that can be materially simpler with identical behavior: collapsible branches, redundant state, dead parameters, conditions provably constant in context.
+Find changed code that can be materially simpler with identical behavior: collapsible branches, redundant state, dead parameters, conditions provably constant in context, and reader load with no payoff — a wrapper whose one caller could call the wrapped code directly, a pass-through layer that only forwards its arguments, state held at a wider scope (field, module, global) than the one place it is used.
 Do NOT report: simplifications that change behavior, however slightly, or matters of taste with no complexity payoff.
 
 ### EFF — efficiency/allocation
@@ -47,9 +42,9 @@ Do NOT report: line-level issues (other angles own them) — this angle is about
 ## Sweep family
 
 ### CONV — conventions
-Check the changed code against the project's stated conventions (the coding-conventions reference, the project's bindings, house patterns visible in neighboring code): naming, file headers, any body comment or docstring beyond the header block and the exemptions the coding-conventions reference states, module placement.
-Do NOT report: conventions the project doesn't actually state or practice — cite the rule's source for every finding.
+Check the changed code against the project's stated conventions (the coding-conventions reference, the project's bindings, house patterns visible in neighboring code): naming, file headers, any body comment or docstring beyond the header block and the exemptions the coding-conventions reference states, module placement. In changed skill or reference prose, ask one question, advice under `.claude/references/core/script-steps.md`: a step that takes no judgment, which no verb performs — its inputs fully determining its output by a rule the prose states — or a step that re-derives what a verb already prints; cite that file's rule.
+Do NOT report: conventions the project doesn't actually state or practice — cite the rule's source for every finding; a step with a judgment part, a gate or a human stop; a locked design doc's description of a step.
 
 ### GAP — gap-sweep
-Read the brief's invariants list and the full diff, and ask what NO other angle covers: unexercised new code paths, missing test coverage for the change's riskiest claim, brief invariants nothing in the change enforces, TODOs introduced without tracking.
+Read the brief's invariants list and the full diff, and ask what NO other angle covers: unexercised new code paths, missing test coverage for the change's riskiest claim, brief invariants nothing in the change enforces, TODOs introduced without tracking. That remainder includes a new test that would still pass with the change reverted, or would fail on a change of internals only, read against the brief's `## Red evidence` where it carries one: a `red not shown` reason, or a red whose failure is not on the behaviour the test pins, is among what it weighs.
 Do NOT report: anything clearly owned by a named angle above — your value is the remainder; duplicating others is noise.

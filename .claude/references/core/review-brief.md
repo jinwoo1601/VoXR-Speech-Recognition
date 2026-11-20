@@ -6,7 +6,7 @@
 
 ## Task
 
-- Agents: `review-angle`, one per angle listed under `## Angles`; `finding-verifier`, one per finding
+- Agents: `review-angle`, one for all the angles listed under `## Angles` on the slim and prose profiles and one per angle on the full profile; `finding-verifier`, one per finding
 - Baseline model: `<the agent file's model:>`; downgrade for this dispatch: `<none>`
 - Binding to consult: the project's `vc` binding, quoted under `## Scope`
 - Task: review `<the change set>` on the angles below and return findings, each with `file:line`
@@ -39,14 +39,14 @@
 - Architecture: `<absolute path>` (§ the sections bearing on this change)
 - Decision records in play: ...
 
+## Red evidence
+
+<!-- Each line opening `red` held by the phase report `implement` FILE saved for each of the build plan's phases, copied verbatim, phase by phase, after its phase's id: a new test's red run, or the reason none was shown. GAP weighs them against the diff; they are evidence, not invariants a finding is refuted against. `none` where no phase report holds such a line: under `none bound`, in a review with no `implement` phase, in a `tackle-issue` review. -->
+- <phase id>: <one line opening `red`, verbatim — an item per line, the phases in the build plan's order; a phase whose report holds no such line has no item> — or, where no phase report holds one, the one item `none`
+
 ## Hot paths
 
 <!-- Paths EFF treats as hot — per-frame, per-tick, per-request; everything else is cold unless listed. -->
-- ...
-
-## Master's changes
-
-<!-- Master's here is the target's: the branch this one catches up with and merges into, whatever the project names it. review-cycle fills this section from .scratch/catch-up-record.md, one block per catch-up, before ## Angles is decided, taking the blocks ## Depth profiles names. First, Record blocks read: and the number of blocks the record holds, 0 with no record. Then, block by block: its range, <base>, the block's merge base, to <tip>, off its closing level-check: FAIL line, a verdict naming no path and so not listed; its head before; its lines as saved, whole: touches <s> <path>, a file the branch changed; calls <s> <path> <- <files>, a file the files named there name; other <s> <path>, neither; <s> the status on the target's side; then each resolution, its path, rule or writer and master's side. A path's side is <tip>:<path>, before the change <base>:<path>, one added having no <base> copy and one deleted no <tip> copy, each read by the idiom under ## Scope, so no read depends on where the merge left the base. MOVED takes the touches and calls lines only; the other lines are here for the trivial profile's list at RULE. A block marked level-check: refused has no closing line, its tip for the range and its lines, one touches line per path its catch-up previewed, listed with the words over-wide, read refused: MOVED runs over them rather than not at all. With no touches or calls line in the blocks taken, write No matching files: MOVED is not dispatched. With no record, as on a branch with no catch-up or with the trees binding absent, write No catch-up record: MOVED is not dispatched. -->
 - ...
 
 ## Deliverable

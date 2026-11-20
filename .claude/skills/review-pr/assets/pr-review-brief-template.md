@@ -4,10 +4,17 @@
      finding-verifier agent reads this file by ABSOLUTE path; it is their entire shared
      context. Anything not written here does not exist for them. -->
 
+## Task
+
+- Agents: `review-angle`, one per angle of the depth profile; `finding-verifier`, one per numbered finding
+- Baseline model: `<the agent file's model:>`; downgrade for this dispatch: `<none>`
+- Binding to consult: the project's `vc` binding, quoted under `## Scope`
+- Task: review PR `#<n>` at `<headRefOid>` on the angles your call prompt gives and return findings, each with `file:line`
+
 ## Scope
 
 - PR: `#<n>` — <url>
-- Lane / depth profile: <issue | feature | design> → <slim | prose | trivial | full>
+- Lane / depth profile: <issue | feature | design | prototype | no match> → <slim | prose | trivial | full>
 - Head: `<headRefName>` @ `<headRefOid>` (the exact commit under review)
 - Base: `<baseRefName>`, merge-base `<base-sha>`
 - Base content for comparisons — use EXACTLY this idiom: `git show <base-sha>:<repo-relative-path>`. Repo root is `<absolute path>`; strip it from the paths in the table below to form the repo-relative path.
@@ -54,7 +61,15 @@
 <!-- Paths EFF treats as per-frame/per-tick; everything else is cold unless listed. -->
 - ...
 
-## Out of scope — declared
+## Deliverable
+
+- Findings in `review-angle`'s Output form, each with `file:line`; verdicts in `finding-verifier`'s, one per numbered finding.
+
+## Acceptance criteria for this dispatch
+
+1. ...
+
+## Declared out of scope
 
 <!-- Known intentional changes angles must not report; deferred items with their
      deferral record; adjacent code deliberately left alone. -->
@@ -64,3 +79,19 @@
 
 <!-- Named so angles report them as unverified claims rather than as passing checks. -->
 - <e.g. on-device or hardware-only behavior; a host project's test run, if no host is reachable>
+
+## Project rules
+
+- <the lines of the project's `CLAUDE.md` or other standing instruction the task must obey, quoted, or `none`>
+
+## Constraints
+
+- Read-only: no file is written, created, or edited; Bash runs the base-revision read named under `## Scope`, and read-only analysis over the tree, the saved diff and those reads — scripted comparisons, counts, extracts — that prints to its output; nothing is written inside the working tree, and a temporary file, where one is unavoidable, goes outside it in the system's temporary directory and is removed before the report. No version-control command beyond the named read, no PR-host command, no installs.
+
+## Verification command
+
+`<the bound command compile-check runs at POST's CHECK — or: none bound — or: absent>` — expected green: `<pattern, or n/a>`
+
+## Stop-and-report rule
+
+On a missing field, an unreadable base revision or diff file, or a criterion that cannot be met as briefed: stop and report `BLOCKED` naming it. Do not adapt.

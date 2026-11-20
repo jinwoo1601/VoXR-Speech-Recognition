@@ -13,7 +13,7 @@ removal-date: null
 
 ## What this is
 
-A system design doc specifies **one system** — a cache's admission and eviction rules, a retry policy, a scheduler, an interaction model — as a **model**, and argues the **dynamics** that model produces: the behaviour the rules create, and why that behaviour delivers what the locked design says the project is for. It is the *earliest* doc in the pipeline — a design-track doc authored on a design branch and **locked at G1**, upstream of the feature-requirement doc (the buildable contract) and the architecture doc (the how).
+A system design doc specifies **one system** — a cache's admission and eviction rules, a retry policy, a scheduler, an interaction model — as a **model**, and argues the **dynamics** that model produces: the behaviour the rules create, and why that behaviour delivers what the locked design says the project is for. It is the *earliest* doc in the pipeline — a design-track doc authored on a design branch and **locked at G1**, upstream of the requirements doc (the buildable contract) and the architecture doc (the how).
 
 The anchor idea, and the test of every line:
 
@@ -44,13 +44,17 @@ A doc that only *describes mechanics* and never reasons about what *emerges* fro
 
 <!-- harness:binding:start process-docs .claude/bindings/core.md -->
 - Design docs: `Planning~/design-docs/<topic>.md`, one file per design topic, its decision records beside it per design-track's ADR convention; the root-level `Planning~/*.md` vN docs are pre-harness history, read-only
+- Architecture-doc body budget: 40 KB over `Planning~/features/<feature>/architecture.md`; the closed features' oversized docs, all written before the harness, are ruled in `memory/doctor-rulings.md`
+- Plan-file budget: 10 KB over `Planning~/features/<feature>/plan-*.md`
+- Brief budget: 15 KB over `.scratch/**/*brief*.md`
 <!-- harness:binding:end process-docs -->
 
 <!-- harness:binding:start vc .claude/bindings/vc-git.md -->
 - System: git; GitHub, remote `origin` `https://github.com/jinwoo1601/VoXR-Speech-Recognition.git`, public; `gh` on the Windows PATH (`C:\Program Files\GitHub CLI\gh.exe`), authenticated as `jinwoo1601`
 - Main branch: `main`
+- Auto-mode entries: excluded
 - Branch procedure: a re-lock — a `design-<topic>` branch cut from the feature branch's head in the feature's own tree, declared on its STATUS line `re-lock of <feature-branch>`, merged back into that feature branch after G1 — is cut by `git switch -c design-<topic>` in the feature's tree and merged back by `git switch <feature-branch>`, then `git merge design-<topic>`, in that tree; a carry — a `design-<topic>` branch cut from the main branch in a prototype's own tree, the one checkout where `trees` is absent, declared on its STATUS line `carry of <prototype-branch>`, which takes only the topic's design directory from the prototype branch — is cut and switched to by `git switch -c design-<topic> <main-branch>` in that tree; branches are `design-<topic>`, `feat-<feature>`, `light-<topic>` (an issue's `light-<n>-<slug>`), `lab-<topic>`, which merges nothing, and the release prep `chore/release-X.Y.Z`; each is cut from an up-to-date `main` — `git fetch origin`, then on `main` `git merge --ff-only origin/main`, both run in the hub — together with its own tree, from the hub, by the Create procedure of `## trees` below, and runs in that tree
-- Check-in procedure: inline on the main thread — `git add -- <paths>`, then `git commit -F <message file> -- <paths>`, each one command, never a heredoc or a chain, never `git add -A` — a hub operation's `memory/` check-in by the base's `scripts/hub.py write --root D:\Workspace\VoXR-Speech-Recognition --main main`, which writes and checks in exactly the paths it edits under `memory/`, as one commit; then `git push -u origin <branch>` on a branch's first push and `git push` after; the commit sha is the receipt; every hub write — a `hub.py write` in the hub on `main` — is preceded by `git pull --no-rebase origin main` in the hub and followed by `git push` there, `hub.py write` neither pulling nor pushing; a failed pull or push is reported, never retried in another form, and the local write stands; a session's `memory/` commits in the hub while the hub is on that session's own branch are plain check-ins on that branch, outside the sync, `main` never pulled into it; pull requests still merge on GitHub, by the human
+- Check-in procedure: inline on the main thread, in the session's own tree, from its root — `git add -- <paths>`, then `git commit -F <message file> -- <paths>`, each one command, bare, the forms the pack's `Bash(git add:*)` and `Bash(git commit:*)` rules match whole: never a heredoc, a chain, a leading `cd` or the Hub slot's `git -C "<path>"`, save `implement`'s JOIN check-in of a writer tree, which runs in that tree by that idiom; never `git add -A` — a hub operation's `memory/` check-in by the base's `scripts/hub.py write --root D:\Workspace\VoXR-Speech-Recognition --main main`, which writes and checks in exactly the paths it edits under `memory/`, as one commit; then `git push -u origin <branch>` on a branch's first push and `git push` after; the commit sha is the receipt; every hub write — a `hub.py write` in the hub on `main` — is preceded by `git pull --no-rebase origin main` in the hub and followed by `git push` there, `hub.py write` neither pulling nor pushing; a failed pull or push is reported, never retried in another form, and the local write stands; a session's `memory/` commits in the hub while the hub is on that session's own branch are plain check-ins on that branch, outside the sync, `main` never pulled into it; pull requests still merge on GitHub, by the human
 <!-- harness:binding:end vc -->
 
 <!-- harness:binding:start board .claude/bindings/core.md -->
@@ -58,6 +62,8 @@ A doc that only *describes mechanics* and never reasons about what *emerges* fro
 <!-- harness:binding:end board -->
 
 ## When it applies — and prerequisites
+
+Read `.claude/references/design-track/design-path.md` first: the design path's steps, each with its enforcer.
 
 Trigger: the design track for a system is active. Before drafting, confirm:
 
@@ -146,6 +152,6 @@ Every deliverable design doc must clear these.
 - **Deliverable frontmatter:** a deliverable doc's frontmatter is its template's, `assets/deliverable-doc-template.md` — `type: deliverable`, the other keys as above.
 - **Prose and linking convention:** keep each paragraph and list item on one logical line — no hard-wrapped prose. For link and date form, match what the project's existing process docs already do; where there are none, link by relative path and write dates absolute (`YYYY-MM-DD`). End with `## Status / openness`, then `## Related`.
 - **Mark unbuilt content:** a line that states forward design intent rather than as-built fact carries `(design intent, not yet built)` inline, so a reader of a design-of-record can tell the two apart line by line.
-- **Update the cross-session state:** add or update the topic's row where the `board` binding's *Mechanism* slot says — track `design`, stage `design-doc`, the pre-G1 design stage. No board bound → `memory/STATUS.md` is the state.
+- **Update the cross-session state:** add or update the topic's row where the `board` binding's *Mechanism* slot says — track `design`, stage `design-doc`, the pre-G1 design stage. No board bound → `memory/STATUS.md` is the state. A line there names the path and this stage as `.claude/references/core/path-read.md` `## The STATUS line` says.
 - **Do not touch the product surface.** A project's product docs are written only after G2 acceptance, by the agent that reconciles them; writing there now is a layer violation. Design docs are process docs, and their only bookkeeping is the row above. Cross-*linking* to a product page is fine; creating or editing one from here is not.
 - **Check in only when the human asks**, per the `vc` binding's check-in procedure. Concurrent sessions edit the same cross-session state and share the ADR sequence — re-read both, and re-check the highest ADR number on disk, before appending.

@@ -40,3 +40,10 @@
 - Source: `Runtime/**`, `Editor/**`, `NativeBridge~/src/**`, `NativeBridge~/include/**`
 - Tests: `Tests~/**`, `NativeBridge~/harness/**`
 - Generated: `.claude/**` except `.claude/bindings/**` (composed by `harness.py`); `Runtime/Plugins/Android/arm64-v8a/*.so` (built from `NativeBridge~/` by its `build.sh`); `Runtime/Plugins/x86_64/voxr-frontend.dll` (built from `NativeBridge~/` by the `windows-x64` preset); `NativeBridge~/build*/` and `NativeBridge~/vendor/` (ignored)
+
+## tickets
+<!-- Interview: Does this project take tickets from the base's `scripts/hub.py` ticket verb — at most how many heavy tickets may be held machine-wide once one of this project's heavy requests is granted, a positive whole number; whether it takes the quiet ticket, `yes` or `no`, and with `yes` for how many minutes a quiet ticket may be held before `ticket status` flags it overdue, 30 where none is named; at which CPU % and memory % in use new heavy and quiet grants wait, or `empty` for slots alone; and whether it takes the merge ticket, `yes` or `no` — or a single `none` where this project takes no tickets? -->
+- Heavy slots: `2` — at most two heavy tickets held machine-wide once one of this project's heavy requests is granted, the workspace-wide cap (the human, 2026-11-21)
+- Quiet: `yes` — takes the quiet ticket, 30-minute maximum hold (the default), for wall-clock perf measurements (the human, 2026-11-21)
+- Load ceiling: `CPU 90 %, memory 90 %` — new heavy and quiet grants wait while either figure in use is above it (the human, 2026-11-21)
+- Merge ticket: `yes` — `hub.py merge` refuses a branch holding none (the human, 2026-11-21)

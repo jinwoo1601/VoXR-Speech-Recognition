@@ -1,6 +1,6 @@
 # The page contract
 
-What every page of a codex owes, in any project that composes this pack. The split is by kind: this file owns what a page *owes*, and the project owns what a page is *about* and where it sits, in the schema file the `product-docs` binding's `Schema file` slot names. A reconciler reads both — this file for the obligations below, the project schema for the subjects, the locations, the naming and the linking form. Where a project has no schema file, every obligation below still holds, and what the schema would have answered is read off the existing pages' own shape rather than invented.
+What every page of a wiki owes, in any project that composes this pack. The split is by kind: this file owns what a page *owes*, and the project owns what a page is *about* and where it sits, in the schema file the `product-docs` binding's `Schema file` slot names. A reconciler reads both — this file for the obligations below, the project schema for the subjects, the locations, the naming and the linking form. Where a project has no schema file, every obligation below still holds, and what the schema would have answered is read off the existing pages' own shape rather than invented.
 
 ## What a page is, and the three page types
 
@@ -9,7 +9,7 @@ A page records **what IS**: one subject, as the built system now stands, as of t
 Three page types are defined here:
 
 - **`pack-page`** — a page whose subject is one of the standing components the project's pages are organized around, as the project schema names them.
-- **`hub`** — the page that lists the codex's pages and stands as its entry point.
+- **`hub`** — the page that lists the wiki's pages and stands as its entry point.
 - **`decision-record`** — a page whose subject is a single decision, kept as a record in its own right.
 
 The set is **extensible**: a project may define further types in its schema, and the project schema names which types that project uses. *Absence:* where the schema names no types, the three above are the available set, and a page is never written under a type no home has defined.
@@ -44,14 +44,15 @@ Every claim on a page is traceable to what it rests on, and **live source is the
 
 ## What crosses — the layer rule
 
-**What crosses:** of a project's process docs, only the tier-2 working record's `## Decision register` crosses into a page; every other process doc is cited where it helps a reader and lifted never. The sorting principle is the findability of the source — what is locked, organized and readable where it sits is cited, and what is buried in a working record is lifted. Its four clauses:
+**What crosses:** of a project's process docs, only the tier-2 working record's `## Decision register` and the recon items a locked requirement names for carrying forward cross into a page; every other process doc is cited where it helps a reader and lifted never. The sorting principle is the findability of the source — what is locked, organized and readable where it sits is cited, and what is buried in a working record is lifted. Its five clauses:
 
 - **Tier-1 design docs and their decision records are cited, not lifted.** They are locked and readable where they are, and a page that copies them carries a second copy to keep current.
 - **The tier-2 `## Decision register` is lifted**, together with its `**Amended YYYY-MM-DD:**` lines — clause by clause, and only what the criterion below passes.
+- **Recon items a locked requirement names for carrying forward are lifted.** Where a locked requirement names a recon record's listed items to be carried forward into the product docs, those items are lifted, those only, by the findability criterion: a recon record is buried as the register is. Every other recon record is cited where it helps a reader, as before.
 - **Requirements docs and the rest of the architecture doc cross nothing.** Not the build plan, not the phase table, not the as-built pass.
 - **Live source remains the evidence**, whatever a lifted clause asserts: the lift supplies the *why*, and the *what* is verified against the tree.
 
-*Absence:* the lift clause is the one arm that needs a tier-2 source at all; where a project has none, the last section of this file says what happens, and the other three clauses are unaffected.
+*Absence:* the register's lift clause is the one arm that needs a tier-2 source at all; where a project has none, the last section of this file says what happens, and the other four clauses are unaffected.
 
 ## The durable/transient criterion
 
@@ -86,11 +87,11 @@ When a decision a page carries is superseded, the old rationale is **removed** f
 
 ## The silent ingest
 
-"No codex change" is a **stated normal outcome** of an ingest, not a defect of one. Where a feature's decisions are all transient under the criterion above, the codex is silent: the record is the chronicle entry and the register, and the ingest reports no page change. *Absence:* silence is reported rather than merely left — the ingest names the clauses that did not cross, so a silent ingest is auditable, and an ingest that finds nothing durable never manufactures something to write.
+"No wiki change" is a **stated normal outcome** of an ingest, not a defect of one. Where a feature's decisions are all transient under the criterion above, the wiki is silent: the record is the chronicle entry and the register, and the ingest reports no page change. *Absence:* silence is reported rather than merely left — the ingest names the clauses that did not cross, so a silent ingest is auditable, and an ingest that finds nothing durable never manufactures something to write.
 
 ## Hub bookkeeping
 
-The `hub` page lists **every** page of the codex and **no** page absent from it; both directions are the obligation, and both are checked in the same pass that writes a page. Every page written, renamed or superseded is reflected on the hub before the ingest closes, in the project schema's linking form. *Absence:* a subject that was ingested and yielded no page is listed on the hub and marked as such, so a reader can tell a subject with nothing durable to say from a subject nobody has looked at yet.
+The `hub` page lists **every** page of the wiki and **no** page absent from it; both directions are the obligation, and both are checked in the same pass that writes a page. Every page written, renamed or superseded is reflected on the hub before the ingest closes, in the project schema's linking form. *Absence:* a subject that was ingested and yielded no page is listed on the hub and marked as such, so a reader can tell a subject with nothing durable to say from a subject nobody has looked at yet.
 
 ## Precedence
 
@@ -98,4 +99,4 @@ Three homes, in this order: **the project schema > this contract > the reconcile
 
 ## Where there is no tier-2 source
 
-The lift clause of the layer rule needs a tier-2 working record to lift from, and a project that keeps none has no register: there the lift rule is **inert, not unsatisfiable** — nothing fails, and nothing waits for a document that will not arrive. The codex is authored from live source instead, citing whatever process docs the project does keep, and the criterion still sorts what is written: the *why* that live source cannot show is what a page adds, and a why that is nowhere in the tree is not manufactured to fill the gap. Every other obligation here stands unchanged — the page types, one subject per page, the frontmatter, cite-everything, the chronicle rule, supersession, the silent outcome, the hub and precedence all hold in a project with no process docs at all.
+The register's lift clause of the layer rule needs a tier-2 working record to lift from, and a project that keeps none has no register: there the lift rule is **inert, not unsatisfiable** — nothing fails, and nothing waits for a document that will not arrive. The wiki is authored from live source instead, citing whatever process docs the project does keep, and the criterion still sorts what is written: the *why* that live source cannot show is what a page adds, and a why that is nowhere in the tree is not manufactured to fill the gap. Every other obligation here stands unchanged — the page types, one subject per page, the frontmatter, cite-everything, the chronicle rule, supersession, the silent outcome, the hub and precedence all hold in a project with no process docs at all.

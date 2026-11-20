@@ -2,7 +2,7 @@
 # Purpose:  SubagentStop hook filing each agent's final report beside the brief it answers
 # Layer:    Hooks
 # Owns:     (script, no public types)
-# Depends:  (none)
+# Depends:  hook-common.py
 # =============================================================================
 
 import json
@@ -10,6 +10,13 @@ import os
 import re
 import sys
 from pathlib import Path
+
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook-common.py"), "rb") as common:
+        exec(compile(common.read(), common.name, "exec"), globals())
+    COMMON_ERROR = None
+except Exception as error:
+    COMMON_ERROR = error
 
 AGENTS_REL = ".claude/agents"
 REPORTS_REL = ".scratch/reports"
@@ -20,26 +27,10 @@ TRAILER_KEYS = ("criteria", "files", "verification")
 FULL_REPORT = "# Full report —"
 HANDBACK_TOOL = "SubagentHandback"
 UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
-DRIVE_FORM = re.compile(r"/([A-Za-z])(?=/|$)")
 REMEDY = ("end with the contract's report: first line `<STATUS> — <brief path>`, and the "
           "trailer (criteria; files; verification) — "
           "`.claude/references/core/brief-fields.md` `## The report (up)`")
-
-
-def resolve_root(argv):
-    if len(argv) > 1:
-        candidate = Path(argv[1])
-        if candidate.is_dir():
-            return candidate
-    return Path.cwd()
-
-
-def parse_payload(data):
-    try:
-        document = json.loads(data)
-    except (ValueError, RecursionError):
-        return None
-    return document if isinstance(document, dict) else None
+ERROR_REASON = "report-filer: internal error (%s: %s); no report was filed"
 
 
 def text_field(payload, key):
@@ -74,18 +65,7 @@ def brief_target(target, root):
     target = target.strip().strip("`'\"").strip()
     if not target:
         return None
-    match = DRIVE_FORM.match(target) if os.name == "nt" else None
-    if match:
-        target = match.group(1).upper() + ":" + (target[match.end():] or "/")
-    path = Path(target)
-    if not path.is_absolute():
-        path = root / path
-    path = path.resolve()
-    if not path.name.endswith(".md") or not path.is_file():
-        return None
-    if ".scratch" in [part.lower() for part in path.parts[:-1]]:
-        return path
-    return None
+    return scratch_md(target, root)
 
 
 def assistant_blocks(transcript):
@@ -226,10 +206,16 @@ def handle(payload, root):
 
 
 def main(argv):
-    payload = parse_payload(sys.stdin.buffer.read())
-    if payload is None:
-        return 0
-    document = handle(payload, resolve_root(argv))
+    try:
+        data = sys.stdin.buffer.read()
+        if COMMON_ERROR is not None:
+            raise COMMON_ERROR
+        payload = parse_payload(data)
+        if payload is None:
+            return 0
+        document = handle(payload, resolve_root(argv))
+    except Exception as error:
+        document = json.dumps({"systemMessage": ERROR_REASON % (type(error).__name__, error)})
     if document is not None:
         print(document)
     return 0

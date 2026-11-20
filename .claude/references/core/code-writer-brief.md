@@ -14,7 +14,7 @@
 
 ## Plan reference
 
-- Plan file: `<repo-relative path>` (required) — or, on the five routes that have no plan, `none — a review fix` (`review-cycle` FIX, the verified findings quoted under the task standing in for the plan), `none — a catch-up resolution` (`.claude/references/core/gate-close.md` `### CATCH-UP`, the conflict and both sides' revisions, or the gate's parsed error list, quoted under the task standing in for the plan), `none — a light-lane fix` (`tackle-issue` FIX, `debugger`'s proved cause and proposed fix standing in) or `none — a prototype round` (`prototype-round` BRIEF, the prototype's requirements doc by path and the human's last direction, quoted under the task, standing in), the two lines below then left out; or `none — a path build` (a path's build skill, the working record its build stage names standing in for the plan, by path, the round's revision entry quoted under the task), the Architecture doc line alone then left out
+- Plan file: `<repo-relative path>` (required) — or, on the five routes that have no plan, `none — a review fix` (`review-cycle` FIX, the verified findings quoted under the task standing in for the plan), `none — a catch-up resolution` (`.claude/references/core/gate-close.md` `### CATCH-UP`, the conflict and both sides' revisions, or the gate's parsed error list, quoted under the task standing in for the plan; on a conflict, each conflicted file's report line declared `kept both` or `chose`, as `code-writer`'s `## Output` says), `none — a light-lane fix` (`tackle-issue` FIX, `debugger`'s proved cause and proposed fix standing in) or `none — a prototype round` (`prototype-round` BRIEF, the prototype's requirements doc by path and the human's last direction, quoted under the task, standing in), the two lines below then left out; or `none — a path build` (a path's build skill, the working record its build stage names standing in for the plan, by path, the round's revision entry quoted under the task), the Architecture doc line alone then left out
 - Architecture doc: `<repo-relative path>` — for the decisions the plan cites, not read whole
 - Requirements doc: `<repo-relative path>` (rows `<F…>`) — for a lite feature, by the test of `.claude/references/core/feature-lite.md` `## The mark`, the backlog's path and criteria `<A…>`, with the word `lite`, the feature's name and the row quoted (`.claude/references/core/feature-lite.md` `## The acceptance source`)
 
@@ -44,7 +44,7 @@ The notes inform, and add no rule; the stop-and-report rule stands.
 ## Conventions
 
 - `.claude/references/core/implementation-rules.md`
-- Project bindings: `<the lines of .claude/bindings/<pack>.md — or, before scaffold, of the project CLAUDE.md Bindings — that bind style, layout, verification>`
+- Project bindings: `<the lines of .claude/bindings/<pack>.md — or, before scaffold, of the project CLAUDE.md Bindings — that bind verification>`
 - The `verification` binding's *Shell*, *Working-dir read* and *Path form* lines, verbatim: `<the three lines>`; a `verification` binding that is a single `none` has none of them — the platform slots are then not read, and the brief says the working directory is read by `pwd` and written by the path it prints
 - `.claude/references/core/coding-conventions.md`
 - `<for each name in .claude/harness.json's packs, in the manifest's order, .claude/references/<pack>/writer-rules.md where that file exists, one line each by that repo-relative path; with no manifest or no such file, this bullet is left out>`

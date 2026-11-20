@@ -29,7 +29,7 @@ The single most common failure is writing at the wrong altitude. Four docs, four
 |---|---|---|
 | **Model + dynamics + resolved forks** | **system design doc** *(this)* | "An entry is admitted on its second reference and evicted by least-recent use, except that an entry pinned by an in-flight read is never evicted. Produces a cache a full scan cannot flush, and a bounded worst case under a burst of one-shot keys." |
 | **Numbers / tuning** | the tuning pass | "Capacity 50 000 entries; the admission window is 2 minutes; a pin expires after 30 seconds." *(provisional — not locked at G1)* |
-| **Buildable, testable contract** | feature-requirement doc | "A pinned entry survives an eviction sweep. *Verify:* fill the cache past capacity while one entry is pinned, and assert it is still resident." *(illustrative)* |
+| **Buildable, testable contract** | requirements doc | "A pinned entry survives an eviction sweep. *Verify:* fill the cache past capacity while one entry is pinned, and assert it is still resident." *(illustrative)* |
 | **Implementation (classes, data)** | architecture doc | "`RecencyIndex` holds the eviction order; `Admission` gates inserts on the second-reference bit." *(illustrative)* |
 
 The design doc owns the **top floor only**. Numbers belong one floor down (flag them `provisional → the tuning pass`); class names two floors down.

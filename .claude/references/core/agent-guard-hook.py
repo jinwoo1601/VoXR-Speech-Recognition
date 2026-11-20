@@ -2,14 +2,20 @@
 # Purpose:  PreToolUse guard refusing a subagent's Agent call, a named teammate, a writing dispatch with no brief or a model upgrade
 # Layer:    Hooks
 # Owns:     (script, no public types)
-# Depends:  (none)
+# Depends:  hook-common.py
 # =============================================================================
 
 import json
 import os
 import re
 import sys
-from pathlib import Path
+
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook-common.py"), "rb") as common:
+        exec(compile(common.read(), common.name, "exec"), globals())
+    COMMON_ERROR = None
+except Exception as error:
+    COMMON_ERROR = error
 
 AGENTS_REL = ".claude/agents"
 SENTINEL = "HARNESS_ALLOW_NAMED_AGENTS"
@@ -32,24 +38,8 @@ BRIEF_REASON = ("`{agent}`'s `tools:` in `.claude/agents/{agent}.md` include Wri
                 "or relative to the project root; only a read-only agent may take its brief "
                 "inline (`.claude/references/core/constitution-annex.md` `## Agent and skill "
                 "contracts`).")
-DRIVE_FORM = re.compile(r"/([A-Za-z])(?=/|$)")
 ANCHOR = re.compile(r"[A-Za-z]:[\\/]|[\\/]")
-
-
-def resolve_root(argv):
-    if len(argv) > 1:
-        candidate = Path(argv[1])
-        if candidate.is_dir():
-            return candidate
-    return Path.cwd()
-
-
-def parse_payload(data):
-    try:
-        document = json.loads(data)
-    except (ValueError, RecursionError):
-        return None
-    return document if isinstance(document, dict) else None
+ERROR_REASON = "agent-guard: internal error (%s: %s); the call was not checked"
 
 
 def is_plain_name(value):
@@ -88,10 +78,6 @@ def baseline_from(lines):
     return None if model is None else model.lower()
 
 
-def baseline_model(root, subagent_type):
-    return baseline_from(agent_frontmatter(root, subagent_type))
-
-
 def writes(lines):
     tools = frontmatter_value(lines, "tools")
     if tools is None:
@@ -123,18 +109,7 @@ def brief_path(text, root):
     name = re.split(r"[/\\]", text)[-1]
     if not name.endswith(".md") or "brief" not in name.lower():
         return None
-    match = DRIVE_FORM.match(text) if os.name == "nt" else None
-    if match:
-        text = match.group(1).upper() + ":" + (text[match.end():] or "/")
-    path = Path(text)
-    if not path.is_absolute():
-        path = root / path
-    path = path.resolve()
-    if not path.name.endswith(".md") or "brief" not in path.name.lower() or not path.is_file():
-        return None
-    if ".scratch" in [part.lower() for part in path.parts[:-1]]:
-        return path
-    return None
+    return scratch_md(text, root, "brief")
 
 
 def names_brief(prompt, root):
@@ -183,12 +158,19 @@ def deny_document(reason):
 
 
 def main(argv):
-    payload = parse_payload(sys.stdin.buffer.read())
-    if payload is None:
-        return 0
-    reason = decide(payload, resolve_root(argv), os.environ)
-    if reason is not None:
-        print(deny_document(reason))
+    try:
+        data = sys.stdin.buffer.read()
+        if COMMON_ERROR is not None:
+            raise COMMON_ERROR
+        payload = parse_payload(data)
+        if payload is None:
+            return 0
+        reason = decide(payload, resolve_root(argv), os.environ)
+        document = None if reason is None else deny_document(reason)
+    except Exception as error:
+        document = json.dumps({"systemMessage": ERROR_REASON % (type(error).__name__, error)})
+    if document is not None:
+        print(document)
     return 0
 
 

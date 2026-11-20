@@ -42,4 +42,4 @@ The runner then judges what the script cannot — a flagged value that is a plac
 
 ## Status
 
-`gate-preflight` is the runner. Its audit reads the project's manifest and takes each composed pack's definition files from `.claude/references/<pack>/`, so a project composing this pack reaches this file at `.claude/references/vc-git/no-secrets-in-diff.md`; the audit performs what is written above and reports it in the three words above, beside its own items. Where there is no manifest to read, the audit marks this UNVERIFIABLE and says so rather than passing it.
+`gate-preflight` item 5, *Pack-declared preflight checks*, runs this check and reports it as that item says.

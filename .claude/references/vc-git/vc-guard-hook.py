@@ -30,6 +30,7 @@ PIN ="vc-guard-mktemp-placeholder"
 REASON = ("vc-guard: subagents never change version-control state (git {verb} in {tree}); "
           "report the need to the PM — read forms such as git status, diff, log, show and "
           "stash list stay allowed.")
+ERROR_REASON = "vc-guard: internal error (%s: %s); the call was not checked"
 READ_VERBS = frozenset((
     "status", "diff", "log", "show", "rev-parse", "ls-files", "ls-tree", "merge-base", "grep",
     "blame", "describe", "shortlog", "cat-file", "for-each-ref", "show-ref", "rev-list",
@@ -39,14 +40,17 @@ WRITES_FILE = frozenset(("diff", "log", "show", "diff-tree", "diff-index", "diff
 GLOBAL_FLAGS = frozenset(("--no-pager", "-P", "-p", "--paginate", "--bare",
                           "--no-optional-locks", "--literal-pathspecs"))
 GLOBAL_VALUED = ("--git-dir=", "--work-tree=")
+GLOBAL_PLACES = frozenset(("--git-dir", "--work-tree"))
+PLACE_VARIABLES = ("GIT_DIR=", "GIT_WORK_TREE=")
 BRANCH_FLAGS = frozenset(("--show-current", "--list", "-l", "-a", "-r", "-v", "-vv", "--all",
                           "--remotes"))
 BRANCH_VALUED = frozenset(("--contains", "--no-contains", "--merged", "--no-merged",
                            "--points-at"))
 CONFIG_READS = frozenset(("--get", "--get-all", "--get-regexp", "--list", "-l"))
 CONFIG_WRITE_SUBCOMMANDS = frozenset(("set", "unset", "rename-section", "remove-section", "edit"))
-CONFIG_WRITE_OPTIONS = frozenset(("--add", "--replace-all", "--rename-section", "--remove-section",
-                                  "-e", "--edit"))
+CONFIG_WRITE_OPTIONS = ("add", "replace-all", "rename-section", "remove-section", "edit", "unset",
+                        "unset-all")
+CONFIG_VALUED = frozenset(("-f", "--file", "--blob", "-t", "--type", "--default", "--comment"))
 INIT_VALUED = ("initial-branch", "template", "separate-git-dir", "object-format", "ref-format")
 
 
@@ -188,7 +192,10 @@ def command_start(segment):
         index += 1
         while index < len(segment) and (segment[index].startswith("-")
                                         or (name == "env" and ASSIGNMENT.match(segment[index]))):
-            index += 2 if segment[index] in valued else 1
+            word = segment[index]
+            abbreviated = (len(word) > 2 and word.startswith("--") and "=" not in word
+                           and any(option.startswith(word) for option in valued))
+            index += 2 if word in valued or abbreviated else 1
     return index
 
 
@@ -410,7 +417,9 @@ def invocations(command, cwd, pinned=None, pinning=None):
                 working = (to_path(operands[0], working, True)
                            if operands and operands[0] != "-" else None)
         else:
-            found.append((name, arguments, working))
+            found.append((name, arguments, working,
+                          [expand(word, seen) for word in segment[:start]
+                           if ASSIGNMENT.match(word)]))
         for word in segment[start:]:
             named = NAMED.match(word)
             if named:
@@ -462,27 +471,36 @@ def protected_trees(root):
 
 def git_verb(arguments, working):
     target, where, risky = working, working or UNRESOLVED, False
+    places = []
     index = 0
     while index < len(arguments):
         option = arguments[index]
-        if option in ("-C", "-c"):
+        if option in ("-C", "-c") or option in GLOBAL_PLACES:
             if index + 1 >= len(arguments):
+                if option in GLOBAL_PLACES:
+                    return option, [], target, where, risky, [(None, option)]
                 return None
             value = arguments[index + 1]
             if option == "-C":
                 target = to_path(value, target, True)
                 where = target or value
-            else:
+            elif option == "-c":
                 key = value.split("=", 1)[0].lower()
                 risky = risky or not (key.startswith("color.") or key == "core.quotepath")
+            else:
+                places.append(value)
             index += 2
-        elif option in GLOBAL_FLAGS or option.startswith(GLOBAL_VALUED):
+        elif option.startswith(GLOBAL_VALUED):
+            places.append(option.split("=", 1)[1])
+            index += 1
+        elif option in GLOBAL_FLAGS:
             index += 1
         else:
             break
     if index >= len(arguments):
         return None
-    return arguments[index], arguments[index + 1:], target, where, risky
+    places = [(to_path(value, target, True), value) for value in places]
+    return arguments[index], arguments[index + 1:], target, where, risky, places
 
 
 def init_targets(rest):
@@ -533,6 +551,18 @@ def branch_reads(rest):
     return True
 
 
+def config_reads(rest):
+    index = 0
+    while index < len(rest):
+        word = rest[index]
+        if word == "--" or not word.startswith("-"):
+            return False
+        if word in CONFIG_READS:
+            return True
+        index += 2 if word in CONFIG_VALUED else 1
+    return False
+
+
 def is_read_form(verb, rest):
     if verb in READ_VERBS:
         return not (verb in WRITES_FILE
@@ -550,10 +580,11 @@ def is_read_form(verb, rest):
         return not rest or (first in ("-l", "--list") and len(rest) <= 2)
     if verb == "config":
         first = rest[0] if rest else ""
-        if first in CONFIG_WRITE_SUBCOMMANDS or any(
-                word in CONFIG_WRITE_OPTIONS or word.startswith("--unset") for word in rest):
+        keys = [word[2:].split("=", 1)[0] for word in rest if word.startswith("--")]
+        if first in CONFIG_WRITE_SUBCOMMANDS or "-e" in rest or any(
+                key and name.startswith(key) for key in keys for name in CONFIG_WRITE_OPTIONS):
             return False
-        return (first in ("get", "list") or any(word in CONFIG_READS for word in rest)
+        return (first in ("get", "list") or config_reads(rest)
                 or (len(rest) == 1 and not first.startswith("-")))
     if verb == "remote":
         return not rest or rest == ["-v"] or first in ("show", "get-url")
@@ -561,36 +592,43 @@ def is_read_form(verb, rest):
 
 
 def decide(payload, root):
-    if not payload.get("agent_id") or payload.get("agent_type") == "vc-checkin":
-        return None
     if payload.get("tool_name") != "Bash":
         return None
     tool_input = payload.get("tool_input")
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
     if not isinstance(command, str):
         return None
+    if not payload.get("agent_id"):
+        return None
     cwd = payload.get("cwd")
     working = to_path(cwd, None) if isinstance(cwd, str) else None
     trees = None
-    for name, arguments, directory in invocations(command, working):
+    exported = []
+    for name, arguments, directory, assignments in invocations(command, working):
+        if name == "export":
+            exported.extend(word for word in arguments if word.startswith(PLACE_VARIABLES))
+            continue
         if name != "git":
             continue
         parsed = git_verb(arguments, directory)
         if parsed is None:
             continue
-        verb, rest, target, where, risky = parsed
+        verb, rest, target, where, risky, places = parsed
         if not risky and is_read_form(verb, rest):
             continue
         checks = [(target, where)]
         if verb == "init":
             operand, separate = init_targets(rest)
             if operand is not None:
-                options = arguments[:len(arguments) - len(rest) - 1]
-                if not ("GIT_DIR" in command
-                        or any(word.startswith("--git-dir=") for word in options)):
+                if not ("GIT_DIR" in command or places):
                     checks = []
                 checks.append((to_path(operand, target, True), UNRESOLVED))
             checks.extend((to_path(value, target, True), UNRESOLVED) for value in separate)
+        checks.extend(places)
+        for word in assignments + exported:
+            if word.startswith(PLACE_VARIABLES):
+                value = word.split("=", 1)[1]
+                checks.append((to_path(value, target, True), value))
         for path, label in checks:
             if path is None:
                 return REASON.format(verb=verb, tree=label)
@@ -609,12 +647,16 @@ def deny_document(reason):
 
 
 def main(argv):
-    payload = parse_payload(sys.stdin.buffer.read())
-    if payload is None:
-        return 0
-    reason = decide(payload, resolve_root(argv))
-    if reason is not None:
-        print(deny_document(reason))
+    try:
+        payload = parse_payload(sys.stdin.buffer.read())
+        if payload is None:
+            return 0
+        reason = decide(payload, resolve_root(argv))
+        document = None if reason is None else deny_document(reason)
+    except Exception as error:
+        document = json.dumps({"systemMessage": ERROR_REASON % (type(error).__name__, error)})
+    if document is not None:
+        print(document)
     return 0
 
 
