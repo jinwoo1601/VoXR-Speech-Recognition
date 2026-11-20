@@ -2,7 +2,7 @@
 # Purpose:  Stop hook blocking, once, a skill-work turn end that closes on no stop line, or an end on a waiting stop line with no AskUserQuestion call
 # Layer:    Hooks
 # Owns:     (script, no public types)
-# Depends:  (none)
+# Depends:  hook-common.py
 # =============================================================================
 
 import json
@@ -11,6 +11,13 @@ import os
 import re
 import sys
 
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook-common.py"), "rb") as common:
+        exec(compile(common.read(), common.name, "exec"), globals())
+    COMMON_ERROR = None
+except Exception as error:
+    COMMON_ERROR = error
+
 REASON = "invoke the next skill, or `handoff` past the context bound or at a phase boundary"
 HUB_REASON = "invoke the next skill, or end on a stop line; past the context bound, file anything held only in context to disk and carry on"
 ASK_REASON = "put this stop to the human through AskUserQuestion, its question stating the issue on its own, then end again; where AskUserQuestion is unavailable or refused, say so and end again"
@@ -18,26 +25,8 @@ KINDS = ("declared", "gate", "irreversible act", "scope change", "BLOCKED",
          "background agents", "answering the human", "fork", "handoff")
 WAITING = ("declared", "gate", "irreversible act", "scope change", "BLOCKED", "fork")
 CARRY_PASS = ("answering the human", "handoff")
-BINDING_KEY = "session-launch"
-BLOCK_BYTES = 65536
-SCAN_BYTES = 1048576
 DASH = re.compile("\\s[\\u2014\\u2013-]\\s")
 COMMAND = re.compile(r"<command-name>/([^<]*)</command-name>")
-
-
-def parse_payload(data):
-    try:
-        document = json.loads(data)
-    except (ValueError, RecursionError):
-        return None
-    return document if isinstance(document, dict) else None
-
-
-def project_root(payload, argument):
-    for candidate in (argument, payload.get("cwd")):
-        if isinstance(candidate, str) and candidate and os.path.isdir(candidate):
-            return candidate
-    return None
 
 
 def normal(text):
@@ -111,31 +100,22 @@ def declared_names(root, names):
             with open(path, encoding="utf-8") as handle:
                 entries = stops_entries(handle.read())
         except (OSError, UnicodeDecodeError):
-            return None
+            continue
         if entries is None:
-            return None
+            continue
         declared.update(declared_key(entry) for entry in entries)
     return declared
 
 
 def entries_backwards(path):
     with open(path, "rb") as handle:
-        position = handle.seek(0, os.SEEK_END)
-        carry, scanned = b"", 0
-        while position > 0 and scanned < SCAN_BYTES:
-            size = min(BLOCK_BYTES, position, SCAN_BYTES - scanned)
-            position -= size
-            handle.seek(position)
-            lines = (handle.read(size) + carry).split(b"\n")
-            scanned += size
-            carry = lines.pop(0) if position > 0 else b""
-            for line in reversed(lines):
-                try:
-                    entry = json.loads(line)
-                except (ValueError, RecursionError):
-                    continue
-                if isinstance(entry, dict):
-                    yield entry
+        for line in tail_lines(handle, handle.seek(0, os.SEEK_END)):
+            try:
+                entry = json.loads(line)
+            except (ValueError, RecursionError):
+                continue
+            if isinstance(entry, dict):
+                yield entry
 
 
 def invoked(entry, names):
@@ -231,126 +211,6 @@ def skill_work(transcript, names):
     return False
 
 
-def bindings_file(root):
-    name = "core"
-    try:
-        with open(ntpath.join(root, ".claude", "harness.json"), encoding="utf-8") as handle:
-            document = json.load(handle)
-    except (OSError, ValueError, RecursionError):
-        document = None
-    if isinstance(document, dict):
-        filler = document.get("bindings")
-        named = filler.get(BINDING_KEY) if isinstance(filler, dict) else None
-        if (isinstance(named, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", named)
-                and ".." not in named):
-            name = named
-    return ntpath.join(root, ".claude", "bindings", name + ".md")
-
-
-def binding_section(text, key):
-    heading = re.compile(r"^#{2,}\s*" + re.escape(key) + r"\b", re.IGNORECASE)
-    body = None
-    for line in text.splitlines():
-        if body is not None and re.match(r"^#{1,6}\s", line):
-            break
-        if body is not None:
-            body.append(line)
-        elif heading.match(line):
-            body = []
-    return body
-
-
-def slot_text(lines, label):
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith(f"- {label}:"):
-            return stripped[len(f"- {label}:"):].strip()
-    return None
-
-
-def line_name(line):
-    try:
-        entry = json.loads(line)
-    except (ValueError, RecursionError):
-        return None
-    if not isinstance(entry, dict):
-        return None
-    kind = entry.get("type")
-    if kind == "custom-title":
-        value = entry.get("customTitle")
-    elif kind == "agent-name":
-        value = entry.get("agentName")
-    else:
-        return None
-    return value if isinstance(value, str) and value else None
-
-
-def session_name(path):
-    try:
-        with open(path, "rb") as handle:
-            position = handle.seek(0, os.SEEK_END)
-            carry, scanned = b"", 0
-            while position > 0 and scanned < SCAN_BYTES:
-                size = min(BLOCK_BYTES, position, SCAN_BYTES - scanned)
-                position -= size
-                handle.seek(position)
-                lines = (handle.read(size) + carry).split(b"\n")
-                scanned += size
-                carry = lines.pop(0) if position > 0 else b""
-                for line in reversed(lines):
-                    name = line_name(line)
-                    if name is not None:
-                        return name
-            handle.seek(0)
-            for line in reversed(handle.read(BLOCK_BYTES).split(b"\n")):
-                name = line_name(line)
-                if name is not None:
-                    return name
-    except (OSError, ValueError):
-        return None
-    return None
-
-
-def slot_name(text):
-    if not text or re.match(r"(?i)todo(?![\w-])", text):
-        return None
-    head = re.split("\\s[\\u2014\\u2013-]\\s| \\(|,", text, maxsplit=1)[0]
-    if "`" not in head:
-        name = head.strip("*\" \t")
-    else:
-        match = re.search(r"`([^`]*)`", text)
-        if match is None:
-            return None
-        group = match.group(1)
-        if " -n " in group:
-            words = group.split(" -n ", 1)[1].split()
-            name = words[0] if words else ""
-        else:
-            name = group.strip()
-    if not name or name.casefold() in ("none", "todo"):
-        return None
-    return name
-
-
-def hub_name(root):
-    try:
-        with open(bindings_file(root), encoding="utf-8") as handle:
-            lines = binding_section(handle.read(), BINDING_KEY)
-    except (OSError, ValueError):
-        return None
-    if lines is None:
-        return None
-    return slot_name(slot_text(lines, "Hub session name"))
-
-
-def is_hub(root, transcript):
-    try:
-        hub = hub_name(root)
-        return hub is not None and session_name(transcript) == hub
-    except Exception:
-        return False
-
-
 def decide(payload, argument=None):
     if not isinstance(payload, dict) or payload.get("agent_id") \
             or payload.get("stop_hook_active"):
@@ -371,8 +231,6 @@ def decide(payload, argument=None):
         return None
     if line is not None:
         declared = declared_names(root, names)
-        if declared is None:
-            return None
         if declared_key(line[1]) in declared:
             return ask if unasked(payload.get("transcript_path")) else None
     if skill_work(payload.get("transcript_path"), names):
@@ -383,7 +241,10 @@ def decide(payload, argument=None):
 
 def main(argv):
     try:
-        payload = parse_payload(sys.stdin.buffer.read())
+        data = sys.stdin.buffer.read()
+        if COMMON_ERROR is not None:
+            raise COMMON_ERROR
+        payload = parse_payload(data)
         if payload is not None:
             line = decide(payload, argv[1] if len(argv) > 1 else None)
             if line is not None:

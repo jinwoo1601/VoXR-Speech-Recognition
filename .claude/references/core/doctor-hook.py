@@ -2,7 +2,7 @@
 # Purpose:  SessionStart hook relaying `harness.py doctor`'s report into a session
 # Layer:    Hooks
 # Owns:     (script, no public types)
-# Depends:  (none)
+# Depends:  hook-common.py
 # =============================================================================
 
 import json
@@ -10,36 +10,25 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook-common.py"), "rb") as common:
+        exec(compile(common.read(), common.name, "exec"), globals())
+    COMMON_ERROR = None
+except Exception as error:
+    COMMON_ERROR = error
 
 MANIFEST_REL = ".claude/harness.json"
 BINDINGS_REL = ".claude/bindings"
 WAIT_SECONDS = 30
 LIST_WAIT_SECONDS = 5
-HUB_CHECKOUT = re.compile(r"the main checkout is `([^`]+)`")
-
-
-def resolve_root(argv):
-    if len(argv) > 1:
-        candidate = Path(argv[1])
-        if candidate.is_dir():
-            return candidate
-    return Path.cwd()
 
 
 def trees_section(root, filler):
-    named = filler.get("trees", "core")
-    if not (isinstance(named, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", named)
-            and ".." not in named):
-        named = "core"
-    path = root / BINDINGS_REL / f"{named}.md"
+    path = root / BINDINGS_REL / f"{binding_stem(filler.get('trees'))}.md"
     return binding_section(path.read_text(encoding="utf-8"), "trees") if path.is_file() else None
-
-
-def trees_hub(lines):
-    line = next((line for line in lines or [] if line.startswith("- Hub:")), None)
-    match = HUB_CHECKOUT.search(line) if line else None
-    return match.group(1) if match else None
 
 
 def harness_script(root):
@@ -57,13 +46,30 @@ def harness_script(root):
     if not base_dir.is_dir():
         filler = document.get("bindings")
         filler = filler if isinstance(filler, dict) else {}
+        owner = root.resolve()
         try:
             hub = trees_hub(trees_section(root, filler))
         except (OSError, UnicodeDecodeError):
             hub = None
+        pointer = document.get("parent")
+        if hub is None and isinstance(pointer, str) and pointer:
+            owner = (root / pointer).resolve()
+            try:
+                parent = json.loads((owner / MANIFEST_REL).read_text(encoding="utf-8"))
+            except (OSError, ValueError, RecursionError):
+                parent = None
+            beneath = parent.get("bindings") if isinstance(parent, dict) else None
+            beneath = beneath if isinstance(beneath, dict) else {}
+            try:
+                hub = trees_hub(trees_section(owner, {**beneath, **filler}))
+            except (OSError, UnicodeDecodeError):
+                hub = None
         if hub is not None:
-            candidate = (Path(hub) / base).resolve()
-            if candidate.is_dir():
+            try:
+                candidate = (Path(hub) / os.path.relpath(root.resolve(), owner) / base).resolve()
+            except ValueError:
+                candidate = None
+            if candidate is not None and candidate.is_dir():
                 base_dir = candidate
     script = base_dir / "scripts/harness.py"
     return script if script.is_file() else None
@@ -104,19 +110,6 @@ def doctor_stdout(root, script):
     return result.stdout, result.returncode, first_line(result.stderr)
 
 
-def binding_section(text, key):
-    heading = re.compile(r"^#{2,}\s*" + re.escape(key) + r"\b", re.IGNORECASE)
-    body = None
-    for line in text.splitlines():
-        if body is not None and re.match(r"^#{1,6}\s", line):
-            break
-        if body is not None:
-            body.append(line)
-        elif heading.match(line):
-            body = []
-    return body
-
-
 def slot_value(lines, label):
     for line in lines:
         stripped = line.strip()
@@ -141,14 +134,17 @@ def hub_warning(root):
         if command is None:
             return None
         where = path.relative_to(root).as_posix()
-        name = slot_value(lines, "Hub session name")
+        name = slot_name(slot_text(lines, "Hub session name"))
         if name is None:
             return f"warn  HUB  {where}  Hub session name unbound while the List command is bound"
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, timeout=LIST_WAIT_SECONDS)
+        with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+            result = subprocess.run(command, shell=True, stdout=out, stderr=err,
+                                    timeout=LIST_WAIT_SECONDS)
+            out.seek(0)
+            stdout = out.read()
         if result.returncode != 0:
             return None
-        sessions = json.loads(result.stdout)
+        sessions = json.loads(stdout)
         if not isinstance(sessions, list):
             return None
         count = sum(1 for session in sessions
@@ -168,6 +164,8 @@ def before_last_line(report, line):
 
 def main(argv):
     try:
+        if COMMON_ERROR is not None:
+            raise COMMON_ERROR
         root = resolve_root(argv)
         script = harness_script(root)
         if script is not None:

@@ -1,7 +1,7 @@
 # =============================================================================
 # Purpose:  WorktreeCreate hook cutting a parallel writer's tree per the trees binding
 # Layer:    Hooks
-# Owns:     (script, no public types)
+# Owns:     Refused, CutFailed (exception classes)
 # Depends:  (none)
 # =============================================================================
 

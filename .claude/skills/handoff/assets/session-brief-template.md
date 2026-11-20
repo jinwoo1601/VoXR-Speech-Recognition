@@ -16,7 +16,7 @@ Records: <the dated-note entry this hand-off landed, by its path and its H1; for
 
 <!-- present only where `handoff` `## Sections` item 3 says; otherwise drop the `Pending:` line -->
 
-Pending: <each directory `handoff` `## The hub's clear` names, as its path and its states in brackets, `; ` between them>
+Pending: <each directory a `kept:` line of `handoff` `## The hub's clear` names, as its path and, in brackets, the states its `pending:` lines give, `; ` between them>
 
 Before acting on a stamped fact, re-verify it.
 

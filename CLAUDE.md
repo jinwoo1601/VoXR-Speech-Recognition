@@ -3,7 +3,7 @@
 <!-- harness:managed:start -->
 <!-- Managed by harness.py — scaffold, add, and upgrade rewrite everything between these markers. -->
 
-**Packs:** codex, core, design-track, feature-track, light-lane, unity, vc-git
+**Packs:** core, design-track, feature-track, light-lane, unity, vc-git, wiki
 
 **Bindings:** `.claude/bindings/<pack>.md` — one file per pack, one `##` section per key.
 
