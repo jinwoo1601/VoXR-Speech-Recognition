@@ -87,7 +87,7 @@ def silence(seconds):
     return np.zeros(int(seconds * TARGET_RATE), dtype=np.float32)
 
 
-def build_case(case, piper_bin, voice, data_dir, tmp_path):
+def build_case(case, speak):
     peak = case.get("peak", DEFAULT_PEAK)
     if "segments" in case and case["segments"]:
         gap = case.get("gapSeconds", DEFAULT_GAP_S)
@@ -96,14 +96,14 @@ def build_case(case, piper_bin, voice, data_dir, tmp_path):
             if i > 0:
                 parts.append(silence(gap))
             seg_samples = scale_to_peak(
-                synth(piper_bin, voice, data_dir, seg, tmp_path), peak)
+                speak(seg), peak)
             if case.get("category") == "ladder":
                 seg_samples = trim_edges(seg_samples)
             parts.append(seg_samples)
         speech = np.concatenate(parts)
     elif case.get("phrase"):
         speech = scale_to_peak(
-            synth(piper_bin, voice, data_dir, case["phrase"], tmp_path), peak)
+            speak(case["phrase"]), peak)
     else:
         if "leadSilenceSeconds" in case or "noiseFloorDbfs" in case:
             sys.exit(f"{case['file']}: a silence entry takes neither "
@@ -242,6 +242,7 @@ def main():
     manifest = json.loads(Path(args.manifest).read_text())
     root = Path(args.fixtures_root)
     tmp_path = Path(tempfile.gettempdir()) / "voxr_tts_tmp.wav"
+    speak = lambda text: synth(args.piper_bin, args.voice, Path(args.data_dir), text, tmp_path)
 
     generated = 0
     try:
@@ -249,8 +250,7 @@ def main():
             rel = case["file"]
             if args.only and args.only not in rel:
                 continue
-            samples = build_case(case, args.piper_bin, args.voice,
-                                 Path(args.data_dir), tmp_path)
+            samples = build_case(case, speak)
             write_wav(root / rel, samples)
             peak = float(np.max(np.abs(samples)))
             print(f"  {rel}  ({len(samples) / TARGET_RATE:.2f}s, peak {peak:.3f})")
