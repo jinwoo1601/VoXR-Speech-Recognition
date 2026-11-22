@@ -110,6 +110,7 @@ Lowest risk first, the bench never blocked on Kokoro. The riskiest part — Koko
 | 5 — Kokoro and the closing gate | Provisioning, the 12-voice render, the determinism probe, F9's invented-word toy, the environment listing, the listening approval; Kokoro-speaker defects fixed here; every §9 criterion re-made. | F1, F9, F13; §9; §10 Q1 | Commands 1–2 if `Tests~/` changes; Command 3 green 52/52 (G2); DocCheck; green voiced fast run in the 12 Kokoro voices; `git diff main` empty for committed WAVs, `expectations.json`, `NativeBridge~/` (`vosk_bridge.h` included); `git status --short` no Kokoro file |
 
 - **Assets code cannot author:** the maintainer's — installing `kokoro` 0.9.4 with torch and fetching `kokoro-v1_0.pth`, its `config.json` and the 12 voice packs (downloads, about 330 MB, §8); the 12-voice render (§4.1; the PM may run it with consent once installed); the listening approval of one clip per voice (§9). The determinism probe and F9's live toy need Kokoro: human or PM steps at Phase 5, or at Phase 1's gate if provisioned. Needed as provisioned: the cached Piper venv and `en_US-lessac-medium` (the stand-in), `NativeBridge~/vendor/` per `NativeBridge~/harness/README.md` *Provisioning a branch tree*, Command 3's toolchain, the .NET SDK 10, `py`.
+- Phase 1 — persisted plan (2026-11-22): [plan-1.md](plan-1.md)
 
 ## Risks, tradeoffs & open questions
 
